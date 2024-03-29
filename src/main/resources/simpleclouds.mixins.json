@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"package": "dev.nonamecrackers2.simpleclouds.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"refmap": "simpleclouds.refmap.json",
+	"mixins": [
+	],
+	"client": [
+		"MixinLevelRenderer"
+	],
+	"minVersion": "0.8"
+}
