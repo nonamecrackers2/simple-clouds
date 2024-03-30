@@ -9,12 +9,11 @@ uniform vec4 FogColor;
 
 in float vertexDistance;
 in vec4 vertexColor;
-in vec4 normal;
 
 out vec4 fragColor;
 
 void main() {
-    vec4 color = vertexColor * ColorModulator;
+    vec4 color = ColorModulator * vertexColor;
     if (color.a < 0.1) {
         discard;
     }

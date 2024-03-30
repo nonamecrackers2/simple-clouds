@@ -7,11 +7,8 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
@@ -23,60 +20,93 @@ public class SimpleCloudsRenderer
 {
 	public static final SimpleCloudsRenderer INSTANCE = new SimpleCloudsRenderer();
 	private static int currentIndex;
-	private int vertexBufferId;
-	private int indexBufferId;
-	private int arrayObjectId;
-//	private RenderSystem.AutoStorageIndexBuffer autoIndexBuffer;
-	private final ByteBuffer vertexBuffer;
+	private final int vertexBufferId;
+	private final int indexBufferId;
+	private final int arrayObjectId;
+//	private final ByteBuffer vertexBuffer;
+//	private final ByteBuffer indexBuffer;
 	
 	public SimpleCloudsRenderer()
 	{
-		this.vertexBuffer = MemoryTracker.create(457);
-		ByteBuffer indexBuffer = MemoryTracker.create(97);
-		renderBox(1.0F, this.vertexBuffer, indexBuffer);
-
 		this.vertexBufferId = GlStateManager._glGenBuffers();
 		this.indexBufferId = GlStateManager._glGenBuffers();
 		this.arrayObjectId = GlStateManager._glGenVertexArrays();
+//		this.vertexBuffer = MemoryTracker.create(36);
+//		this.indexBuffer = MemoryTracker.create(12);
+	}
+	
+	private void genVertices()
+	{
+		currentIndex = 0;
 		
-		BufferUploader.invalidate();
+//		vertex(this.vertexBuffer, this.indexBuffer, 0.0F, 0.0F, 0.0F);
+//		vertex(this.vertexBuffer, this.indexBuffer, 0.0F, 1.0F, 0.0F);
+//		vertex(this.vertexBuffer, this.indexBuffer, 1.0F, 0.0F, 0.0F);
+//		this.indexBuffer.rewind();
+//		this.vertexBuffer.rewind();
+		
+		float[] data = new float[] {
+				0.0F, 0.0F, 0.0F,
+				1.0F, 1.0F, 1.0F, 1.0F,
+				0.0F, 1.0F, 0.0F,
+				1.0F, 1.0F, 1.0F, 1.0F,
+				1.0F, 0.0F, 0.0F,
+				1.0F, 1.0F, 1.0F, 1.0F
+		};
+		int[] indices = new int[] { 0, 1, 2 };
+		
+//		BufferUploader.invalidate();
 		GlStateManager._glBindVertexArray(this.arrayObjectId);
 		
 		GlStateManager._glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
-		DefaultVertexFormat.POSITION_COLOR_NORMAL.setupBufferState();
-		RenderSystem.glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_STATIC_DRAW);
+//		DefaultVertexFormat.POSITION_COLOR_NORMAL.setupBufferState();
+		GlStateManager._enableVertexAttribArray(0);
+		GlStateManager._vertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 28, 0);
+		GlStateManager._enableVertexAttribArray(1);
+		GlStateManager._vertexAttribPointer(1, 4, GL11.GL_FLOAT, true, 28, 12);
+//		RenderSystem.glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_STATIC_DRAW);
+		GL15.glBufferData(GL15.GL_ARRAY_BUFFER, data, GL15.GL_STATIC_DRAW);
 		
 		
 //		this.autoIndexBuffer = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
 //		this.autoIndexBuffer.bind(currentIndex);
 		GlStateManager._glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
-		RenderSystem.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL15.GL_STATIC_DRAW);
+//		RenderSystem.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_STATIC_DRAW);
+		GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indices, GL15.GL_STATIC_DRAW);
 
-		BufferUploader.invalidate();
+//		BufferUploader.invalidate();
 		GlStateManager._glBindVertexArray(0);
 	}
 	
 	public void render(PoseStack stack, Matrix4f projMat, float partialTicks, double camX, double camY, double camZ)
 	{
+		this.genVertices();
+		
 //		Tesselator tesselator = Tesselator.getInstance();
 //		BufferBuilder builder = tesselator.getBuilder();
 		RenderSystem.setShader(SimpleCloudsShaders::getCloudsShader);
 		RenderSystem.disableBlend();
 		RenderSystem.disableCull();
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 //		
-		BufferUploader.invalidate();
+//		BufferUploader.invalidate();
 		GlStateManager._glBindVertexArray(this.arrayObjectId);
 		
 		stack.pushPose();
 		stack.translate(-camX, -camY, -camZ);
 		prepareShader(RenderSystem.getShader(), stack.last().pose(), projMat);
 		RenderSystem.getShader().apply();
-		RenderSystem.drawElements(4, currentIndex, GL11.GL_UNSIGNED_INT);
+		RenderSystem.drawElements(GL11.GL_TRIANGLES, 3, GL11.GL_UNSIGNED_INT);
 		RenderSystem.getShader().clear();
 		stack.popPose();
 		
-		BufferUploader.invalidate();
+//		BufferUploader.invalidate();
 		GlStateManager._glBindVertexArray(0);
+		
+//		this.vertexBuffer.clear();
+//		this.indexBuffer.clear();
+		
+		//this.genVertices();
 		
 //		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
 //		builder.putBulkData(this.vertexBuffer);
@@ -92,6 +122,8 @@ public class SimpleCloudsRenderer
 //		
 //		buffer.close();
 	}
+	
+	//setupBufferState(count, glType, vertexSize, byteSize, index, elementIndexInFormat);
 	
 	private static void prepareShader(ShaderInstance shader, Matrix4f modelView, Matrix4f projMat)
 	{
@@ -182,18 +214,18 @@ public class SimpleCloudsRenderer
 	
 	private static void vertex(ByteBuffer vertexBuffer, ByteBuffer indexBuffer, float x, float y, float z)
 	{
-		int nextIndex = currentIndex * 19;
-		vertexBuffer.putFloat(0 + nextIndex, x);
-		vertexBuffer.putFloat(4 + nextIndex, y);
-		vertexBuffer.putFloat(8 + nextIndex, z);
-		vertexBuffer.put(12 + nextIndex, (byte)255);
-		vertexBuffer.put(13 + nextIndex, (byte)255);
-		vertexBuffer.put(14 + nextIndex, (byte)255);
-		vertexBuffer.put(15 + nextIndex, (byte)255);
-		vertexBuffer.put(16 + nextIndex, normalIntValue(0.0F));
-		vertexBuffer.put(17 + nextIndex, normalIntValue(1.0F));
-		vertexBuffer.put(18 + nextIndex, normalIntValue(0.0F));
+		vertexBuffer.putFloat(x);
+		vertexBuffer.putFloat(y);
+		vertexBuffer.putFloat(z);
+//		vertexBuffer.put(12 + nextIndex, (byte)255);
+//		vertexBuffer.put(13 + nextIndex, (byte)255);
+//		vertexBuffer.put(14 + nextIndex, (byte)255);
+//		vertexBuffer.put(15 + nextIndex, (byte)255);
+//		vertexBuffer.put(16 + nextIndex, normalIntValue(0.0F));
+//		vertexBuffer.put(17 + nextIndex, normalIntValue(1.0F));
+//		vertexBuffer.put(18 + nextIndex, normalIntValue(0.0F));
 		indexBuffer.putInt(currentIndex++);
+//		indexBuffer.putInt(currentIndex++);
 	}
 	
 	private static byte normalIntValue(float normal)

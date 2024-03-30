@@ -8,8 +8,7 @@
     "fragment": "simpleclouds:clouds",
     "attributes": [
         "Position",
-        "Color",
-        "Normal"
+        "Color"
     ],
     "samplers": [
     ],
