@@ -1,129 +1,249 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
+import java.util.Objects;
 
+import javax.annotation.Nullable;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 
+import com.google.gson.JsonSyntaxException;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 
+import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
+import dev.nonamecrackers2.simpleclouds.client.shader.compute.AtomicCounter;
+import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.EffectInstance;
+import net.minecraft.client.renderer.PostChain;
+import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.ShaderInstance;
-import net.minecraft.util.Mth;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.world.phys.Vec3;
+import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
-public class SimpleCloudsRenderer
+//TODO: Better far plane extension, use lowest GL class, etc
+public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 {
-	public static final SimpleCloudsRenderer INSTANCE = new SimpleCloudsRenderer();
-	private static int currentIndex;
-	private final int vertexBufferId;
-	private final int indexBufferId;
-	private final int arrayObjectId;
-//	private final ByteBuffer vertexBuffer;
-//	private final ByteBuffer indexBuffer;
+	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/SimpleCloudsRenderer");
+	private static final Vector3f DIFFUSE_LIGHT_0 = (new Vector3f(0.2F, 1.0F, -0.7F)).normalize();
+	private static final Vector3f DIFFUSE_LIGHT_1 = (new Vector3f(-0.2F, 1.0F, 0.7F)).normalize();
+	private static final ResourceLocation POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/cloud_post.json");
+	public static final int CLOUD_SCALE = 8;
+//	private static boolean extendFarPlane;
+//	private static float extendedFarPlaneAmount = -1.0F;
+//	private static Matrix4f prevProjMat;
+	private static @Nullable SimpleCloudsRenderer instance;
+	private final Minecraft mc;
+	private final CloudMeshGenerator meshGenerator;
+	private @Nullable RenderTarget cloudTarget;
+	private @Nullable PostChain cloudsPostProcessing;
+	private int arrayObjectId = -1;
+	private int totalIndices;
+	private int totalSides;
+	private float scrollX;
+	private float scrollY;
+	private float scrollZ;
 	
-	public SimpleCloudsRenderer()
+	private SimpleCloudsRenderer(Minecraft mc)
 	{
-		this.vertexBufferId = GlStateManager._glGenBuffers();
-		this.indexBufferId = GlStateManager._glGenBuffers();
-		this.arrayObjectId = GlStateManager._glGenVertexArrays();
-//		this.vertexBuffer = MemoryTracker.create(36);
-//		this.indexBuffer = MemoryTracker.create(12);
+		this.mc = mc;
+		this.meshGenerator = new CloudMeshGenerator();
+		this.setupMeshGenerator();
 	}
 	
-	private void genVertices()
+	private void setupMeshGenerator()
 	{
-		currentIndex = 0;
-		
-//		vertex(this.vertexBuffer, this.indexBuffer, 0.0F, 0.0F, 0.0F);
-//		vertex(this.vertexBuffer, this.indexBuffer, 0.0F, 1.0F, 0.0F);
-//		vertex(this.vertexBuffer, this.indexBuffer, 1.0F, 0.0F, 0.0F);
-//		this.indexBuffer.rewind();
-//		this.vertexBuffer.rewind();
-		
-		float[] data = new float[] {
-				0.0F, 0.0F, 0.0F,
-				1.0F, 1.0F, 1.0F, 1.0F,
-				0.0F, 1.0F, 0.0F,
-				1.0F, 1.0F, 1.0F, 1.0F,
-				1.0F, 0.0F, 0.0F,
-				1.0F, 1.0F, 1.0F, 1.0F
-		};
-		int[] indices = new int[] { 0, 1, 2 };
-		
-//		BufferUploader.invalidate();
-		GlStateManager._glBindVertexArray(this.arrayObjectId);
-		
-		GlStateManager._glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
-//		DefaultVertexFormat.POSITION_COLOR_NORMAL.setupBufferState();
-		GlStateManager._enableVertexAttribArray(0);
-		GlStateManager._vertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 28, 0);
-		GlStateManager._enableVertexAttribArray(1);
-		GlStateManager._vertexAttribPointer(1, 4, GL11.GL_FLOAT, true, 28, 12);
-//		RenderSystem.glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_STATIC_DRAW);
-		GL15.glBufferData(GL15.GL_ARRAY_BUFFER, data, GL15.GL_STATIC_DRAW);
-		
-		
-//		this.autoIndexBuffer = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-//		this.autoIndexBuffer.bind(currentIndex);
-		GlStateManager._glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
-//		RenderSystem.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_STATIC_DRAW);
-		GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indices, GL15.GL_STATIC_DRAW);
-
-//		BufferUploader.invalidate();
-		GlStateManager._glBindVertexArray(0);
+		this.meshGenerator.setNoiseScale(30.0F, 10.0F, 30.0F);
+		this.meshGenerator.setScroll(this.scrollX, this.scrollY, this.scrollZ);
 	}
 	
-	public void render(PoseStack stack, Matrix4f projMat, float partialTicks, double camX, double camY, double camZ)
+	@Override
+	public void onResourceManagerReload(ResourceManager manager)
 	{
-		this.genVertices();
+		if (this.cloudTarget != null)
+			this.cloudTarget.destroyBuffers();
+		this.cloudTarget = new TextureTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), true, Minecraft.ON_OSX);
+		this.cloudTarget.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 		
-//		Tesselator tesselator = Tesselator.getInstance();
-//		BufferBuilder builder = tesselator.getBuilder();
-		RenderSystem.setShader(SimpleCloudsShaders::getCloudsShader);
-		RenderSystem.disableBlend();
-		RenderSystem.disableCull();
-		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-//		
-//		BufferUploader.invalidate();
-		GlStateManager._glBindVertexArray(this.arrayObjectId);
+		if (this.arrayObjectId >= 0)
+		{
+			RenderSystem.glDeleteVertexArrays(this.arrayObjectId);
+			this.arrayObjectId = -1;
+		}
 		
-		stack.pushPose();
-		stack.translate(-camX, -camY, -camZ);
-		prepareShader(RenderSystem.getShader(), stack.last().pose(), projMat);
-		RenderSystem.getShader().apply();
-		RenderSystem.drawElements(GL11.GL_TRIANGLES, 3, GL11.GL_UNSIGNED_INT);
-		RenderSystem.getShader().clear();
-		stack.popPose();
+		this.meshGenerator.init(manager);
 		
-//		BufferUploader.invalidate();
-		GlStateManager._glBindVertexArray(0);
+		if (this.meshGenerator.getShader() != null)
+		{
+			this.arrayObjectId = GL30.glGenVertexArrays();
+			this.rebindBuffers();
+		}
 		
-//		this.vertexBuffer.clear();
-//		this.indexBuffer.clear();
+		if (this.cloudsPostProcessing != null)
+			this.cloudsPostProcessing.close();
 		
-		//this.genVertices();
-		
-//		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
-//		builder.putBulkData(this.vertexBuffer);
-//		VertexBuffer buffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
-//		BufferBuilder.RenderedBuffer rendered = builder.end();
-//		buffer.bind();
-//		buffer.upload(rendered);
-//		stack.pushPose();
-//		stack.translate(-camX, -camY, -camZ);
-//		buffer.drawWithShader(stack.last().pose(), projMat, RenderSystem.getShader());
-//		stack.popPose();
-//		VertexBuffer.unbind();
-//		
-//		buffer.close();
+		try
+		{
+			this.cloudsPostProcessing = new PostChain(this.mc.getTextureManager(), manager, this.cloudTarget, POST_PROCESSING_LOC);
+			this.cloudsPostProcessing.resize(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight());
+		}
+		catch (JsonSyntaxException e)
+		{
+			LOGGER.warn("Failed to parse shader: {}", POST_PROCESSING_LOC, e);
+		}
+		catch (IOException e)
+		{
+			LOGGER.warn("Failed to load shader: {}", POST_PROCESSING_LOC, e);
+		}
 	}
 	
-	//setupBufferState(count, glType, vertexSize, byteSize, index, elementIndexInFormat);
+	private void rebindBuffers()
+	{
+		if (this.arrayObjectId != -1)
+		{
+			int vertexBufferId = this.meshGenerator.getShader().getBufferObject(1).getId();
+			int indexBufferId = this.meshGenerator.getShader().getBufferObject(2).getId();
+			this.totalSides = this.meshGenerator.getShader().<AtomicCounter>getBufferObject(0).get();
+			this.totalIndices = this.totalSides * 6;
+			
+			GL30.glBindVertexArray(this.arrayObjectId);
+			
+			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBufferId);
+			//Vertex position
+			GL20.glEnableVertexAttribArray(0);
+			GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 40, 0);
+			//Vertex color
+			GL20.glEnableVertexAttribArray(1);
+			GL20.glVertexAttribPointer(1, 4, GL11.GL_FLOAT, true, 40, 12);
+			//Vertex normal
+			GL20.glEnableVertexAttribArray(2);
+			GL20.glVertexAttribPointer(2, 3, GL11.GL_FLOAT, true, 40, 28);
+			
+			GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, indexBufferId);
+			
+			GL30.glBindVertexArray(0);
+		}
+	}
+	
+	public CloudMeshGenerator getMeshGenerator()
+	{
+		return this.meshGenerator;
+	}
+	
+	public void onResize(int width, int height)
+	{
+		if (this.cloudTarget != null)
+			this.cloudTarget.resize(width, height, Minecraft.ON_OSX);
+		if (this.cloudsPostProcessing != null)
+			this.cloudsPostProcessing.resize(width, height);
+	}
+		
+	public void shutdown()
+	{
+		if (this.cloudTarget != null)
+			this.cloudTarget.destroyBuffers();
+		this.cloudTarget = null;
+		if (this.cloudsPostProcessing != null)
+			this.cloudsPostProcessing.close();
+		this.cloudsPostProcessing = null;
+		this.meshGenerator.close();
+	}
+	
+	public void tick()
+	{
+		this.scrollX += 0.001F;
+		this.scrollZ += 0.0005F;
+	}
+	
+	public void render(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	{
+		if (this.arrayObjectId != -1)
+		{
+			this.setupMeshGenerator();
+			this.meshGenerator.generateMesh(camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE);
+			this.totalSides = this.meshGenerator.getShader().<AtomicCounter>getBufferObject(0).get();
+			this.totalIndices = this.totalSides * 6;
+			
+			this.cloudTarget.clear(Minecraft.ON_OSX);
+			this.cloudTarget.copyDepthFrom(this.mc.getMainRenderTarget());
+			this.cloudTarget.bindWrite(false);
+			
+			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShader);
+			RenderSystem.disableBlend();
+			RenderSystem.enableDepthTest();
+			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
+			RenderSystem.setShaderColor((float)cloudCol.x, (float)cloudCol.y, (float)cloudCol.z, 1.0F);
+			
+			GLFW.glfwWindowHint(arrayObjectId, CLOUD_SCALE);
+			
+			GL30.glBindVertexArray(this.arrayObjectId);
+			
+			stack.pushPose();
+			stack.translate(-camX, -camY / 4.0F + 64.0F, -camZ);
+			stack.scale((float)CLOUD_SCALE, (float)CLOUD_SCALE, (float)CLOUD_SCALE);
+			
+			ShaderInstance shader = RenderSystem.getShader();
+			prepareShader(shader, stack.last().pose(), projMat);
+			shader.apply();
+			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.totalIndices, GL11.GL_UNSIGNED_INT);
+			shader.clear();
+			
+			stack.popPose();
+			
+			GL30.glBindVertexArray(0);
+			
+			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+			
+			this.doPostProcessing(stack, partialTick, projMat);
+			
+			this.mc.getMainRenderTarget().bindWrite(false);
+			
+			RenderSystem.enableBlend();
+			RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+			this.cloudTarget.blitToScreen(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), false);
+			RenderSystem.disableBlend();
+	        RenderSystem.defaultBlendFunc();
+		}
+	}
+	
+	private void doPostProcessing(PoseStack stack, float partialTick, Matrix4f projMat)
+	{
+		if (this.cloudsPostProcessing != null)
+		{
+			RenderSystem.disableDepthTest();
+			RenderSystem.resetTextureMatrix();
+			
+			for (PostPass pass : ((MixinPostChain)this.cloudsPostProcessing).simpleclouds$getPostPasses())
+			{
+				EffectInstance effect = pass.getEffect();
+				effect.safeGetUniform("WorldProjMat").set(projMat);
+				effect.safeGetUniform("ModelViewMat").set(stack.last().pose());
+				float renderDistance = (float)CloudMeshGenerator.getCloudRenderDistance() * (float)CLOUD_SCALE;
+				effect.safeGetUniform("FogStart").set(renderDistance / 4.0F);
+				effect.safeGetUniform("FogEnd").set(renderDistance);
+			}
+			
+			this.cloudsPostProcessing.process(partialTick);
+		}
+	}
 	
 	private static void prepareShader(ShaderInstance shader, Matrix4f modelView, Matrix4f projMat)
 	{
@@ -171,65 +291,65 @@ public class SimpleCloudsRenderer
 			Window window = Minecraft.getInstance().getWindow();
 			shader.SCREEN_SIZE.set((float) window.getWidth(), (float) window.getHeight());
 		}
+		
+		RenderSystem.setShaderLights(DIFFUSE_LIGHT_0, DIFFUSE_LIGHT_1);
+		RenderSystem.setupShaderLights(shader);
 	}
 	
-	public static void renderBox(float radius, ByteBuffer vertexBuffer, ByteBuffer indexBuffer)
+	public int getTotalSides()
 	{
-		//-Z
-		vertex(vertexBuffer, indexBuffer, -radius, -radius, -radius);
-		vertex(vertexBuffer, indexBuffer, -radius, radius, -radius);
-		vertex(vertexBuffer, indexBuffer, radius, radius, -radius);
-		vertex(vertexBuffer, indexBuffer, radius, -radius, -radius);
-		
-		//+Z
-		vertex(vertexBuffer, indexBuffer, -radius, radius, radius);
-		vertex(vertexBuffer, indexBuffer, -radius, -radius, radius);
-		vertex(vertexBuffer, indexBuffer, radius, -radius, radius);
-		vertex(vertexBuffer, indexBuffer, radius, radius, radius);
-		
-		//-Y
-		vertex(vertexBuffer, indexBuffer, -radius, -radius, radius);
-		vertex(vertexBuffer, indexBuffer, -radius, -radius, -radius);
-		vertex(vertexBuffer, indexBuffer, radius, -radius, -radius);
-		vertex(vertexBuffer, indexBuffer, radius, -radius, radius);
-		
-		//+Y
-		vertex(vertexBuffer, indexBuffer, -radius, radius, -radius);
-		vertex(vertexBuffer, indexBuffer, -radius, radius, radius);
-		vertex(vertexBuffer, indexBuffer, radius, radius, radius);
-		vertex(vertexBuffer, indexBuffer, radius, radius, -radius);
-		
-		//-X
-		vertex(vertexBuffer, indexBuffer, -radius, -radius, -radius);
-		vertex(vertexBuffer, indexBuffer, -radius, -radius, radius);
-		vertex(vertexBuffer, indexBuffer, -radius, radius, radius);
-		vertex(vertexBuffer, indexBuffer, -radius, radius, -radius);
-		
-		//+X
-		vertex(vertexBuffer, indexBuffer, radius, -radius, radius);
-		vertex(vertexBuffer, indexBuffer, radius, -radius, -radius);
-		vertex(vertexBuffer, indexBuffer, radius, radius, -radius);
-		vertex(vertexBuffer, indexBuffer, radius, radius, radius);
+		return this.totalSides;
 	}
 	
-	private static void vertex(ByteBuffer vertexBuffer, ByteBuffer indexBuffer, float x, float y, float z)
+	public static boolean isEnabled()
 	{
-		vertexBuffer.putFloat(x);
-		vertexBuffer.putFloat(y);
-		vertexBuffer.putFloat(z);
-//		vertexBuffer.put(12 + nextIndex, (byte)255);
-//		vertexBuffer.put(13 + nextIndex, (byte)255);
-//		vertexBuffer.put(14 + nextIndex, (byte)255);
-//		vertexBuffer.put(15 + nextIndex, (byte)255);
-//		vertexBuffer.put(16 + nextIndex, normalIntValue(0.0F));
-//		vertexBuffer.put(17 + nextIndex, normalIntValue(1.0F));
-//		vertexBuffer.put(18 + nextIndex, normalIntValue(0.0F));
-		indexBuffer.putInt(currentIndex++);
-//		indexBuffer.putInt(currentIndex++);
+		return !CompatHelper.isShadersRunning();
 	}
 	
-	private static byte normalIntValue(float normal)
+	public static void initialize()
 	{
-		return (byte)((int)(Mth.clamp(normal, -1.0F, 1.0F) * 127.0F) & 255);
+		RenderSystem.assertOnRenderThread();
+		instance = new SimpleCloudsRenderer(Minecraft.getInstance());
+		LOGGER.debug("Clouds render initialized");
 	}
+	
+	public static SimpleCloudsRenderer getInstance()
+	{
+		return Objects.requireNonNull(instance, "Renderer not initialized!");
+	}
+//	
+//	public static void extendFarPlane(float amount, float partialTick)
+//	{
+//		if (extendFarPlane)
+//			throw new IllegalStateException("Already extending the far plane!");
+//		prevProjMat = RenderSystem.getProjectionMatrix();
+//		extendFarPlane = true;
+//		extendedFarPlaneAmount = amount;
+//		Minecraft mc = Minecraft.getInstance();
+//		GameRenderer renderer = mc.gameRenderer;
+//		Matrix4f proj = new Matrix4f(prevProjMat);
+//		float near = 0.1F;
+//		proj.set(2, 2, -((amount + near) / (amount - near))).set(3, 2, -((2 * amount * near) / (amount - near)));
+////		double fov = ((MixinGameRendererAccessor)renderer).simpleclouds$getFov(renderer.getMainCamera(), partialTick, true);
+//		renderer.resetProjectionMatrix(proj);
+//	}
+//	
+//	public static void resetFarPlane()
+//	{
+//		if (prevProjMat == null || !extendFarPlane)
+//			throw new IllegalStateException("Not extending the far plane!");
+//		Minecraft.getInstance().gameRenderer.resetProjectionMatrix(prevProjMat);
+//		extendFarPlane = false;
+//		extendedFarPlaneAmount = -1.0F;
+//	}
+//	
+//	public static boolean isExtendingFarPlane()
+//	{
+//		return extendFarPlane && prevProjMat != null;
+//	}
+//	
+//	public static float getExtendedFarPlane()
+//	{
+//		return extendedFarPlaneAmount;
+//	}
 }

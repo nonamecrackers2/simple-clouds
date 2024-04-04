@@ -6,7 +6,10 @@
 	"mixins": [
 	],
 	"client": [
-		"MixinLevelRenderer"
+		"MixinLevelRenderer",
+		"MixinGameRenderer",
+		"MixinGameRendererAccessor",
+		"MixinPostChain"
 	],
 	"minVersion": "0.8"
 }

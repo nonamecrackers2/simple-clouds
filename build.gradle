@@ -121,6 +121,16 @@ repositories {
     // flatDir {
     //     dir 'libs'
     // }
+    maven {
+        url "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+    maven {
+        name "nonamecrackers2Maven"
+        url "https://maven.nonamecrackers2.dev/releases"
+    }
 }
 
 dependencies {
@@ -132,6 +142,15 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    
+    runtimeOnly fg.deobf("curse.maven:embeddium-908741:5230460")
+    runtimeOnly fg.deobf("curse.maven:oculus-581495:5108615")
+    
+    jarJar("nonamecrackers2:crackerslib-forge:${minecraft_version}-${crackerslib_version}") {
+    	jarJar.ranged(it, "${crackerslib_version_range}")
+    }
+    
+    implementation fg.deobf("nonamecrackers2:crackerslib-forge:${minecraft_version}-${crackerslib_version}")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

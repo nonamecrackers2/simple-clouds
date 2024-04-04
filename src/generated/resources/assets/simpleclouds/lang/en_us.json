@@ -1,0 +1,4 @@
+{
+  "gui.simpleclouds.config.noiseThreshold.description": "Specifies the noise threshold for the clouds. Impacts how big each individual cloud is.\nRange: 0.0 ~ 1.0",
+  "gui.simpleclouds.config.noiseThreshold.title": "Noise Threshold"
+}
