@@ -9,7 +9,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -191,8 +190,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.enableDepthTest();
 			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
 			RenderSystem.setShaderColor((float)cloudCol.x, (float)cloudCol.y, (float)cloudCol.z, 1.0F);
-			
-			GLFW.glfwWindowHint(arrayObjectId, CLOUD_SCALE);
 			
 			GL30.glBindVertexArray(this.arrayObjectId);
 			
