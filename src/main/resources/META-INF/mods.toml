@@ -29,5 +29,5 @@ license="${mod_license}"
     ordering="NONE"
     side="BOTH"
 
-[features.${mod_id}]
-openGLVersion="[4.3,)"
+#[features.${mod_id}]
+#openGLVersion="[4.3,)"

@@ -12,7 +12,7 @@ public class ShaderStorageBuffer extends BufferObject
 {
 	protected ShaderStorageBuffer(int id, int binding, int usage)
 	{
-		super(id, binding, usage);
+		super(GL43.GL_SHADER_STORAGE_BUFFER, id, binding, usage);
 	}
 	
 	public void uploadData(ByteBuffer buffer)

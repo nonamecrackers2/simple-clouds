@@ -35,6 +35,7 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
@@ -52,6 +53,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private static @Nullable SimpleCloudsRenderer instance;
 	private final Minecraft mc;
 	private final CloudMeshGenerator meshGenerator;
+	private final RandomSource random;
 	private @Nullable RenderTarget cloudTarget;
 	private @Nullable PostChain cloudsPostProcessing;
 	private int arrayObjectId = -1;
@@ -60,12 +62,14 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private float scrollX;
 	private float scrollY;
 	private float scrollZ;
+	private Vector3f scrollDirection = new Vector3f(1.0F, 0.0F, 0.0F);
 	
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
 		this.mc = mc;
 		this.meshGenerator = new CloudMeshGenerator();
 		this.setupMeshGenerator();
+		this.random = RandomSource.create();
 	}
 	
 	private void setupMeshGenerator()
@@ -77,6 +81,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	@Override
 	public void onResourceManagerReload(ResourceManager manager)
 	{
+		this.scrollDirection = new Vector3f(this.random.nextFloat() * 2.0F - 1.0F, this.random.nextFloat() * 2.0F - 1.0F, this.random.nextFloat() * 2.0F - 1.0F).normalize();
+		
 		if (this.cloudTarget != null)
 			this.cloudTarget.destroyBuffers();
 		this.cloudTarget = new TextureTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), true, Minecraft.ON_OSX);
@@ -168,8 +174,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void tick()
 	{
-		this.scrollX += 0.001F;
-		this.scrollZ += 0.0005F;
+		float speed = 0.001F * SimpleCloudsConfig.CLIENT.speedModifier.get().floatValue();
+		this.scrollX += this.scrollDirection.x() * speed;
+		this.scrollY += this.scrollDirection.y() * speed;
+		this.scrollZ += this.scrollDirection.z() * speed;
 	}
 	
 	public void render(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
@@ -177,7 +185,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.arrayObjectId != -1)
 		{
 			this.setupMeshGenerator();
-			this.meshGenerator.generateMesh(camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE);
+			this.meshGenerator.generateMesh(SimpleCloudsConfig.CLIENT.movementSmoothing.get(), camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE);
 			this.totalSides = this.meshGenerator.getShader().<AtomicCounter>getBufferObject(0).get();
 			this.totalIndices = this.totalSides * 6;
 			

@@ -4,19 +4,20 @@ import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL43;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 public class BufferObject implements AutoCloseable
 {
+	protected final int type;
 	protected int id;
 	protected final int binding;
 	protected final int usage;
 	
-	protected BufferObject(int id, int binding, int usage)
+	protected BufferObject(int type, int id, int binding, int usage)
 	{
+		this.type = type;
 		this.id = id;
 		this.binding = binding;
 		this.usage = usage;
@@ -38,10 +39,11 @@ public class BufferObject implements AutoCloseable
 	{
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
-		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.id);
-		consumer.accept(GlStateManager._glMapBuffer(GL43.GL_SHADER_STORAGE_BUFFER, access));
-		GlStateManager._glUnmapBuffer(GL43.GL_SHADER_STORAGE_BUFFER);
-		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, 0);
+		//TODO: Change this, not always a shader storage buffer
+		GlStateManager._glBindBuffer(this.type, this.id);
+		consumer.accept(GlStateManager._glMapBuffer(this.type, access));
+		GlStateManager._glUnmapBuffer(this.type);
+		GlStateManager._glBindBuffer(this.type, 0);
 	}
 	
 	public void readData(Consumer<ByteBuffer> consumer)

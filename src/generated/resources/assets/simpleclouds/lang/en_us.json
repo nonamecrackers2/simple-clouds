@@ -1,4 +1,8 @@
 {
+  "gui.simpleclouds.config.movementSmoothing.description": "Specifies if some movement smoothing should be applied to the clouds so they don't look as distracting. May impact performance.",
+  "gui.simpleclouds.config.movementSmoothing.title": "Movement Smoothing",
   "gui.simpleclouds.config.noiseThreshold.description": "Specifies the noise threshold for the clouds. Impacts how big each individual cloud is.\nRange: 0.0 ~ 1.0",
-  "gui.simpleclouds.config.noiseThreshold.title": "Noise Threshold"
+  "gui.simpleclouds.config.noiseThreshold.title": "Noise Threshold",
+  "gui.simpleclouds.config.speedModifier.description": "Specifies the movement speed of the clouds.\nRange: 0.1 ~ 10.0",
+  "gui.simpleclouds.config.speedModifier.title": "Speed Modifier"
 }

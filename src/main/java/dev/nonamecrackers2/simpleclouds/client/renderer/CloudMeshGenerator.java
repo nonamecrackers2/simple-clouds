@@ -18,7 +18,7 @@ import net.minecraft.util.Mth;
 
 public class CloudMeshGenerator implements AutoCloseable
 {
-	private static final ResourceLocation MESH_GENERATOR = SimpleCloudsMod.id("test");
+	private static final ResourceLocation CUBE_MESH_GENERATOR = SimpleCloudsMod.id("cube_mesh");
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudMeshGenerator");
 	private static final int WORK_X = 64;
 	private static final int WORK_Y = 4;
@@ -71,11 +71,11 @@ public class CloudMeshGenerator implements AutoCloseable
 		try
 		{
 //			int totalCubes = WORK_X * WORK_Y * WORK_Z * LOCAL_X * LOCAL_Y * LOCAL_Z;
-			this.shader = ComputeShader.loadShader(MESH_GENERATOR, manager, LOCAL_X, LOCAL_Y, LOCAL_Z);
+			this.shader = ComputeShader.loadShader(CUBE_MESH_GENERATOR, manager, LOCAL_X, LOCAL_Y, LOCAL_Z);
 			this.shader.bindAtomicCounter(0, GL15.GL_DYNAMIC_DRAW); //Counter
-			this.shader.bindShaderStorageBuffer(1, GL15.GL_DYNAMIC_DRAW).allocateBuffer(268435456); //Vertex data
-			this.shader.bindShaderStorageBuffer(2, GL15.GL_DYNAMIC_DRAW).allocateBuffer(268435456); //Index data
-			this.generateMesh(0.0F, 0.0F, 0.0F, 0.5F, 1.0F);
+			this.shader.bindShaderStorageBuffer(1, GL15.GL_DYNAMIC_DRAW).allocateBuffer(368435456); //Vertex data
+			this.shader.bindShaderStorageBuffer(2, GL15.GL_DYNAMIC_DRAW).allocateBuffer(107108864); //Index data
+			this.generateMesh(false, 0.0F, 0.0F, 0.0F, 0.5F, 1.0F);
 			
 			//Test print statements
 //			int indices = this.shader.<AtomicCounter>getBufferObject(0).get();
@@ -117,16 +117,22 @@ public class CloudMeshGenerator implements AutoCloseable
 		this.noiseScaleZ = z;
 	}
 	
-	public void generateMesh(double camX, double camY, double camZ, float threshold, float scale)
+	public void generateMesh(boolean smoothingPass, double camX, double camY, double camZ, float threshold, float scale)
 	{
-		this.generateMesh(camX, camY, camZ, threshold, scale, false);
+		this.generateMesh(smoothingPass, camX, camY, camZ, threshold, scale, false);
 	}
 	
-	public void generateMesh(double camX, double camY, double camZ, float threshold, float scale, boolean wait)
+	public void generateMesh(boolean addMovementSmoothing, double camX, double camY, double camZ, float threshold, float scale, boolean wait)
 	{
 		this.shader.<AtomicCounter>getBufferObject(0).set(0);
+		this.shader.forUniform("AddMovementSmoothing", loc -> {
+			GL20.glUniform1i(loc, addMovementSmoothing ? 1 : 0);
+		});
 		this.shader.forUniform("Threshold", loc -> {
 			GL20.glUniform1f(loc, threshold);
+		});
+		this.shader.forUniform("FadeThreshold", loc -> {
+			GL20.glUniform1f(loc, threshold - 0.1F);
 		});
 		float cloudCenterOffsetX = WORK_X * LOCAL_X / 2.0F * scale;
 		float cloudCenterOffsetZ = WORK_Z * LOCAL_Z / 2.0F * scale;

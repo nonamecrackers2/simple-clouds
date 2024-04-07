@@ -13,7 +13,7 @@ public class AtomicCounter extends BufferObject
 {
 	protected AtomicCounter(int id, int binding, int usage)
 	{
-		super(id, binding, usage);
+		super(GL42.GL_ATOMIC_COUNTER_BUFFER, id, binding, usage);
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
 		GlStateManager._glBindBuffer(GL42.GL_ATOMIC_COUNTER_BUFFER, this.id);
