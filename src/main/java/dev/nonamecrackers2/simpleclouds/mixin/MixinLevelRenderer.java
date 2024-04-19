@@ -18,10 +18,8 @@ public class MixinLevelRenderer
 	@Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true)
 	public void simpleclouds$overrideCloudRendering_renderClouds(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, CallbackInfo ci)
 	{
-		//SimpleCloudsRenderer.extendFarPlane((float)CloudMeshGenerator.getCloudAreaMaxRadius() * (float)SimpleCloudsRenderer.CLOUD_SCALE, partialTick);
 		if (SimpleCloudsRenderer.isEnabled())
-			SimpleCloudsRenderer.getInstance().render(stack, RenderSystem.getProjectionMatrix(), partialTick, camX, camY, camZ);
-		//SimpleCloudsRenderer.resetFarPlane();
+			SimpleCloudsRenderer.getInstance().renderInWorld(stack, RenderSystem.getProjectionMatrix(), partialTick, camX, camY, camZ);
 		ci.cancel();
 	}
 	

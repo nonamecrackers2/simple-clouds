@@ -3,6 +3,7 @@ package dev.nonamecrackers2.simpleclouds;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 
 import dev.nonamecrackers2.simpleclouds.client.event.SimpleCloudsClientEvents;
+import dev.nonamecrackers2.simpleclouds.client.keybind.SimpleCloudsKeybinds;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsDataEvents;
@@ -15,6 +16,7 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
+//TODO: Re-add open gl version check in mods.toml
 @Mod(SimpleCloudsMod.MODID)
 public class SimpleCloudsMod
 {
@@ -28,6 +30,7 @@ public class SimpleCloudsMod
 		modBus.addListener(SimpleCloudsClientEvents::registerReloadListeners);
 		modBus.addListener(this::clientInit);
 		modBus.addListener(SimpleCloudsDataEvents::gatherData);
+		modBus.addListener(SimpleCloudsKeybinds::registerKeyMappings);
 		ModLoadingContext context = ModLoadingContext.get();
 		context.registerConfig(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC);
 	}
@@ -40,6 +43,7 @@ public class SimpleCloudsMod
 		modBus.addListener(SimpleCloudsClientEvents::registerConfigMenuButton);
 		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
 		forgeBus.register(SimpleCloudsClientEvents.class);
+		forgeBus.register(SimpleCloudsKeybinds.class);
 	}
 	
 	public static ResourceLocation id(String path)

@@ -8,10 +8,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL31;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.AtomicCounter;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
+import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
@@ -75,7 +78,7 @@ public class CloudMeshGenerator implements AutoCloseable
 			this.shader.bindAtomicCounter(0, GL15.GL_DYNAMIC_DRAW); //Counter
 			this.shader.bindShaderStorageBuffer(1, GL15.GL_DYNAMIC_DRAW).allocateBuffer(368435456); //Vertex data
 			this.shader.bindShaderStorageBuffer(2, GL15.GL_DYNAMIC_DRAW).allocateBuffer(107108864); //Index data
-			this.generateMesh(false, 0.0F, 0.0F, 0.0F, 0.5F, 1.0F);
+			this.generateMesh(StaticNoiseSettings.DEFAULT, false, 0.0F, 0.0F, 0.0F, 0.5F, 1.0F);
 			
 			//Test print statements
 //			int indices = this.shader.<AtomicCounter>getBufferObject(0).get();
@@ -117,23 +120,23 @@ public class CloudMeshGenerator implements AutoCloseable
 		this.noiseScaleZ = z;
 	}
 	
-	public void generateMesh(boolean smoothingPass, double camX, double camY, double camZ, float threshold, float scale)
+	public void generateMesh(NoiseSettings settings, boolean addMovementSmoothing, double camX, double camY, double camZ, float threshold, float scale)
 	{
-		this.generateMesh(smoothingPass, camX, camY, camZ, threshold, scale, false);
+		this.generateMesh(settings, addMovementSmoothing, camX, camY, camZ, threshold, scale, false);
 	}
 	
-	public void generateMesh(boolean addMovementSmoothing, double camX, double camY, double camZ, float threshold, float scale, boolean wait)
+	public void generateMesh(NoiseSettings settings, boolean addMovementSmoothing, double camX, double camY, double camZ, float threshold, float scale, boolean wait)
 	{
 		this.shader.<AtomicCounter>getBufferObject(0).set(0);
 		this.shader.forUniform("AddMovementSmoothing", loc -> {
 			GL20.glUniform1i(loc, addMovementSmoothing ? 1 : 0);
 		});
-		this.shader.forUniform("Threshold", loc -> {
-			GL20.glUniform1f(loc, threshold);
-		});
-		this.shader.forUniform("FadeThreshold", loc -> {
-			GL20.glUniform1f(loc, threshold - 0.1F);
-		});
+//		this.shader.forUniform("Threshold", loc -> {
+//			GL20.glUniform1f(loc, threshold);
+//		});
+//		this.shader.forUniform("FadeThreshold", loc -> {
+//			GL20.glUniform1f(loc, threshold - 0.1F);
+//		});
 		float cloudCenterOffsetX = WORK_X * LOCAL_X / 2.0F * scale;
 		float cloudCenterOffsetZ = WORK_Z * LOCAL_Z / 2.0F * scale;
 		float offsetX = ((float)Mth.floor(camX / 16.0D) * 16.0F - cloudCenterOffsetX) / scale;
@@ -144,12 +147,12 @@ public class CloudMeshGenerator implements AutoCloseable
 		this.shader.forUniform("Scroll", loc -> {
 			GL20.glUniform3f(loc, this.scrollX, this.scrollY, this.scrollZ);
 		});
-		this.shader.forUniform("NoiseScale", loc -> {
-			GL20.glUniform3f(loc, this.noiseScaleX, this.noiseScaleY, this.noiseScaleZ);
-		});
-		this.shader.forUniform("CloudHeight", loc -> {
-			GL20.glUniform1f(loc, WORK_Y * LOCAL_Y);
-		});
+//		this.shader.forUniform("NoiseScale", loc -> {
+//			GL20.glUniform3f(loc, this.noiseScaleX, this.noiseScaleY, this.noiseScaleZ);
+//		});
+//		this.shader.forUniform("CloudHeight", loc -> {
+//			GL20.glUniform1f(loc, WORK_Y * LOCAL_Y);
+//		});
 		this.shader.dispatch(WORK_X, WORK_Y, WORK_Z, wait);
 		//System.out.println("Sides: " + this.shader.<AtomicCounter>getBufferObject(0).get());
 	}

@@ -3,6 +3,7 @@ package dev.nonamecrackers2.simpleclouds.client.event;
 import java.util.List;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.ChatFormatting;
@@ -27,7 +28,7 @@ public class SimpleCloudsClientEvents
 	public static void registerConfigMenu(RegisterConfigScreensEvent event)
 	{
 		event.builder(ConfigHomeScreen.builder(TextTitle.ofModDisplayName(SimpleCloudsMod.MODID))
-				.crackersDefault().build()
+				.crackersDefault().build(SimpleCloudsConfigScreen::new)
 		).addSpec(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC).register();
 	}
 	

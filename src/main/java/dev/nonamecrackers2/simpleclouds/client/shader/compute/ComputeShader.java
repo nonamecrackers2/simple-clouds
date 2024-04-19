@@ -90,26 +90,36 @@ public class ComputeShader implements AutoCloseable
 		ProgramManager.glUseProgram(0);
 	}
 	
-	public ShaderStorageBuffer bindShaderStorageBuffer(int binding, int usage)
+	private int newBuffer(int binding)
 	{
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
 		if (this.buffers.containsKey(binding))
 			throw new IllegalArgumentException("Buffer already binded!");
-		int id = GlStateManager._glGenBuffers();
-		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, binding, id);
-		return this.putBufferObject(binding, new ShaderStorageBuffer(id, binding, usage));
+		return GlStateManager._glGenBuffers();
+	}
+	
+	private <T extends BufferObject> T putBufferObject(int binding, T object)
+	{
+		this.buffers.put(binding, object);
+		return object;
+	}
+	
+	private <T extends BufferObject> T bindBuffer(ComputeShader.BufferFactory<T> factory, int type, int binding, int usage)
+	{
+		int id = this.newBuffer(binding);
+		GL30.glBindBufferBase(type, binding, id);
+		return this.putBufferObject(binding, factory.make(id, binding, usage));
+	}
+	
+	public ShaderStorageBuffer bindShaderStorageBuffer(int binding, int usage)
+	{
+		return this.bindBuffer(ShaderStorageBuffer::new, GL43.GL_SHADER_STORAGE_BUFFER, binding, usage);
 	}
 	
 	public AtomicCounter bindAtomicCounter(int binding, int usage)
 	{
-		RenderSystem.assertOnRenderThread();
-		this.assertValid();
-		if (this.buffers.containsKey(binding))
-			throw new IllegalArgumentException("Buffer already binded!");
-		int id = GlStateManager._glGenBuffers();
-		GL30.glBindBufferBase(GL42.GL_ATOMIC_COUNTER_BUFFER, binding, id);
-		return this.putBufferObject(binding, new AtomicCounter(id, binding, usage));
+		return this.bindBuffer(AtomicCounter::new, GL42.GL_ATOMIC_COUNTER_BUFFER, binding, usage);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -117,12 +127,6 @@ public class ComputeShader implements AutoCloseable
 	{
 		RenderSystem.assertOnRenderThread();
 		return (T)Objects.requireNonNull(this.buffers.get(binding), "Shader storage buffer with binding " + binding + " does not exist");
-	}
-	
-	private <T extends BufferObject> T putBufferObject(int binding, T object)
-	{
-		this.buffers.put(binding, object);
-		return object;
 	}
 	
 	public void dispatch(int groupX, int groupY, int groupZ, boolean wait)
@@ -277,5 +281,11 @@ public class ComputeShader implements AutoCloseable
 			LOGGER.warn(GlStateManager.glGetProgramInfoLog(programId, GL11.GL_HINT_BIT));
 		}
 		return new ComputeShader(programId, shaderId, loc);
+	}
+	
+	@FunctionalInterface
+	public static interface BufferFactory<T extends BufferObject>
+	{
+		T make(int id, int binding, int usage);
 	}
 }

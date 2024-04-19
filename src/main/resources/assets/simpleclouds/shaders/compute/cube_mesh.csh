@@ -1,6 +1,7 @@
 #version 430
 
-#moj_import <simpleclouds:noise.glsl>
+#moj_import <simpleclouds:simplex_noise.glsl>
+#moj_import <simpleclouds:noise_shaper.glsl>
 
 struct Vertex {
 	float x;
@@ -43,25 +44,6 @@ indices;
 //Render params
 uniform vec2 RenderOffset;
 uniform bool AddMovementSmoothing;
-
-//Noise params
-uniform float Threshold = 0.5;
-uniform float FadeThreshold = 0.4;
-uniform vec3 NoiseScale = vec3(30.0);
-uniform float CloudHeight = 32.0;
-uniform vec3 Scroll;
-
-float getNoiseAt(float x, float y, float z)
-{
-	float noise = snoise(vec3(x, y, z) / NoiseScale + Scroll);
-	noise *= clamp(y / 10.0, 0.0, 1.0);
-	return noise * clamp((CloudHeight - y) / 10.0, 0.0, 1.0);
-}
-
-bool isPosValid(float x, float y, float z)
-{
-	return getNoiseAt(x, y, z) > Threshold;
-}
 
 void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal)
 {
@@ -120,7 +102,7 @@ void main()
 	else if (AddMovementSmoothing)
 	{
 		float noise = getNoiseAt(x, y, z);
-		if (noise > FadeThreshold)
-			createCube(x, y, z, false, (noise - FadeThreshold) / (Threshold - FadeThreshold) * 0.5);
+		if (noise > NoiseSettings.fadeThreshold)
+			createCube(x, y, z, false, (noise - NoiseSettings.fadeThreshold) / (NoiseSettings.threshold - NoiseSettings.fadeThreshold) * 0.5);
 	}
 }

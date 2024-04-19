@@ -26,6 +26,8 @@ import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.AtomicCounter;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EffectInstance;
@@ -124,10 +126,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		if (this.arrayObjectId != -1)
 		{
-			int vertexBufferId = this.meshGenerator.getShader().getBufferObject(1).getId();
-			int indexBufferId = this.meshGenerator.getShader().getBufferObject(2).getId();
 			this.totalSides = this.meshGenerator.getShader().<AtomicCounter>getBufferObject(0).get();
 			this.totalIndices = this.totalSides * 6;
+			int vertexBufferId = this.meshGenerator.getShader().getBufferObject(1).getId();
+			int indexBufferId = this.meshGenerator.getShader().getBufferObject(2).getId();
 			
 			GL30.glBindVertexArray(this.arrayObjectId);
 			
@@ -180,30 +182,24 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.scrollZ += this.scrollDirection.z() * speed;
 	}
 	
-	public void render(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	public void generateMesh(NoiseSettings settings, double camX, double camY, double camZ)
+	{
+		this.setupMeshGenerator();
+		this.meshGenerator.generateMesh(settings, SimpleCloudsConfig.CLIENT.movementSmoothing.get(), camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE);
+		this.totalSides = this.meshGenerator.getShader().<AtomicCounter>getBufferObject(0).get();
+		this.totalIndices = this.totalSides * 6;
+	}
+	
+	public void render(PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b)
 	{
 		if (this.arrayObjectId != -1)
 		{
-			this.setupMeshGenerator();
-			this.meshGenerator.generateMesh(SimpleCloudsConfig.CLIENT.movementSmoothing.get(), camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE);
-			this.totalSides = this.meshGenerator.getShader().<AtomicCounter>getBufferObject(0).get();
-			this.totalIndices = this.totalSides * 6;
-			
-			this.cloudTarget.clear(Minecraft.ON_OSX);
-			this.cloudTarget.copyDepthFrom(this.mc.getMainRenderTarget());
-			this.cloudTarget.bindWrite(false);
-			
 			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShader);
 			RenderSystem.disableBlend();
 			RenderSystem.enableDepthTest();
-			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
-			RenderSystem.setShaderColor((float)cloudCol.x, (float)cloudCol.y, (float)cloudCol.z, 1.0F);
+			RenderSystem.setShaderColor(r, g, b, 1.0F);
 			
 			GL30.glBindVertexArray(this.arrayObjectId);
-			
-			stack.pushPose();
-			stack.translate(-camX, -camY / 4.0F + 64.0F, -camZ);
-			stack.scale((float)CLOUD_SCALE, (float)CLOUD_SCALE, (float)CLOUD_SCALE);
 			
 			ShaderInstance shader = RenderSystem.getShader();
 			prepareShader(shader, stack.last().pose(), projMat);
@@ -211,11 +207,28 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.totalIndices, GL11.GL_UNSIGNED_INT);
 			shader.clear();
 			
-			stack.popPose();
-			
 			GL30.glBindVertexArray(0);
 			
 			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		}
+	}
+	
+	public void renderInWorld(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	{
+		if (this.arrayObjectId != -1)
+		{
+			this.generateMesh(StaticNoiseSettings.DEFAULT, camX, camY, camZ);
+			
+			this.cloudTarget.clear(Minecraft.ON_OSX);
+			this.cloudTarget.copyDepthFrom(this.mc.getMainRenderTarget());
+			this.cloudTarget.bindWrite(false);
+			
+			stack.pushPose();
+			stack.translate(-camX, -camY / 4.0F + 64.0F, -camZ);
+			stack.scale((float)CLOUD_SCALE, (float)CLOUD_SCALE, (float)CLOUD_SCALE);
+			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
+			this.render(stack, projMat, partialTick, (float)cloudCol.x, (float)cloudCol.y, (float)cloudCol.z);
+			stack.popPose();
 			
 			this.doPostProcessing(stack, partialTick, projMat);
 			
@@ -260,7 +273,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 
 		if (shader.MODEL_VIEW_MATRIX != null)
 			shader.MODEL_VIEW_MATRIX.set(modelView);
-
+		
 		if (shader.PROJECTION_MATRIX != null)
 			shader.PROJECTION_MATRIX.set(projMat);
 
@@ -311,6 +324,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		return !CompatHelper.isShadersRunning();
 	}
 	
+	//TODO: Make it so you can't call this multiple times
 	public static void initialize()
 	{
 		RenderSystem.assertOnRenderThread();
@@ -322,39 +336,4 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		return Objects.requireNonNull(instance, "Renderer not initialized!");
 	}
-//	
-//	public static void extendFarPlane(float amount, float partialTick)
-//	{
-//		if (extendFarPlane)
-//			throw new IllegalStateException("Already extending the far plane!");
-//		prevProjMat = RenderSystem.getProjectionMatrix();
-//		extendFarPlane = true;
-//		extendedFarPlaneAmount = amount;
-//		Minecraft mc = Minecraft.getInstance();
-//		GameRenderer renderer = mc.gameRenderer;
-//		Matrix4f proj = new Matrix4f(prevProjMat);
-//		float near = 0.1F;
-//		proj.set(2, 2, -((amount + near) / (amount - near))).set(3, 2, -((2 * amount * near) / (amount - near)));
-////		double fov = ((MixinGameRendererAccessor)renderer).simpleclouds$getFov(renderer.getMainCamera(), partialTick, true);
-//		renderer.resetProjectionMatrix(proj);
-//	}
-//	
-//	public static void resetFarPlane()
-//	{
-//		if (prevProjMat == null || !extendFarPlane)
-//			throw new IllegalStateException("Not extending the far plane!");
-//		Minecraft.getInstance().gameRenderer.resetProjectionMatrix(prevProjMat);
-//		extendFarPlane = false;
-//		extendedFarPlaneAmount = -1.0F;
-//	}
-//	
-//	public static boolean isExtendingFarPlane()
-//	{
-//		return extendFarPlane && prevProjMat != null;
-//	}
-//	
-//	public static float getExtendedFarPlane()
-//	{
-//		return extendedFarPlaneAmount;
-//	}
 }
