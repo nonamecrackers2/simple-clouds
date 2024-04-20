@@ -4,15 +4,15 @@ import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
+import dev.nonamecrackers2.simpleclouds.client.gui.widget.ParametersList;
 import dev.nonamecrackers2.simpleclouds.client.renderer.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
-import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.noise.ModifiableNoiseSettings;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -21,9 +21,21 @@ import nonamecrackers2.crackerslib.client.gui.Screen3D;
 
 public class CloudPreviewerScreen extends Screen3D
 {
+	private final ModifiableNoiseSettings noiseSettings = new ModifiableNoiseSettings();
+	private ParametersList parametersList;
+	
 	public CloudPreviewerScreen()
 	{
 		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.5F, 1000.0F);
+	}
+	
+	@Override
+	protected void init()
+	{
+		super.init();
+		
+		this.parametersList = new ParametersList(this.noiseSettings, this.minecraft, 10, 10, this.width / 3, this.height - 20);
+		this.addRenderableWidget(this.parametersList);
 	}
 	
 	@Override
@@ -36,10 +48,8 @@ public class CloudPreviewerScreen extends Screen3D
 	@Override
 	protected void render3D(PoseStack stack, MultiBufferSource buffers, int mouseX, int mouseY, float partialTick)
 	{
-		BufferUploader.reset();
-		
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
-		renderer.generateMesh(StaticNoiseSettings.DEFAULT, 0.0D, 0.0D, 0.0D);
+		renderer.generateMesh(this.noiseSettings, 0.0D, 0.0D, 0.0D);
 		renderer.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F);
 		
 		float radius = CloudMeshGenerator.getCloudRenderDistance();

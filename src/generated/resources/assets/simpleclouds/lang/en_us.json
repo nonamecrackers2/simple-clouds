@@ -7,6 +7,10 @@
   "gui.simpleclouds.config.noiseThreshold.title": "Noise Threshold",
   "gui.simpleclouds.config.speedModifier.description": "Specifies the movement speed of the clouds.\nRange: 0.1 ~ 10.0",
   "gui.simpleclouds.config.speedModifier.title": "Speed Modifier",
+  "gui.simpleclouds.noise_settings.param.fade_threshold.name": "Fade Threshold",
+  "gui.simpleclouds.noise_settings.param.height.name": "Height",
+  "gui.simpleclouds.noise_settings.param.scale.name": "Scale",
+  "gui.simpleclouds.noise_settings.param.threshold.name": "Threshold",
   "simpleclouds.key.categories.main": "Simple Clouds",
   "simpleclouds.key.openGenPreviewer": "Open Cloud Gen Previewer"
 }

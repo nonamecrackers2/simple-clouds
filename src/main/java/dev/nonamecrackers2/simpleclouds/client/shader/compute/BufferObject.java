@@ -4,8 +4,10 @@ import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL43;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 public class BufferObject implements AutoCloseable
@@ -15,12 +17,26 @@ public class BufferObject implements AutoCloseable
 	protected final int binding;
 	protected final int usage;
 	
-	protected BufferObject(int type, int id, int binding, int usage)
+	public BufferObject(int type, int id, int binding, int usage)
 	{
 		this.type = type;
 		this.id = id;
 		this.binding = binding;
 		this.usage = usage;
+	}
+	
+	public void uploadData(ByteBuffer buffer)
+	{
+		RenderSystem.assertOnRenderThread();
+		this.assertValid();
+		GlStateManager._glBindBuffer(this.type, this.id);
+		GlStateManager._glBufferData(this.type, buffer, this.usage);
+		GlStateManager._glBindBuffer(this.type, 0);
+	}
+	
+	public void allocateBuffer(int bytes)
+	{
+		this.uploadData(MemoryTracker.create(bytes));
 	}
 	
 	@Override

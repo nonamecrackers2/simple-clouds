@@ -17,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
 
@@ -109,17 +110,22 @@ public class ComputeShader implements AutoCloseable
 	{
 		int id = this.newBuffer(binding);
 		GL30.glBindBufferBase(type, binding, id);
-		return this.putBufferObject(binding, factory.make(id, binding, usage));
+		return this.putBufferObject(binding, factory.make(type, id, binding, usage));
 	}
 	
-	public ShaderStorageBuffer bindShaderStorageBuffer(int binding, int usage)
+	public BufferObject bindShaderStorageBuffer(int binding, int usage)
 	{
-		return this.bindBuffer(ShaderStorageBuffer::new, GL43.GL_SHADER_STORAGE_BUFFER, binding, usage);
+		return this.bindBuffer(BufferObject::new, GL43.GL_SHADER_STORAGE_BUFFER, binding, usage);
 	}
 	
 	public AtomicCounter bindAtomicCounter(int binding, int usage)
 	{
 		return this.bindBuffer(AtomicCounter::new, GL42.GL_ATOMIC_COUNTER_BUFFER, binding, usage);
+	}
+	
+	public BufferObject bindUniformBuffer(int binding, int usage)
+	{
+		return this.bindBuffer(BufferObject::new, GL31.GL_UNIFORM_BUFFER, binding, usage);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -286,6 +292,6 @@ public class ComputeShader implements AutoCloseable
 	@FunctionalInterface
 	public static interface BufferFactory<T extends BufferObject>
 	{
-		T make(int id, int binding, int usage);
+		T make(int type, int id, int binding, int usage);
 	}
 }

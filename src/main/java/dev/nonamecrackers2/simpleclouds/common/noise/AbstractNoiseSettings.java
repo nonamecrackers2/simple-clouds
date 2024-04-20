@@ -39,6 +39,7 @@ public abstract class AbstractNoiseSettings implements NoiseSettings
 				int index = currentIndex + i;
 				layerSettings[index] = value[i];
 			}
+			currentIndex += param.getSize();
 		}
 		this.packedParameters = layerSettings; 
 	}
@@ -56,9 +57,10 @@ public abstract class AbstractNoiseSettings implements NoiseSettings
 		HEIGHT(1, () -> new float[] { 32.0F }),
 		THRESHOLD(1, () -> new float[] { 0.5F }),
 		FADE_THRESHOLD(1, () -> new float[] { 0.4F }),
-		SCALE(3, () -> new float[] { 1.0F, 1.0F, 1.0F });
+		SCALE(3, () -> new float[] { 30.0F, 10.0F, 30.0F });
 		
 		public static final int TOTAL_SIZE = Arrays.stream(values()).collect(Collectors.summingInt(Param::getSize));
+		public static final int TOTAL_SIZE_BYTES = TOTAL_SIZE * 4;
 		private final int size;
 		private final Supplier<float[]> defaultValue;
 		

@@ -1,7 +1,6 @@
 #version 150
 
 in vec3 Position;
-in vec4 Color;
 in vec3 Normal;
 
 uniform sampler2D Sampler2;
@@ -34,6 +33,6 @@ void main()
     gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
 
     normal = ModelViewMat * vec4(Normal, 0.0);
-	vertexColor = mix_light(Light0_Direction, Light1_Direction, Normal, Color);
+	vertexColor = mix_light(Light0_Direction, Light1_Direction, Normal, vec4(1.0, 1.0, 1.0, 1.0));
     //vertexDistance = fog_distance(ModelViewMat, Position, FogShape);
 }

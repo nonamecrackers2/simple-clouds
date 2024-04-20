@@ -7,10 +7,10 @@ struct Vertex {
 	float x;
 	float y;
 	float z;
-	float r;
-	float g;
-	float b;
-	float a;
+//	float r;
+//	float g;
+//	float b;
+//	float a;
 	float nx;
 	float ny;
 	float nz;
@@ -51,10 +51,10 @@ void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corn
 	uint lastIndex = currentFace * 6;
 	uint lastVertex = currentFace * 4;
 	Side side;
-	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, 1.0, 1.0, 1.0, 1.0, normal.x, normal.y, normal.z);
-	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, 1.0, 1.0, 1.0, 1.0, normal.x, normal.y, normal.z);
-	side.c = Vertex(offset.x + corner3.x, offset.y + corner3.y, offset.z + corner3.z, 1.0, 1.0, 1.0, 1.0, normal.x, normal.y, normal.z);
-	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, 1.0, 1.0, 1.0, 1.0, normal.x, normal.y, normal.z);
+	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, normal.x, normal.y, normal.z);
+	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, normal.x, normal.y, normal.z);
+	side.c = Vertex(offset.x + corner3.x, offset.y + corner3.y, offset.z + corner3.z, normal.x, normal.y, normal.z);
+	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, normal.x, normal.y, normal.z);
 	sides.data[currentFace] = side;
 	for (uint i = 0; i < sideIndices.length; i++)
 		indices.data[lastIndex + i] = lastVertex + sideIndices[i];
@@ -102,7 +102,7 @@ void main()
 	else if (AddMovementSmoothing)
 	{
 		float noise = getNoiseAt(x, y, z);
-		if (noise > NoiseSettings.fadeThreshold)
-			createCube(x, y, z, false, (noise - NoiseSettings.fadeThreshold) / (NoiseSettings.threshold - NoiseSettings.fadeThreshold) * 0.5);
+		if (noise > FadeThreshold)
+			createCube(x, y, z, false, (noise - FadeThreshold) / (Threshold - FadeThreshold) * 0.5);
 	}
 }

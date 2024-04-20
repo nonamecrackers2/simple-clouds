@@ -8,11 +8,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL31;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.AtomicCounter;
+import dev.nonamecrackers2.simpleclouds.client.shader.compute.BufferObject;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
+import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import net.minecraft.resources.ResourceLocation;
@@ -24,23 +25,20 @@ public class CloudMeshGenerator implements AutoCloseable
 	private static final ResourceLocation CUBE_MESH_GENERATOR = SimpleCloudsMod.id("cube_mesh");
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudMeshGenerator");
 	private static final int WORK_X = 64;
-	private static final int WORK_Y = 4;
+	private static final int WORK_Y = 16;
 	private static final int WORK_Z = 64;
 	private static final int LOCAL_X = 8;
 	private static final int LOCAL_Y = 8;
 	private static final int LOCAL_Z = 8;
-	private static final int BYTES_PER_VERTEX = 4 * 10;
-	private static final int BYTES_PER_SIDE = 4 * BYTES_PER_VERTEX;
-	private static final int MAX_BYTES_PER_CUBE = BYTES_PER_SIDE * 6;
-	private static final int MAX_INDICES_PER_CUBE = 36;
-	private static final int MAX_BYTES_PER_CUBE_INDICES = 4 * MAX_INDICES_PER_CUBE;
+//	private static final int BYTES_PER_VERTEX = 4 * 10;
+//	private static final int BYTES_PER_SIDE = 4 * BYTES_PER_VERTEX;
+//	private static final int MAX_BYTES_PER_CUBE = BYTES_PER_SIDE * 6;
+//	private static final int MAX_INDICES_PER_CUBE = 36;
+//	private static final int MAX_BYTES_PER_CUBE_INDICES = 4 * MAX_INDICES_PER_CUBE;
 	private @Nullable ComputeShader shader;
 	private float scrollX;
 	private float scrollY;
 	private float scrollZ;
-	private float noiseScaleX;
-	private float noiseScaleY;
-	private float noiseScaleZ;
 	
 	protected CloudMeshGenerator() {}
 	
@@ -78,6 +76,7 @@ public class CloudMeshGenerator implements AutoCloseable
 			this.shader.bindAtomicCounter(0, GL15.GL_DYNAMIC_DRAW); //Counter
 			this.shader.bindShaderStorageBuffer(1, GL15.GL_DYNAMIC_DRAW).allocateBuffer(368435456); //Vertex data
 			this.shader.bindShaderStorageBuffer(2, GL15.GL_DYNAMIC_DRAW).allocateBuffer(107108864); //Index data
+			this.shader.bindUniformBuffer(3, GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.TOTAL_SIZE_BYTES);
 			this.generateMesh(StaticNoiseSettings.DEFAULT, false, 0.0F, 0.0F, 0.0F, 0.5F, 1.0F);
 			
 			//Test print statements
@@ -112,13 +111,13 @@ public class CloudMeshGenerator implements AutoCloseable
 		this.scrollY = y;
 		this.scrollZ = z;
 	}
-	
-	public void setNoiseScale(float x, float y, float z)
-	{
-		this.noiseScaleX = x;
-		this.noiseScaleY = y;
-		this.noiseScaleZ = z;
-	}
+//	
+//	public void setNoiseScale(float x, float y, float z)
+//	{
+//		this.noiseScaleX = x;
+//		this.noiseScaleY = y;
+//		this.noiseScaleZ = z;
+//	}
 	
 	public void generateMesh(NoiseSettings settings, boolean addMovementSmoothing, double camX, double camY, double camZ, float threshold, float scale)
 	{
@@ -128,8 +127,11 @@ public class CloudMeshGenerator implements AutoCloseable
 	public void generateMesh(NoiseSettings settings, boolean addMovementSmoothing, double camX, double camY, double camZ, float threshold, float scale, boolean wait)
 	{
 		this.shader.<AtomicCounter>getBufferObject(0).set(0);
-		this.shader.forUniform("AddMovementSmoothing", loc -> {
-			GL20.glUniform1i(loc, addMovementSmoothing ? 1 : 0);
+		this.shader.<BufferObject>getBufferObject(3).writeData(b -> 
+		{
+			float[] packed = settings.packForShader();
+			for (int i = 0; i < packed.length; i++)
+				b.putFloat(i * 4, packed[i]);
 		});
 //		this.shader.forUniform("Threshold", loc -> {
 //			GL20.glUniform1f(loc, threshold);
@@ -141,6 +143,9 @@ public class CloudMeshGenerator implements AutoCloseable
 		float cloudCenterOffsetZ = WORK_Z * LOCAL_Z / 2.0F * scale;
 		float offsetX = ((float)Mth.floor(camX / 16.0D) * 16.0F - cloudCenterOffsetX) / scale;
 		float offsetZ = ((float)Mth.floor(camZ / 16.0D) * 16.0F - cloudCenterOffsetZ) / scale;
+		this.shader.forUniform("AddMovementSmoothing", loc -> {
+			GL20.glUniform1i(loc, addMovementSmoothing ? 1 : 0);
+		});
 		this.shader.forUniform("RenderOffset", loc -> {
 			GL20.glUniform2f(loc, offsetX, offsetZ);
 		});

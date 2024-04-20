@@ -20,6 +20,7 @@ import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
@@ -76,7 +77,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	private void setupMeshGenerator()
 	{
-		this.meshGenerator.setNoiseScale(30.0F, 10.0F, 30.0F);
+		//this.meshGenerator.setNoiseScale(30.0F, 10.0F, 30.0F);
 		this.meshGenerator.setScroll(this.scrollX, this.scrollY, this.scrollZ);
 	}
 	
@@ -136,13 +137,13 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBufferId);
 			//Vertex position
 			GL20.glEnableVertexAttribArray(0);
-			GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 40, 0);
+			GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 24, 0);
 			//Vertex color
-			GL20.glEnableVertexAttribArray(1);
-			GL20.glVertexAttribPointer(1, 4, GL11.GL_FLOAT, true, 40, 12);
+//			GL20.glEnableVertexAttribArray(1);
+//			GL20.glVertexAttribPointer(1, 4, GL11.GL_FLOAT, true, 40, 12);
 			//Vertex normal
 			GL20.glEnableVertexAttribArray(2);
-			GL20.glVertexAttribPointer(2, 3, GL11.GL_FLOAT, true, 40, 28);
+			GL20.glVertexAttribPointer(2, 3, GL11.GL_FLOAT, true, 24, 12);
 			
 			GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, indexBufferId);
 			
@@ -194,6 +195,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		if (this.arrayObjectId != -1)
 		{
+			BufferUploader.reset();
+			
 			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShader);
 			RenderSystem.disableBlend();
 			RenderSystem.enableDepthTest();

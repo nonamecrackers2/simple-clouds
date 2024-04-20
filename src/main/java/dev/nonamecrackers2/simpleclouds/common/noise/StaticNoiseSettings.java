@@ -16,6 +16,7 @@ public class StaticNoiseSettings extends AbstractNoiseSettings
 		for (AbstractNoiseSettings.Param param : AbstractNoiseSettings.Param.values())
 			builder.put(param, settings.getParam(param));
 		this.values = builder.build();
+		this.packParameters();
 	}
 	
 	private StaticNoiseSettings()
@@ -24,6 +25,7 @@ public class StaticNoiseSettings extends AbstractNoiseSettings
 		for (AbstractNoiseSettings.Param param : AbstractNoiseSettings.Param.values())
 			builder.put(param, param.makeDefaultValue());
 		this.values = builder.build();
+		this.packParameters();
 	}
 	
 	@Override

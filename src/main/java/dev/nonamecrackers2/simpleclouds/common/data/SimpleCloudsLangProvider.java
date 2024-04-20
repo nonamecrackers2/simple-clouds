@@ -1,7 +1,10 @@
 package dev.nonamecrackers2.simpleclouds.common.data;
 
+import org.apache.commons.lang3.StringUtils;
+
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import net.minecraft.data.PackOutput;
 import net.minecraftforge.common.data.LanguageProvider;
 import net.minecraftforge.fml.ModList;
@@ -22,5 +25,13 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.button.title", "Cloud Previewer");
 		this.add("simpleclouds.key.openGenPreviewer", "Open Cloud Gen Previewer");
 		this.add("simpleclouds.key.categories.main", ModList.get().getModContainerById(SimpleCloudsMod.MODID).get().getModInfo().getDisplayName());
+		for (AbstractNoiseSettings.Param parameter : AbstractNoiseSettings.Param.values())
+		{
+			String key = "gui.simpleclouds.noise_settings.param." + parameter.toString().toLowerCase() + ".name";
+			String[] splitted = parameter.toString().toLowerCase().split("_");
+			for (int i = 0; i < splitted.length; i++)
+				splitted[i] = StringUtils.capitalize(splitted[i]);
+			this.add(key, StringUtils.join(splitted, " "));
+		}
 	}
 }

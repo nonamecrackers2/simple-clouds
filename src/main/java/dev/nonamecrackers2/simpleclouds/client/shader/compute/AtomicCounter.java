@@ -11,16 +11,16 @@ import com.mojang.blaze3d.systems.RenderSystem;
 
 public class AtomicCounter extends BufferObject
 {
-	protected AtomicCounter(int id, int binding, int usage)
+	protected AtomicCounter(int type, int id, int binding, int usage)
 	{
-		super(GL42.GL_ATOMIC_COUNTER_BUFFER, id, binding, usage);
+		super(type, id, binding, usage);
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
-		GlStateManager._glBindBuffer(GL42.GL_ATOMIC_COUNTER_BUFFER, this.id);
+		GlStateManager._glBindBuffer(type, this.id);
 		ByteBuffer buffer = MemoryTracker.create(4);
 		buffer.putInt(0, 0);
-		GlStateManager._glBufferData(GL42.GL_ATOMIC_COUNTER_BUFFER, buffer, usage);
-		GlStateManager._glBindBuffer(GL42.GL_ATOMIC_COUNTER_BUFFER, 0);
+		GlStateManager._glBufferData(type, buffer, usage);
+		GlStateManager._glBindBuffer(type, 0);
 	}
 	
 	public int get()
@@ -37,7 +37,6 @@ public class AtomicCounter extends BufferObject
 	public void set(int value)
 	{
 		this.writeData(b -> {
-			b.position(0);
 			b.putInt(0, value);
 		});
 	}
