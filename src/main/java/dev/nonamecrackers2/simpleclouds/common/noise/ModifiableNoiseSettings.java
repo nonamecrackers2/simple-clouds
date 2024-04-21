@@ -8,27 +8,27 @@ import com.google.common.collect.Maps;
 
 public class ModifiableNoiseSettings extends AbstractNoiseSettings
 {
-	private final Map<AbstractNoiseSettings.Param, float[]> values = Maps.newEnumMap(AbstractNoiseSettings.Param.class);
+	private final Map<AbstractNoiseSettings.Param, Float> values = Maps.newEnumMap(AbstractNoiseSettings.Param.class);
 	
 	public ModifiableNoiseSettings()
 	{
 		for (AbstractNoiseSettings.Param param : AbstractNoiseSettings.Param.values())
-			this.values.put(param, param.makeDefaultValue());
+			this.values.put(param, param.getDefaultValue());
 	}
 	
 	@Override
-	protected float[] getParamRaw(AbstractNoiseSettings.Param param)
+	public float getParam(AbstractNoiseSettings.Param param)
 	{
 		return Objects.requireNonNull(this.values.get(param), "Value is missing for param '" + param + "'");
 	}
 
 	@Override
-	protected boolean setParamRaw(AbstractNoiseSettings.Param param, float[] values)
+	protected boolean setParamRaw(AbstractNoiseSettings.Param param, float value)
 	{
-		float[] previous = this.values.get(param);
-		if (!Arrays.equals(previous, values))
+		float previous = this.values.get(param);
+		if (previous != value)
 		{
-			this.values.put(param, values);
+			this.values.put(param, value);
 			return true;
 		}
 		return false;

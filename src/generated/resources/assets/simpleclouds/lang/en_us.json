@@ -1,5 +1,9 @@
 {
+  "gui.simpleclouds.cloud_previewer.button.add_layer.title": "Add Layer",
+  "gui.simpleclouds.cloud_previewer.button.remove_layer.title": "Remove Layer",
   "gui.simpleclouds.cloud_previewer.button.title": "Cloud Previewer",
+  "gui.simpleclouds.cloud_previewer.button.toggle_preview.title": "Toggle Preview",
+  "gui.simpleclouds.cloud_previewer.layers": "Layers",
   "gui.simpleclouds.cloud_previewer.title": "Cloud Previewer",
   "gui.simpleclouds.config.movementSmoothing.description": "Specifies if some movement smoothing should be applied to the clouds so they don't look as distracting. May impact performance.",
   "gui.simpleclouds.config.movementSmoothing.title": "Movement Smoothing",
@@ -7,10 +11,15 @@
   "gui.simpleclouds.config.noiseThreshold.title": "Noise Threshold",
   "gui.simpleclouds.config.speedModifier.description": "Specifies the movement speed of the clouds.\nRange: 0.1 ~ 10.0",
   "gui.simpleclouds.config.speedModifier.title": "Speed Modifier",
-  "gui.simpleclouds.noise_settings.param.fade_threshold.name": "Fade Threshold",
+  "gui.simpleclouds.noise_settings.param.fade_distance.name": "Fade Distance",
   "gui.simpleclouds.noise_settings.param.height.name": "Height",
-  "gui.simpleclouds.noise_settings.param.scale.name": "Scale",
-  "gui.simpleclouds.noise_settings.param.threshold.name": "Threshold",
+  "gui.simpleclouds.noise_settings.param.height_offset.name": "Height Offset",
+  "gui.simpleclouds.noise_settings.param.range": "Range: %s - %s",
+  "gui.simpleclouds.noise_settings.param.scale_x.name": "Scale X",
+  "gui.simpleclouds.noise_settings.param.scale_y.name": "Scale Y",
+  "gui.simpleclouds.noise_settings.param.scale_z.name": "Scale Z",
+  "gui.simpleclouds.noise_settings.param.value_offset.name": "Value Offset",
+  "gui.simpleclouds.noise_settings.param.value_scale.name": "Value Scale",
   "simpleclouds.key.categories.main": "Simple Clouds",
   "simpleclouds.key.openGenPreviewer": "Open Cloud Gen Previewer"
 }

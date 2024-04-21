@@ -23,6 +23,10 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		ConfigLangGeneratorHelper.langForSpec(SimpleCloudsMod.MODID, SimpleCloudsConfig.CLIENT_SPEC, this, ConfigLangGeneratorHelper.Info.ONLY_RANGE);
 		this.add("gui.simpleclouds.cloud_previewer.title", "Cloud Previewer");
 		this.add("gui.simpleclouds.cloud_previewer.button.title", "Cloud Previewer");
+		this.add("gui.simpleclouds.cloud_previewer.button.add_layer.title", "Add Layer");
+		this.add("gui.simpleclouds.cloud_previewer.button.remove_layer.title", "Remove Layer");
+		this.add("gui.simpleclouds.cloud_previewer.button.toggle_preview.title", "Toggle Preview");
+		this.add("gui.simpleclouds.cloud_previewer.layers", "Layers");
 		this.add("simpleclouds.key.openGenPreviewer", "Open Cloud Gen Previewer");
 		this.add("simpleclouds.key.categories.main", ModList.get().getModContainerById(SimpleCloudsMod.MODID).get().getModInfo().getDisplayName());
 		for (AbstractNoiseSettings.Param parameter : AbstractNoiseSettings.Param.values())
@@ -33,5 +37,6 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 				splitted[i] = StringUtils.capitalize(splitted[i]);
 			this.add(key, StringUtils.join(splitted, " "));
 		}
+		this.add("gui.simpleclouds.noise_settings.param.range", "Range: %s - %s");
 	}
 }

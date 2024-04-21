@@ -27,6 +27,8 @@ import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.AtomicCounter;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.noise.ModifiableLayeredNoise;
+import dev.nonamecrackers2.simpleclouds.common.noise.ModifiableNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
@@ -57,6 +59,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private final Minecraft mc;
 	private final CloudMeshGenerator meshGenerator;
 	private final RandomSource random;
+	private final ModifiableLayeredNoise previewNoiseSettings = new ModifiableLayeredNoise().addNoiseLayer(new ModifiableNoiseSettings());
 	private @Nullable RenderTarget cloudTarget;
 	private @Nullable PostChain cloudsPostProcessing;
 	private int arrayObjectId = -1;
@@ -66,6 +69,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private float scrollY;
 	private float scrollZ;
 	private Vector3f scrollDirection = new Vector3f(1.0F, 0.0F, 0.0F);
+	private boolean previewToggled;
 	
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
@@ -220,7 +224,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		if (this.arrayObjectId != -1)
 		{
-			this.generateMesh(StaticNoiseSettings.DEFAULT, camX, camY, camZ);
+			if (!this.mc.isPaused())
+				this.generateMesh(this.previewToggled ? StaticNoiseSettings.DEFAULT : this.previewNoiseSettings, camX, camY, camZ);
 			
 			this.cloudTarget.clear(Minecraft.ON_OSX);
 			this.cloudTarget.copyDepthFrom(this.mc.getMainRenderTarget());
@@ -258,7 +263,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				effect.safeGetUniform("WorldProjMat").set(projMat);
 				effect.safeGetUniform("ModelViewMat").set(stack.last().pose());
 				float renderDistance = (float)CloudMeshGenerator.getCloudRenderDistance() * (float)CLOUD_SCALE;
-				effect.safeGetUniform("FogStart").set(renderDistance / 4.0F);
+				effect.safeGetUniform("FogStart").set(renderDistance - renderDistance / 4.0F);
 				effect.safeGetUniform("FogEnd").set(renderDistance);
 			}
 			
@@ -315,6 +320,21 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		RenderSystem.setShaderLights(DIFFUSE_LIGHT_0, DIFFUSE_LIGHT_1);
 		RenderSystem.setupShaderLights(shader);
+	}
+	
+	public ModifiableLayeredNoise getPreviewNoiseSettings()
+	{
+		return this.previewNoiseSettings;
+	}
+	
+	public boolean previewToggled()
+	{
+		return this.previewToggled;
+	}
+	
+	public void togglePreview(boolean flag)
+	{
+		this.previewToggled = flag;
 	}
 	
 	public int getTotalSides()

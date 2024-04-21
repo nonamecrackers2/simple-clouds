@@ -1,45 +1,31 @@
 package dev.nonamecrackers2.simpleclouds.common.noise;
 
-import java.util.Arrays;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import dev.nonamecrackers2.simpleclouds.client.renderer.CloudMeshGenerator;
+import net.minecraft.util.Mth;
 
 public abstract class AbstractNoiseSettings implements NoiseSettings
 {
 	private float[] packedParameters;
 	
-	public final AbstractNoiseSettings setParam(AbstractNoiseSettings.Param param, float... values)
+	public final AbstractNoiseSettings setParam(AbstractNoiseSettings.Param param, float value)
 	{
-		if (values.length != param.size)
-			throw new IllegalArgumentException("Length of values does not match parameter required length");
-		if (this.setParamRaw(param, values))
+		value = Mth.clamp(value, param.getMinInclusive(), param.getMaxInclusive());
+		if (this.setParamRaw(param, value))
 			this.packParameters();
 		return this;
 	}
 	
-	public final float[] getParam(AbstractNoiseSettings.Param param)
-	{
-		float[] internal = this.getParamRaw(param);
-		return Arrays.copyOf(internal, internal.length);
-	}
+	public abstract float getParam(AbstractNoiseSettings.Param param);
 	
-	protected abstract float[] getParamRaw(AbstractNoiseSettings.Param param);
-	
-	protected abstract boolean setParamRaw(AbstractNoiseSettings.Param param, float[] values);
+	protected abstract boolean setParamRaw(AbstractNoiseSettings.Param param, float value);
 	
 	protected void packParameters()
 	{
-		float[] layerSettings = new float[Param.TOTAL_SIZE];
-		int currentIndex = 0;
-		for (var param : AbstractNoiseSettings.Param.values())
+		float[] layerSettings = new float[AbstractNoiseSettings.Param.values().length];
+		for (int i = 0; i < AbstractNoiseSettings.Param.values().length; i++)
 		{
-			float[] value = this.getParam(param);
-			for (int i = 0; i < param.getSize(); i++)
-			{
-				int index = currentIndex + i;
-				layerSettings[index] = value[i];
-			}
-			currentIndex += param.getSize();
+			AbstractNoiseSettings.Param param = AbstractNoiseSettings.Param.values()[i];
+			layerSettings[i] = this.getParam(param);
 		}
 		this.packedParameters = layerSettings; 
 	}
@@ -52,32 +38,47 @@ public abstract class AbstractNoiseSettings implements NoiseSettings
 		return this.packedParameters;
 	}
 	
+	@Override
+	public int layerCount()
+	{
+		return 1;
+	}
+	
 	public static enum Param
 	{
-		HEIGHT(1, () -> new float[] { 32.0F }),
-		THRESHOLD(1, () -> new float[] { 0.5F }),
-		FADE_THRESHOLD(1, () -> new float[] { 0.4F }),
-		SCALE(3, () -> new float[] { 30.0F, 10.0F, 30.0F });
+		HEIGHT(32.0F, 1.0F, CloudMeshGenerator.LOCAL_Y * CloudMeshGenerator.WORK_Y),
+		VALUE_OFFSET(-0.5F, -1.0F, 1.0F),
+		SCALE_X(30.0F, 0.1F, 1000.0F),
+		SCALE_Y(10.0F, 0.1F, 1000.0F),
+		SCALE_Z(30.0F, 0.1F, 1000.0F),
+		FADE_DISTANCE(10.0F, 1.0F, CloudMeshGenerator.LOCAL_Y * CloudMeshGenerator.WORK_Y / 2),
+		HEIGHT_OFFSET(0.0F, 0.0F, CloudMeshGenerator.LOCAL_Y * CloudMeshGenerator.WORK_Y),
+		VALUE_SCALE(1.0F, 0.1F, 10.0F);
 		
-		public static final int TOTAL_SIZE = Arrays.stream(values()).collect(Collectors.summingInt(Param::getSize));
-		public static final int TOTAL_SIZE_BYTES = TOTAL_SIZE * 4;
-		private final int size;
-		private final Supplier<float[]> defaultValue;
+		private final float defaultValue;
+		private final float minInclusive;
+		private final float maxInclusive;
 		
-		private Param(int size, Supplier<float[]> defaultValue)
+		private Param(float value, float minInclusive, float maxInclusive)
 		{
-			this.size = size;
-			this.defaultValue = defaultValue;
+			this.defaultValue = value;
+			this.minInclusive = minInclusive;
+			this.maxInclusive = maxInclusive;
 		}
 		
-		public float[] makeDefaultValue()
+		public float getDefaultValue()
 		{
-			return this.defaultValue.get();
+			return this.defaultValue;
 		}
 		
-		public int getSize()
+		public float getMinInclusive()
 		{
-			return this.size;
+			return this.minInclusive;
+		}
+		
+		public float getMaxInclusive()
+		{
+			return this.maxInclusive;
 		}
 	}
 }

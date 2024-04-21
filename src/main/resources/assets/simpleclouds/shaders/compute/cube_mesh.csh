@@ -99,10 +99,10 @@ void main()
     {
 		createCube(x, y, z, true, 0.5);
     }
-	else if (AddMovementSmoothing)
-	{
-		float noise = getNoiseAt(x, y, z);
-		if (noise > FadeThreshold)
-			createCube(x, y, z, false, (noise - FadeThreshold) / (Threshold - FadeThreshold) * 0.5);
-	}
+	//else if (AddMovementSmoothing)
+	//{
+	//	float noise = getNoiseAt(x, y, z);
+	//	if (noise > Layer.FadeThreshold)
+	//		createCube(x, y, z, false, (noise - Layer.FadeThreshold) / (Layer.Threshold - Layer.FadeThreshold) * 0.5);
+	//}
 }

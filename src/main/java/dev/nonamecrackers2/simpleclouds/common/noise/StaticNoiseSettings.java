@@ -8,11 +8,11 @@ import com.google.common.collect.ImmutableMap;
 public class StaticNoiseSettings extends AbstractNoiseSettings
 {
 	public static final StaticNoiseSettings DEFAULT = new StaticNoiseSettings();
-	private final Map<AbstractNoiseSettings.Param, float[]> values;
+	private final Map<AbstractNoiseSettings.Param, Float> values;
 	
 	public StaticNoiseSettings(AbstractNoiseSettings settings)
 	{
-		ImmutableMap.Builder<AbstractNoiseSettings.Param, float[]> builder = ImmutableMap.builder();
+		ImmutableMap.Builder<AbstractNoiseSettings.Param, Float> builder = ImmutableMap.builder();
 		for (AbstractNoiseSettings.Param param : AbstractNoiseSettings.Param.values())
 			builder.put(param, settings.getParam(param));
 		this.values = builder.build();
@@ -21,21 +21,21 @@ public class StaticNoiseSettings extends AbstractNoiseSettings
 	
 	private StaticNoiseSettings()
 	{
-		ImmutableMap.Builder<AbstractNoiseSettings.Param, float[]> builder = ImmutableMap.builder();
+		ImmutableMap.Builder<AbstractNoiseSettings.Param, Float> builder = ImmutableMap.builder();
 		for (AbstractNoiseSettings.Param param : AbstractNoiseSettings.Param.values())
-			builder.put(param, param.makeDefaultValue());
+			builder.put(param, param.getDefaultValue());
 		this.values = builder.build();
 		this.packParameters();
 	}
 	
 	@Override
-	protected float[] getParamRaw(Param param)
+	public float getParam(AbstractNoiseSettings.Param param)
 	{
 		return Objects.requireNonNull(this.values.get(param), "Value is missing for param '" + param + "'");
 	}
 
 	@Override
-	protected boolean setParamRaw(Param param, float[] values)
+	protected boolean setParamRaw(AbstractNoiseSettings.Param param, float values)
 	{
 		return false;
 	}

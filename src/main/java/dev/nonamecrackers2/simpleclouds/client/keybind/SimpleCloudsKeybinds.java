@@ -26,7 +26,7 @@ public class SimpleCloudsKeybinds
 		if (!FMLEnvironment.production)
 		{
 			while (OPEN_GEN_PREVIEWER.consumeClick())
-				mc.setScreen(new CloudPreviewerScreen());
+				mc.setScreen(new CloudPreviewerScreen(null));
 		}
 	}
 }
