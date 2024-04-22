@@ -37,6 +37,7 @@ import net.minecraft.client.renderer.EffectInstance;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -70,6 +71,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private float scrollZ;
 	private Vector3f scrollDirection = new Vector3f(1.0F, 0.0F, 0.0F);
 	private boolean previewToggled;
+	private Frustum cullFrustum;
 	
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
@@ -187,10 +189,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.scrollZ += this.scrollDirection.z() * speed;
 	}
 	
-	public void generateMesh(NoiseSettings settings, double camX, double camY, double camZ)
+	public void generateMesh(NoiseSettings settings, double camX, double camY, double camZ, @Nullable Frustum frustum)
 	{
 		this.setupMeshGenerator();
-		this.meshGenerator.generateMesh(settings, SimpleCloudsConfig.CLIENT.movementSmoothing.get(), camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE);
+		this.meshGenerator.generateMesh(settings, SimpleCloudsConfig.CLIENT.movementSmoothing.get(), camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE, frustum);
 		this.totalSides = this.meshGenerator.getShader().<AtomicCounter>getBufferObject(0).get();
 		this.totalIndices = this.totalSides * 6;
 	}
@@ -224,15 +226,18 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		if (this.arrayObjectId != -1)
 		{
+			this.cullFrustum = new Frustum(stack.last().pose(), projMat);
+			this.cullFrustum.prepare(camX, camY, camZ);
+			
 			if (!this.mc.isPaused())
-				this.generateMesh(this.previewToggled ? StaticNoiseSettings.DEFAULT : this.previewNoiseSettings, camX, camY, camZ);
+				this.generateMesh(this.previewToggled ? StaticNoiseSettings.DEFAULT : this.previewNoiseSettings, camX, camY, camZ, this.cullFrustum);
 			
 			this.cloudTarget.clear(Minecraft.ON_OSX);
 			this.cloudTarget.copyDepthFrom(this.mc.getMainRenderTarget());
 			this.cloudTarget.bindWrite(false);
 			
 			stack.pushPose();
-			stack.translate(-camX, -camY / 4.0F + 64.0F, -camZ);
+			stack.translate(-camX, -camY, -camZ);
 			stack.scale((float)CLOUD_SCALE, (float)CLOUD_SCALE, (float)CLOUD_SCALE);
 			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
 			this.render(stack, projMat, partialTick, (float)cloudCol.x, (float)cloudCol.y, (float)cloudCol.z);

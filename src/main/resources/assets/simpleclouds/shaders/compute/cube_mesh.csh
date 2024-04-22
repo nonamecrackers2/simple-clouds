@@ -42,7 +42,7 @@ layout(binding = 2, std430) restrict buffer IndexBuffer {
 indices;
 
 //Render params
-uniform vec2 RenderOffset;
+uniform vec3 RenderOffset;
 uniform bool AddMovementSmoothing;
 
 void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal)
@@ -92,8 +92,8 @@ void main()
 {
     vec3 id = gl_GlobalInvocationID;
     float x = id.x + RenderOffset.x;
-    float y = id.y;
-    float z = id.z + RenderOffset.y;
+    float y = id.y + RenderOffset.y;
+    float z = id.z + RenderOffset.z;
     
     if (isPosValid(x, y, z))
     {

@@ -110,7 +110,7 @@ public class CloudPreviewerScreen extends Screen3D
 	protected void render3D(PoseStack stack, MultiBufferSource buffers, int mouseX, int mouseY, float partialTick)
 	{
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
-		renderer.generateMesh(this.renderer.getPreviewNoiseSettings(), 0.0D, 0.0D, 0.0D);
+		renderer.generateMesh(this.renderer.getPreviewNoiseSettings(), 0.0D, 0.0D, 0.0D, null);
 		renderer.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F);
 		
 		float radius = CloudMeshGenerator.getCloudRenderDistance();
