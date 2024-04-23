@@ -110,9 +110,9 @@ public class CloudMeshGenerator implements AutoCloseable
 			GL20.glUniform3f(loc, this.scrollX, this.scrollY, this.scrollZ);
 		});
 		
-		float camOffsetX = ((float)Mth.floor(camX / 32.0D) * 32.0F) / scale;
-		float camOffsetY = ((float)Mth.floor(camY / 32.0D) * 32.0F) / scale;
-		float camOffsetZ = ((float)Mth.floor(camZ / 32.0D) * 32.0F) / scale;
+		float chunkSize = 32.0F * scale;
+		float camOffsetX = ((float)Mth.floor(camX / chunkSize) * chunkSize);
+		float camOffsetZ = ((float)Mth.floor(camZ / chunkSize) * chunkSize);
 		int radiusX = CHUNK_AMOUNT_SPAN_X / 2;
 		int radiusZ = CHUNK_AMOUNT_SPAN_Z / 2;
 		for (int x = -radiusX; x < radiusX; x++)
@@ -121,16 +121,16 @@ public class CloudMeshGenerator implements AutoCloseable
 			{
 				for (int z = -radiusZ; z < radiusZ; z++)
 				{
-					float offsetX = (float)x * 32.0F;
-					float offsetY = (float)y * 32.0F;
-					float offsetZ = (float)z * 32.0F;
-//					if (frustum == null || frustum.isVisible(new AABB(offsetX / scale, offsetY / scale, offsetZ / scale, offsetX / scale + 32.0F / scale, offsetY / scale + 32.0F / scale, offsetZ / scale + 32.0F / scale).move(-camOffsetX, -camOffsetY, -camOffsetZ)))
-//					{
+					float offsetX = (float)x * chunkSize;
+					float offsetY = (float)y * chunkSize;
+					float offsetZ = (float)z * chunkSize;
+					if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSize, offsetY + chunkSize, offsetZ + chunkSize).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
+					{
 						this.shader.forUniform("RenderOffset", loc -> {
-							GL20.glUniform3f(loc, offsetX + camOffsetX, offsetY, offsetZ + camOffsetZ);
+							GL20.glUniform3f(loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
 						});
 						this.shader.dispatch(WORK_X, WORK_Y, WORK_Z, false);
-//					}
+					}
 				}
 			}
 		}

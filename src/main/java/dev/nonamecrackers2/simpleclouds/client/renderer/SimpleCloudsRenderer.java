@@ -22,6 +22,7 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
@@ -34,14 +35,20 @@ import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EffectInstance;
+import net.minecraft.client.renderer.FogRenderer;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
@@ -227,7 +234,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.arrayObjectId != -1)
 		{
 			this.cullFrustum = new Frustum(stack.last().pose(), projMat);
-			this.cullFrustum.prepare(camX, camY, camZ);
 			
 			if (!this.mc.isPaused())
 				this.generateMesh(this.previewToggled ? StaticNoiseSettings.DEFAULT : this.previewNoiseSettings, camX, camY, camZ, this.cullFrustum);
@@ -242,6 +248,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
 			this.render(stack, projMat, partialTick, (float)cloudCol.x, (float)cloudCol.y, (float)cloudCol.z);
 			stack.popPose();
+			
+			//renderDebugRegionBoundingBoxes(this.mc.renderBuffers().bufferSource(), camX, camY, camZ, this.cullFrustum);
 			
 			this.doPostProcessing(stack, partialTick, projMat);
 			
@@ -274,6 +282,32 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			
 			this.cloudsPostProcessing.process(partialTick);
 		}
+	}
+	
+	private static void renderDebugRegionBoundingBoxes(MultiBufferSource.BufferSource buffers, double camX, double camY, double camZ, Frustum frustum)
+	{
+		float chunkSize = 32.0F * CLOUD_SCALE;
+		float camOffsetX = ((float)Mth.floor(camX / chunkSize) * chunkSize);
+		float camOffsetZ = ((float)Mth.floor(camZ / chunkSize) * chunkSize);
+		int radiusX = CloudMeshGenerator.CHUNK_AMOUNT_SPAN_X / 2;
+		int radiusZ = CloudMeshGenerator.CHUNK_AMOUNT_SPAN_Z / 2;
+		VertexConsumer consumer = buffers.getBuffer(RenderType.lines());
+		for (int x = -radiusX; x < radiusX; x++)
+		{
+			for (int y = 0; y < CloudMeshGenerator.CHUNK_AMOUNT_SPAN_Y; y++)
+			{
+				for (int z = -radiusZ; z < radiusZ; z++)
+				{
+					float offsetX = (float)x * chunkSize;
+					float offsetY = (float)y * chunkSize;
+					float offsetZ = (float)z * chunkSize;
+					AABB box = new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSize, offsetY + chunkSize, offsetZ + chunkSize).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ);
+					LevelRenderer.renderLineBox(new PoseStack(), consumer, box, frustum.isVisible(box) ? 0.0F : 1.0F, 1.0F, 0.0F, 1.0F);
+				}
+			}
+		}
+		FogRenderer.setupNoFog();
+		buffers.endBatch();
 	}
 	
 	private static void prepareShader(ShaderInstance shader, Matrix4f modelView, Matrix4f projMat)
