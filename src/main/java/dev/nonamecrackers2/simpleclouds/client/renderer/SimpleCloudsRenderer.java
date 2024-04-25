@@ -52,7 +52,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
-//TODO: Better far plane extension, use lowest GL class, etc
 public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/SimpleCloudsRenderer");
@@ -60,9 +59,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private static final Vector3f DIFFUSE_LIGHT_1 = (new Vector3f(-0.2F, 1.0F, 0.7F)).normalize();
 	private static final ResourceLocation POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/cloud_post.json");
 	public static final int CLOUD_SCALE = 8;
-//	private static boolean extendFarPlane;
-//	private static float extendedFarPlaneAmount = -1.0F;
-//	private static Matrix4f prevProjMat;
+	private static final int MESH_REBUILD_TIME = 3;
 	private static @Nullable SimpleCloudsRenderer instance;
 	private final Minecraft mc;
 	private final CloudMeshGenerator meshGenerator;
@@ -79,6 +76,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private Vector3f scrollDirection = new Vector3f(1.0F, 0.0F, 0.0F);
 	private boolean previewToggled;
 	private Frustum cullFrustum;
+	private int nextMeshRebuild = MESH_REBUILD_TIME;
+	private @Nullable NoiseSettings previousNoiseSettings;
 	
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
@@ -202,6 +201,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.meshGenerator.generateMesh(settings, SimpleCloudsConfig.CLIENT.movementSmoothing.get(), camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE, frustum);
 		this.totalSides = this.meshGenerator.getShader().<AtomicCounter>getBufferObject(0).get();
 		this.totalIndices = this.totalSides * 6;
+		this.nextMeshRebuild = MESH_REBUILD_TIME;
 	}
 	
 	public void render(PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b)
@@ -235,15 +235,19 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			this.cullFrustum = new Frustum(stack.last().pose(), projMat);
 			
-			if (!this.mc.isPaused())
-				this.generateMesh(this.previewToggled ? StaticNoiseSettings.DEFAULT : this.previewNoiseSettings, camX, camY, camZ, this.cullFrustum);
+			if (this.nextMeshRebuild > 0)
+			{
+				this.nextMeshRebuild--;
+				if (this.nextMeshRebuild == 0)
+					this.generateMesh(this.previewToggled ? this.previewNoiseSettings : StaticNoiseSettings.DEFAULT, camX, camY - 128.0D, camZ, this.cullFrustum);
+			}
 			
 			this.cloudTarget.clear(Minecraft.ON_OSX);
 			this.cloudTarget.copyDepthFrom(this.mc.getMainRenderTarget());
 			this.cloudTarget.bindWrite(false);
 			
 			stack.pushPose();
-			stack.translate(-camX, -camY, -camZ);
+			stack.translate(-camX, -camY + 128.0D, -camZ);
 			stack.scale((float)CLOUD_SCALE, (float)CLOUD_SCALE, (float)CLOUD_SCALE);
 			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
 			this.render(stack, projMat, partialTick, (float)cloudCol.x, (float)cloudCol.y, (float)cloudCol.z);
