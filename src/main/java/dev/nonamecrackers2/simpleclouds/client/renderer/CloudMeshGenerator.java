@@ -110,20 +110,29 @@ public class CloudMeshGenerator implements AutoCloseable
 			GL20.glUniform3f(loc, this.scrollX, this.scrollY, this.scrollZ);
 		});
 		
+//		int radiusX = CHUNK_AMOUNT_SPAN_X / 2;
+//		int radiusZ = CHUNK_AMOUNT_SPAN_Z / 2;
+		int x = 0;
+		int z = 0;
+		int dx = 0;
+		int dz = -1;
 		float chunkSize = 32.0F * scale;
 		float camOffsetX = ((float)Mth.floor(camX / chunkSize) * chunkSize);
 		float camOffsetZ = ((float)Mth.floor(camZ / chunkSize) * chunkSize);
-		int radiusX = CHUNK_AMOUNT_SPAN_X / 2;
-		int radiusZ = CHUNK_AMOUNT_SPAN_Z / 2;
-		for (int x = -radiusX; x < radiusX; x++)
+		int t = Math.max(CHUNK_AMOUNT_SPAN_X, CHUNK_AMOUNT_SPAN_Z);//(int)Math.pow(Math.max(radiusX * 2, radiusZ * 2), 2);
+		int iterations = t*t;
+		for (int i = 0; i < iterations; i++)
 		{
-			for (int y = 0; y < CHUNK_AMOUNT_SPAN_Y; y++)
+			if (-CHUNK_AMOUNT_SPAN_X/2 <= x && x <= CHUNK_AMOUNT_SPAN_X/2 && -CHUNK_AMOUNT_SPAN_Z/2 <= z && z <= CHUNK_AMOUNT_SPAN_Z/2)
 			{
-				for (int z = -radiusZ; z < radiusZ; z++)
+				for (int y = 0; y < CHUNK_AMOUNT_SPAN_Y; y++)
 				{
-					float offsetX = (float)x * chunkSize;
-					float offsetY = (float)y * chunkSize;
-					float offsetZ = (float)z * chunkSize;
+					int span = Mth.floor(Mth.sqrt(i));
+					int lodLevel = getLodLevel(span);
+					
+					float offsetX = (float)(x - 1) * chunkSize * lodLevel;
+					float offsetY = (float)y * chunkSize * lodLevel;
+					float offsetZ = (float)(z - 1) * chunkSize * lodLevel;
 					if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSize, offsetY + chunkSize, offsetZ + chunkSize).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
 					{
 						this.shader.forUniform("RenderOffset", loc -> {
@@ -133,7 +142,40 @@ public class CloudMeshGenerator implements AutoCloseable
 					}
 				}
 			}
+			if (x == z || (x < 0 && x == -z) || (x > 0 && x == 1 - z))
+			{
+				t = dx;
+				dx = -dz;
+				dz = t;
+			}
+			x += dx;
+			z += dz;
 		}
+		
+//		for (int x = -radiusX; x < radiusX; x++)
+//		{
+//			for (int y = 0; y < CHUNK_AMOUNT_SPAN_Y; y++)
+//			{
+//				for (int z = -radiusZ; z < radiusZ; z++)
+//				{
+//					float offsetX = (float)x * chunkSize;
+//					float offsetY = (float)y * chunkSize;
+//					float offsetZ = (float)z * chunkSize;
+//					if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSize, offsetY + chunkSize, offsetZ + chunkSize).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
+//					{
+//						this.shader.forUniform("RenderOffset", loc -> {
+//							GL20.glUniform3f(loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
+//						});
+//						this.shader.dispatch(WORK_X, WORK_Y, WORK_Z, false);
+//					}
+//				}
+//			}
+//		}
+	}
+	
+	public static int getLodLevel(int radius)
+	{
+		return Mth.clamp(radius, 0, 2) + 1;
 	}
 	
 	public @Nullable ComputeShader getShader()
