@@ -43,6 +43,7 @@ indices;
 
 //Render params
 uniform vec3 RenderOffset;
+uniform float Scale = 1.0;
 uniform bool AddMovementSmoothing;
 
 void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal)
@@ -67,37 +68,37 @@ void createFaceInvert(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec
 
 void createCube(float x, float y, float z, bool occlude, float cubeRadius)
 {
-	vec3 offset = vec3(x + 0.5, y + 0.5, z + 0.5);
+	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
 	//-Y
-	if (!occlude || !isPosValid(x, y - 1.0, z))
+	if (!occlude || !isPosValid(x, y - Scale, z))
 		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, -1.0, 0.0));
 	//+Y
-	if (!occlude || !isPosValid(x, y + 1.0, z))
+	if (!occlude || !isPosValid(x, y + Scale, z))
 		createFaceInvert(offset, vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(0.0, 1.0, 0.0));
 	//+X
-	if (!occlude || !isPosValid(x - 1.0, y, z))
+	if (!occlude || !isPosValid(x - Scale, y, z))
 		createFaceInvert(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-1.0, 0.0, 0.0));
 	//+X
-	if (!occlude || !isPosValid(x + 1.0, y, z))
+	if (!occlude || !isPosValid(x + Scale, y, z))
 		createFace(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(1.0, 0.0, 0.0));
 	//-Z
-	if (!occlude || !isPosValid(x, y, z - 1.0))
+	if (!occlude || !isPosValid(x, y, z - Scale))
 		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(0.0, 0.0, -1.0));
 	//+Z
-	if (!occlude || !isPosValid(x, y, z + 1.0))
+	if (!occlude || !isPosValid(x, y, z + Scale))
 		createFaceInvert(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, 0.0, 1.0));
 }
 
 void main() 
 {
     vec3 id = gl_GlobalInvocationID;
-    float x = id.x + RenderOffset.x;
-    float y = id.y + RenderOffset.y;
-    float z = id.z + RenderOffset.z;
+    float x = id.x * Scale + RenderOffset.x;
+    float y = id.y * Scale + RenderOffset.y;
+    float z = id.z * Scale + RenderOffset.z;
     
     if (isPosValid(x, y, z))
     {
-		createCube(x, y, z, true, 0.5);
+		createCube(x, y, z, true, Scale / 2.0);
     }
 	//else if (AddMovementSmoothing)
 	//{
