@@ -125,23 +125,27 @@ public class CloudMeshGenerator implements AutoCloseable
 		});
 		
 		interface ChunkGenerator {
-			void generate(int lodScale, int x, int y, int z);
+			void generate(int lodScale, int x, int y, int z, int noOcclusionDirectionIndex);
 		}
-		ChunkGenerator generator = (lodScale, x, y, z) ->
+		ChunkGenerator generator = (lodScale, x, y, z, noOcclusionDirectionIndex) ->
 		{
-			float chunkSize = 32.0F * scale * lodScale;
-			float offsetX = (float)x * chunkSize;
-			float offsetY = (float)y * chunkSize;
-			float offsetZ = (float)z * chunkSize;
-			float camOffsetX = ((float)Mth.floor(camX / chunkSize) * chunkSize);
-			float camOffsetZ = ((float)Mth.floor(camZ / chunkSize) * chunkSize);
-			if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSize, offsetY + chunkSize, offsetZ + chunkSize).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
+			float chunkSizeUpscaled = 32.0F * scale;
+			float chunkSizeLod = 32.0F * scale * lodScale;
+			float offsetX = (float)x * chunkSizeLod;
+			float offsetY = (float)y * chunkSizeLod;
+			float offsetZ = (float)z * chunkSizeLod;
+			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
+			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
+			if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSizeLod, offsetY + chunkSizeLod, offsetZ + chunkSizeLod).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
 			{
 				this.shader.forUniform("RenderOffset", loc -> {
 					GL20.glUniform3f(loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
 				});
 				this.shader.forUniform("Scale", loc -> {
 					GL20.glUniform1f(loc, lodScale);
+				});
+				this.shader.forUniform("DoNotOccludeSide", loc -> {
+					GL20.glUniform1i(loc, noOcclusionDirectionIndex);
 				});
 				this.shader.dispatch(WORK_SIZE, WORK_SIZE, WORK_SIZE, false);
 			}
@@ -154,13 +158,13 @@ public class CloudMeshGenerator implements AutoCloseable
 			{
 				for (int x = -r; x < r; x++)
 				{
-					generator.generate(1, x, y, -r);
-					generator.generate(1, x, y, r - 1);
+					generator.generate(1, x, y, -r, -1);
+					generator.generate(1, x, y, r - 1, -1);
 				}
 				for (int z = -r + 1; z < r - 1; z++)
 				{
-					generator.generate(1, -r, y, z);
-					generator.generate(1, r - 1, y, z);
+					generator.generate(1, -r, y, z, -1);
+					generator.generate(1, r - 1, y, z, -1);
 				}
 			}
 		}
@@ -170,18 +174,19 @@ public class CloudMeshGenerator implements AutoCloseable
 			for (int deltaR = 1; deltaR <= config.spread(); deltaR++)
 			{
 				int ySpan = Mth.ceil((float)VERTICAL_CHUNK_SPAN / (float)config.chunkScale());
+				boolean noOcclusion = deltaR == 1;
 				for (int y = 0; y < ySpan; y++)
 				{
 					int r = currentRadius / config.chunkScale() + deltaR;
 					for (int x = -r; x < r; x++)
 					{
-						generator.generate(config.chunkScale(), x, y, -r);
-						generator.generate(config.chunkScale(), x, y, r - 1);
+						generator.generate(config.chunkScale(), x, y, -r, noOcclusion ? 5 : -1);
+						generator.generate(config.chunkScale(), x, y, r - 1, noOcclusion ? 4 : -1);
 					}
 					for (int z = -r + 1; z < r - 1; z++)
 					{
-						generator.generate(config.chunkScale(), -r, y, z);
-						generator.generate(config.chunkScale(), r - 1, y, z);
+						generator.generate(config.chunkScale(), -r, y, z, noOcclusion ? 1 : -1);
+						generator.generate(config.chunkScale(), r - 1, y, z, noOcclusion ? 0 : -1);
 					}
 				}
 			}

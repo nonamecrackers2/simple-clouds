@@ -3,6 +3,8 @@
 #moj_import <simpleclouds:simplex_noise.glsl>
 #moj_import <simpleclouds:noise_shaper.glsl>
 
+#define LOCAL_SIZE vec3(${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z})
+
 struct Vertex {
 	float x;
 	float y;
@@ -46,6 +48,43 @@ uniform vec3 RenderOffset;
 uniform float Scale = 1.0;
 uniform bool AddMovementSmoothing;
 
+//Faces:
+//-X = 0
+//+X = 1
+//-Y = 2
+//+Y = 3
+//-Z = 4
+//+Z = 5
+
+uniform int DoNotOccludeSide = -1;
+
+bool shouldNotOcclude(int index)
+{
+	if (DoNotOccludeSide != -1 && index == DoNotOccludeSide)
+	{
+		vec3 id = gl_GlobalInvocationID;
+		vec3 size = gl_NumWorkGroups * LOCAL_SIZE;
+		if (DoNotOccludeSide == 1)
+			return id.x == size.x - 1.0;
+		else if (DoNotOccludeSide == 0)
+			return id.x == 0.0;
+		else if (DoNotOccludeSide == 3)
+			return id.y == size.y - 1.0;
+		else if (DoNotOccludeSide == 2)
+			return id.y == 0.0;
+		else if (DoNotOccludeSide == 5)
+			return id.z == size.z - 1.0;
+		else if (DoNotOccludeSide == 4)
+			return id.z == 0.0;
+		else
+			return false;			
+	}
+	else
+	{
+		return false;
+	}
+}
+
 void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal)
 {
 	uint currentFace = atomicCounterIncrement(counter);
@@ -70,22 +109,22 @@ void createCube(float x, float y, float z, bool occlude, float cubeRadius)
 {
 	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
 	//-Y
-	if (!occlude || !isPosValid(x, y - Scale, z))
+	if (!occlude || !isPosValid(x, y - Scale, z) || shouldNotOcclude(2))
 		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, -1.0, 0.0));
 	//+Y
-	if (!occlude || !isPosValid(x, y + Scale, z))
+	if (!occlude || !isPosValid(x, y + Scale, z) || shouldNotOcclude(3))
 		createFaceInvert(offset, vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(0.0, 1.0, 0.0));
-	//+X
-	if (!occlude || !isPosValid(x - Scale, y, z))
+	//-X
+	if (!occlude || !isPosValid(x - Scale, y, z) || shouldNotOcclude(0))
 		createFaceInvert(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-1.0, 0.0, 0.0));
 	//+X
-	if (!occlude || !isPosValid(x + Scale, y, z))
+	if (!occlude || !isPosValid(x + Scale, y, z) || shouldNotOcclude(1))
 		createFace(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(1.0, 0.0, 0.0));
 	//-Z
-	if (!occlude || !isPosValid(x, y, z - Scale))
+	if (!occlude || !isPosValid(x, y, z - Scale) || shouldNotOcclude(4))
 		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(0.0, 0.0, -1.0));
 	//+Z
-	if (!occlude || !isPosValid(x, y, z + Scale))
+	if (!occlude || !isPosValid(x, y, z + Scale) || shouldNotOcclude(5))
 		createFaceInvert(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, 0.0, 1.0));
 }
 
