@@ -25,7 +25,9 @@ vec4 mix_light(vec3 lightDir0, vec3 lightDir1, vec3 normal, vec4 color)
     float light0 = max(0.0, dot(lightDir0, normal));
     float light1 = max(0.0, dot(lightDir1, normal));
     float lightAccum = min(1.0, (light0 + light1) * LightPower + AmbientLight);
-    return vec4(color.rgb * lightAccum, color.a);
+    vec3 shade = vec3(0.6, 0.7, 0.8);
+    vec3 finalCol = mix(color.rgb, shade, lightAccum);
+    return vec4(vec3(color.r * lightAccum, color.g * lightAccum, color.b), color.a);
 }
 
 void main() 

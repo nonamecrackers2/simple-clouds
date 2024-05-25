@@ -38,7 +38,7 @@ public class CloudPreviewerScreen extends Screen3D
 	
 	public CloudPreviewerScreen(Screen prev)
 	{
-		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.5F, 1000.0F);
+		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.5F, 3000.0F);
 		this.prev = prev;
 	}
 	

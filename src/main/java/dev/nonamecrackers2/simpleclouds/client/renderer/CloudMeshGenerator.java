@@ -27,33 +27,46 @@ public class CloudMeshGenerator implements AutoCloseable
 	public static final int MAX_NOISE_LAYERS = 4;
 	private static final ResourceLocation CUBE_MESH_GENERATOR = SimpleCloudsMod.id("cube_mesh");
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudMeshGenerator");
-	private static final int[] LOD_LEVELS = new int[] {2, 6, 18};
-	public static final int CHUNK_AMOUNT_SPAN_X = 16;
-	public static final int CHUNK_AMOUNT_SPAN_Y = 4;
-	public static final int CHUNK_AMOUNT_SPAN_Z = 16;
-	public static final int WORK_X = 4;
-	public static final int WORK_Y = 4;
-	public static final int WORK_Z = 4;
-	public static final int LOCAL_X = 8;
-	public static final int LOCAL_Y = 8;
-	public static final int LOCAL_Z = 8;
+	private static final CloudMeshGenerator.LevelOfDetailConfig[] LEVEL_OF_DETAIL = new CloudMeshGenerator.LevelOfDetailConfig[] {
+		new CloudMeshGenerator.LevelOfDetailConfig(2, 4),
+		new CloudMeshGenerator.LevelOfDetailConfig(4, 3),
+		new CloudMeshGenerator.LevelOfDetailConfig(8, 2)
+	};
+	public static final int EFFECTIVE_CHUNK_SPAN; //The total span of the complete renderable area, including all level of detail layers
+	public static final int PRIMARY_CHUNK_SPAN = 8; //The total span of the primary, full detail cloud area
+	public static final int VERTICAL_CHUNK_SPAN = 4;
+//	public static final int CHUNK_AMOUNT_SPAN_X = 16;
+//	public static final int CHUNK_AMOUNT_SPAN_Y = 4;
+//	public static final int CHUNK_AMOUNT_SPAN_Z = 16;
+	public static final int WORK_SIZE = 4;
+	public static final int LOCAL_SIZE = 8;
 	private @Nullable ComputeShader shader;
 	private float scrollX;
 	private float scrollY;
 	private float scrollZ;
 	
+	static
+	{
+		int radius = PRIMARY_CHUNK_SPAN / 2;
+		for (CloudMeshGenerator.LevelOfDetailConfig config : LEVEL_OF_DETAIL)
+			radius += config.chunkScale() * config.spread();
+		EFFECTIVE_CHUNK_SPAN = radius * 2;
+	}
+	
 	protected CloudMeshGenerator() {}
 	
 	public static int getCloudAreaMaxRadius()
 	{
-		int width = WORK_X * LOCAL_X * CHUNK_AMOUNT_SPAN_X;
-		int length = WORK_Z * LOCAL_Z * CHUNK_AMOUNT_SPAN_Z;
-		return width / 2 + length / 2;
+		return EFFECTIVE_CHUNK_SPAN * WORK_SIZE * LOCAL_SIZE / 2;
+//		int width = WORK_X * LOCAL_X * CHUNK_AMOUNT_SPAN_X;
+//		int length = WORK_Z * LOCAL_Z * CHUNK_AMOUNT_SPAN_Z;
+//		return width / 2 + length / 2;
 	}
 	
 	public static int getCloudRenderDistance()
 	{
-		return Math.max(WORK_X * LOCAL_X * CHUNK_AMOUNT_SPAN_X, WORK_Z * LOCAL_Z * CHUNK_AMOUNT_SPAN_Z) / 2;
+		return getCloudAreaMaxRadius();
+		//return Math.max(WORK_X * LOCAL_X * CHUNK_AMOUNT_SPAN_X, WORK_Z * LOCAL_Z * CHUNK_AMOUNT_SPAN_Z) / 2;
 	}
 	
 	@Override
@@ -73,7 +86,7 @@ public class CloudMeshGenerator implements AutoCloseable
 		
 		try
 		{
-			this.shader = ComputeShader.loadShader(CUBE_MESH_GENERATOR, manager, LOCAL_X, LOCAL_Y, LOCAL_Z);
+			this.shader = ComputeShader.loadShader(CUBE_MESH_GENERATOR, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE);
 			this.shader.bindAtomicCounter(0, GL15.GL_DYNAMIC_DRAW); //Counter
 			this.shader.bindShaderStorageBuffer(1, GL15.GL_DYNAMIC_DRAW).allocateBuffer(368435456); //Vertex data, arbitrary size
 			this.shader.bindShaderStorageBuffer(2, GL15.GL_DYNAMIC_DRAW).allocateBuffer(107108864); //Index data, arbitrary size
@@ -111,43 +124,102 @@ public class CloudMeshGenerator implements AutoCloseable
 			GL20.glUniform3f(loc, this.scrollX, this.scrollY, this.scrollZ);
 		});
 		
-		int radiusX = CHUNK_AMOUNT_SPAN_X / 2;
-		int radiusZ = CHUNK_AMOUNT_SPAN_Z / 2;
-		float chunkSize = 32.0F * scale;
-		float camOffsetX = ((float)Mth.floor(camX / chunkSize) * chunkSize);
-		float camOffsetZ = ((float)Mth.floor(camZ / chunkSize) * chunkSize);
-		int lodSpread = 1;
-		int sizePerLod = (int)Math.pow(3, lodSpread);
-		for (int lodLevel = 2; lodLevel <= 4; lodLevel++)
+		interface ChunkGenerator {
+			void generate(int lodScale, int x, int y, int z);
+		}
+		ChunkGenerator generator = (lodScale, x, y, z) ->
 		{
-			int prevSpan = getSpanForLodLevel(lodLevel - 1);
-			int span = getSpanForLodLevel(lodLevel);
-			int spanPerLodChunk = span / 3;
-			for (int x = -sizePerLod - lodSpread; x <= sizePerLod + lodSpread; x++)
+			float chunkSize = 32.0F * scale * lodScale;
+			float offsetX = (float)x * chunkSize;
+			float offsetY = (float)y * chunkSize;
+			float offsetZ = (float)z * chunkSize;
+			float camOffsetX = ((float)Mth.floor(camX / chunkSize) * chunkSize);
+			float camOffsetZ = ((float)Mth.floor(camZ / chunkSize) * chunkSize);
+			if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSize, offsetY + chunkSize, offsetZ + chunkSize).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
 			{
-				for (int z = -sizePerLod - lodSpread; z <= sizePerLod + lodSpread; z++)
+				this.shader.forUniform("RenderOffset", loc -> {
+					GL20.glUniform3f(loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
+				});
+				this.shader.forUniform("Scale", loc -> {
+					GL20.glUniform1f(loc, lodScale);
+				});
+				this.shader.dispatch(WORK_SIZE, WORK_SIZE, WORK_SIZE, false);
+			}
+		};
+		
+		int currentRadius = PRIMARY_CHUNK_SPAN / 2;
+		for (int r = 0; r <= currentRadius; r++)
+		{
+			for (int y = 0; y < VERTICAL_CHUNK_SPAN; y++)
+			{
+				for (int x = -r; x < r; x++)
 				{
-					if (x < -lodSpread || x > lodSpread || z < -lodSpread || z > lodSpread)
+					generator.generate(1, x, y, -r);
+					generator.generate(1, x, y, r - 1);
+				}
+				for (int z = -r + 1; z < r - 1; z++)
+				{
+					generator.generate(1, -r, y, z);
+					generator.generate(1, r - 1, y, z);
+				}
+			}
+		}
+		
+		for (CloudMeshGenerator.LevelOfDetailConfig config : LEVEL_OF_DETAIL)
+		{
+			for (int deltaR = 1; deltaR <= config.spread(); deltaR++)
+			{
+				int ySpan = Mth.ceil((float)VERTICAL_CHUNK_SPAN / (float)config.chunkScale());
+				for (int y = 0; y < ySpan; y++)
+				{
+					int r = currentRadius / config.chunkScale() + deltaR;
+					for (int x = -r; x < r; x++)
 					{
-						int y = 0;
-						int currentX = x * spanPerLodChunk - spanPerLodChunk + prevSpan / 2;
-						int currentZ = z * spanPerLodChunk - spanPerLodChunk + prevSpan / 2;
-						float offsetX = (float)currentX * chunkSize;
-						float offsetY = (float)y * chunkSize;
-						float offsetZ = (float)currentZ * chunkSize;
-						if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSize, offsetY + chunkSize, offsetZ + chunkSize).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
-						{
-							this.shader.forUniform("RenderOffset", loc -> {
-								GL20.glUniform3f(loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
-							});
-							this.shader.forUniform("Scale", loc -> {
-								GL20.glUniform1f(loc, spanPerLodChunk);
-							});
-							this.shader.dispatch(WORK_X, WORK_Y, WORK_Z, false);
-						}
+						generator.generate(config.chunkScale(), x, y, -r);
+						generator.generate(config.chunkScale(), x, y, r - 1);
+					}
+					for (int z = -r + 1; z < r - 1; z++)
+					{
+						generator.generate(config.chunkScale(), -r, y, z);
+						generator.generate(config.chunkScale(), r - 1, y, z);
 					}
 				}
 			}
+			currentRadius = currentRadius + config.spread() * config.chunkScale();
+		}
+		
+//		int lodSpread = 1;
+//		int sizePerLod = (int)Math.pow(3, lodSpread);
+//		for (int lodLevel = 2; lodLevel <= 4; lodLevel++)
+//		{
+//			int prevSpan = getSpanForLodLevel(lodLevel - 1);
+//			int span = getSpanForLodLevel(lodLevel);
+//			int spanPerLodChunk = span / 3;
+//			for (int x = -sizePerLod - lodSpread; x <= sizePerLod + lodSpread; x++)
+//			{
+//				for (int z = -sizePerLod - lodSpread; z <= sizePerLod + lodSpread; z++)
+//				{
+//					if (x < -lodSpread || x > lodSpread || z < -lodSpread || z > lodSpread)
+//					{
+//						int y = 0;
+//						int currentX = x * spanPerLodChunk - spanPerLodChunk + prevSpan / 2;
+//						int currentZ = z * spanPerLodChunk - spanPerLodChunk + prevSpan / 2;
+//						float offsetX = (float)currentX * chunkSize;
+//						float offsetY = (float)y * chunkSize;
+//						float offsetZ = (float)currentZ * chunkSize;
+//						if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSize, offsetY + chunkSize, offsetZ + chunkSize).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
+//						{
+//							this.shader.forUniform("RenderOffset", loc -> {
+//								GL20.glUniform3f(loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
+//							});
+//							this.shader.forUniform("Scale", loc -> {
+//								GL20.glUniform1f(loc, spanPerLodChunk);
+//							});
+//							this.shader.dispatch(WORK_SIZE, WORK_SIZE, WORK_SIZE, false);
+//						}
+//					}
+//				}
+//			}
 //			for (int x = -r; x < r; x++)
 //			{
 //				for (int y = 0; y < CHUNK_AMOUNT_SPAN_Y; y++)
@@ -164,7 +236,7 @@ public class CloudMeshGenerator implements AutoCloseable
 //					this.generateChunk(chunkSize, r, r - 1, y, z, frustum, camOffsetX, camOffsetZ, camX, camY, camZ, scale);
 //				}
 //			}
-		}
+//		}
 		
 //		int x = 0;
 //		int z = 0;
@@ -233,20 +305,6 @@ public class CloudMeshGenerator implements AutoCloseable
 //		}
 	}
 	
-	private void generateChunk(float chunkSize, int lodLevel, int x, int y, int z, @Nullable Frustum frustum, float camOffsetX, float camOffsetZ, double camX, double camY, double camZ, float scale)
-	{
-		float offsetX = (float)x * chunkSize * lodLevel;
-		float offsetY = (float)y * chunkSize * lodLevel;
-		float offsetZ = (float)z * chunkSize * lodLevel;
-		if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSize, offsetY + chunkSize, offsetZ + chunkSize).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
-		{
-			this.shader.forUniform("RenderOffset", loc -> {
-				GL20.glUniform3f(loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
-			});
-			this.shader.dispatch(WORK_X, WORK_Y, WORK_Z, false);
-		}
-	}
-	
 	private static int getSpanForLodLevel(int lodLevel)
 	{
 		if (lodLevel <= 1)
@@ -259,4 +317,6 @@ public class CloudMeshGenerator implements AutoCloseable
 	{
 		return this.shader;
 	}
+	
+	private static record LevelOfDetailConfig(int chunkScale, int spread) {}
 }

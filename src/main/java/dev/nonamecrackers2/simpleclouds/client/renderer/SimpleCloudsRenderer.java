@@ -280,7 +280,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				effect.safeGetUniform("WorldProjMat").set(projMat);
 				effect.safeGetUniform("ModelViewMat").set(stack.last().pose());
 				float renderDistance = (float)CloudMeshGenerator.getCloudRenderDistance() * (float)CLOUD_SCALE;
-				effect.safeGetUniform("FogStart").set(renderDistance - renderDistance / 4.0F);
+				effect.safeGetUniform("FogStart").set(renderDistance - renderDistance / 1.0F);
 				effect.safeGetUniform("FogEnd").set(renderDistance);
 			}
 			
@@ -293,14 +293,13 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		float chunkSize = 32.0F * CLOUD_SCALE;
 		float camOffsetX = ((float)Mth.floor(camX / chunkSize) * chunkSize);
 		float camOffsetZ = ((float)Mth.floor(camZ / chunkSize) * chunkSize);
-		int radiusX = CloudMeshGenerator.CHUNK_AMOUNT_SPAN_X / 2;
-		int radiusZ = CloudMeshGenerator.CHUNK_AMOUNT_SPAN_Z / 2;
+		int radius = CloudMeshGenerator.PRIMARY_CHUNK_SPAN / 2;
 		VertexConsumer consumer = buffers.getBuffer(RenderType.lines());
-		for (int x = -radiusX; x < radiusX; x++)
+		for (int x = -radius; x < radius; x++)
 		{
-			for (int y = 0; y < CloudMeshGenerator.CHUNK_AMOUNT_SPAN_Y; y++)
+			for (int y = 0; y < CloudMeshGenerator.VERTICAL_CHUNK_SPAN; y++)
 			{
-				for (int z = -radiusZ; z < radiusZ; z++)
+				for (int z = -radius; z < radius; z++)
 				{
 					float offsetX = (float)x * chunkSize;
 					float offsetY = (float)y * chunkSize;

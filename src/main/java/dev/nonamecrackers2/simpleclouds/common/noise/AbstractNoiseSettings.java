@@ -46,13 +46,13 @@ public abstract class AbstractNoiseSettings implements NoiseSettings
 	
 	public static enum Param
 	{
-		HEIGHT(32.0F, 1.0F, CloudMeshGenerator.LOCAL_Y * CloudMeshGenerator.WORK_Y * CloudMeshGenerator.CHUNK_AMOUNT_SPAN_Y),
+		HEIGHT(32.0F, 1.0F, CloudMeshGenerator.LOCAL_SIZE * CloudMeshGenerator.WORK_SIZE * CloudMeshGenerator.VERTICAL_CHUNK_SPAN),
 		VALUE_OFFSET(-0.5F, -1.0F, 1.0F),
 		SCALE_X(30.0F, 0.1F, 1000.0F),
 		SCALE_Y(10.0F, 0.1F, 1000.0F),
 		SCALE_Z(30.0F, 0.1F, 1000.0F),
-		FADE_DISTANCE(10.0F, 1.0F, CloudMeshGenerator.LOCAL_Y * CloudMeshGenerator.WORK_Y * CloudMeshGenerator.CHUNK_AMOUNT_SPAN_Y / 2),
-		HEIGHT_OFFSET(0.0F, 0.0F, CloudMeshGenerator.LOCAL_Y * CloudMeshGenerator.WORK_Y * CloudMeshGenerator.CHUNK_AMOUNT_SPAN_Y),
+		FADE_DISTANCE(10.0F, 1.0F, CloudMeshGenerator.LOCAL_SIZE * CloudMeshGenerator.WORK_SIZE * CloudMeshGenerator.VERTICAL_CHUNK_SPAN / 2),
+		HEIGHT_OFFSET(0.0F, 0.0F, CloudMeshGenerator.LOCAL_SIZE * CloudMeshGenerator.WORK_SIZE * CloudMeshGenerator.VERTICAL_CHUNK_SPAN),
 		VALUE_SCALE(1.0F, 0.1F, 10.0F);
 		
 		private final float defaultValue;
