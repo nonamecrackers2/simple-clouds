@@ -1,13 +1,22 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer;
 
 import java.io.IOException;
+import java.nio.IntBuffer;
 
 import javax.annotation.Nullable;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL42;
+import org.lwjgl.opengl.GL45;
+
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.TextureUtil;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.AtomicCounter;
@@ -26,6 +35,7 @@ public class CloudMeshGenerator implements AutoCloseable
 {
 	public static final int MAX_NOISE_LAYERS = 4;
 	private static final ResourceLocation CUBE_MESH_GENERATOR = SimpleCloudsMod.id("cube_mesh");
+	private static final ResourceLocation CLOUD_REGIONS_GENERATOR = SimpleCloudsMod.id("cloud_regions");
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudMeshGenerator");
 	private static final CloudMeshGenerator.LevelOfDetailConfig[] LEVEL_OF_DETAIL = new CloudMeshGenerator.LevelOfDetailConfig[] {
 		new CloudMeshGenerator.LevelOfDetailConfig(2, 4),
@@ -41,9 +51,11 @@ public class CloudMeshGenerator implements AutoCloseable
 	public static final int WORK_SIZE = 4;
 	public static final int LOCAL_SIZE = 8;
 	private @Nullable ComputeShader shader;
+	private @Nullable ComputeShader cloudRegionShader;
 	private float scrollX;
 	private float scrollY;
 	private float scrollZ;
+	private int cloudRegionTexture;
 	
 	static
 	{
@@ -67,6 +79,11 @@ public class CloudMeshGenerator implements AutoCloseable
 	{
 		return getCloudAreaMaxRadius();
 		//return Math.max(WORK_X * LOCAL_X * CHUNK_AMOUNT_SPAN_X, WORK_Z * LOCAL_Z * CHUNK_AMOUNT_SPAN_Z) / 2;
+	}
+	
+	public int getCloudRegionTextureId()
+	{
+		return this.cloudRegionTexture;
 	}
 	
 	@Override
@@ -96,6 +113,37 @@ public class CloudMeshGenerator implements AutoCloseable
 		catch (IOException e)
 		{
 			LOGGER.warn("Failed to load compute shader", e);
+		}
+		
+		if (this.cloudRegionTexture >= 0)
+		{
+			TextureUtil.releaseTextureId(this.cloudRegionTexture);
+			this.cloudRegionTexture = -1;
+		}
+		
+		this.cloudRegionTexture = TextureUtil.generateTextureId();
+		GlStateManager._bindTexture(this.cloudRegionTexture);
+		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
+		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
+		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
+		GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL30.GL_R32UI, 256, 256, 0, GL30.GL_RED_INTEGER, GL11.GL_UNSIGNED_INT, (IntBuffer)null);
+		
+		if (this.cloudRegionShader != null)
+		{
+			this.cloudRegionShader.close();
+			this.cloudRegionShader = null;
+		}
+		
+		try
+		{
+			this.cloudRegionShader = ComputeShader.loadShader(CLOUD_REGIONS_GENERATOR, manager, 8, 8, 1);
+			GL42.glBindImageTexture(0, this.cloudRegionTexture, 0, false, 0, GL42.GL_READ_WRITE, GL30.GL_R32UI);
+			this.cloudRegionShader.dispatchAndWait(32, 32, 1);
+		}
+		catch (IOException e)
+		{
+			LOGGER.warn("Failed to load cloud region compute shader", e);
 		}
 	}
 	

@@ -6,6 +6,7 @@ import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
@@ -104,6 +105,20 @@ public class CloudPreviewerScreen extends Screen3D
 		this.renderBackground(stack);
 		super.render(stack, pMouseX, pMouseY, pPartialTick);
 		stack.drawString(this.font, LAYERS, 10, 5, 0xFFFFFFFF);
+		
+		if (this.renderer.getMeshGenerator().getCloudRegionTextureId() != -1)
+		{
+			RenderSystem.setShaderTexture(0, this.renderer.getMeshGenerator().getCloudRegionTextureId());
+			RenderSystem.setShader(GameRenderer::getPositionTexShader);
+			Matrix4f matrix4f = stack.pose().last().pose();
+			BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+			bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+			bufferbuilder.vertex(matrix4f, this.width - 100.0F, 0.0F, 0.0F).uv(0.0F, 0.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, this.width - 100.0F, 100.0F, 0.0F).uv(0.0F, 1.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, this.width, 100.0F, 0.0F).uv(1.0F, 1.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, this.width, 0.0F, 0.0F).uv(1.0F, 0.0F).endVertex();
+			BufferUploader.drawWithShader(bufferbuilder.end());
+		}
 	}
 	
 	@Override

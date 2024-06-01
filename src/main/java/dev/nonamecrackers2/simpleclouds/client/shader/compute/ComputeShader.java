@@ -153,7 +153,7 @@ public class ComputeShader implements AutoCloseable
 		ProgramManager.glUseProgram(this.id);
 		GL43.glDispatchCompute(groupX, groupY, groupZ);
 		if (wait)
-			GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT | GL42.GL_ATOMIC_COUNTER_BARRIER_BIT | GL42.GL_UNIFORM_BARRIER_BIT);
+			GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT | GL42.GL_ATOMIC_COUNTER_BARRIER_BIT | GL42.GL_UNIFORM_BARRIER_BIT | GL42.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		ProgramManager.glUseProgram(0);
 	}
 	

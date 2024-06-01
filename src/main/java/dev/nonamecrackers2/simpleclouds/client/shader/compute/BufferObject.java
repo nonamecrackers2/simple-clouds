@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL43;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.MemoryTracker;
@@ -55,7 +54,6 @@ public class BufferObject implements AutoCloseable
 	{
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
-		//TODO: Change this, not always a shader storage buffer
 		GlStateManager._glBindBuffer(this.type, this.id);
 		consumer.accept(GlStateManager._glMapBuffer(this.type, access));
 		GlStateManager._glUnmapBuffer(this.type);
