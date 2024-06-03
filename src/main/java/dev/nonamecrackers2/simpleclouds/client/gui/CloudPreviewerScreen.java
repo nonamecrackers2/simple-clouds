@@ -105,27 +105,27 @@ public class CloudPreviewerScreen extends Screen3D
 		this.renderBackground(stack);
 		super.render(stack, pMouseX, pMouseY, pPartialTick);
 		stack.drawString(this.font, LAYERS, 10, 5, 0xFFFFFFFF);
-		
-		if (this.renderer.getMeshGenerator().getCloudRegionTextureId() != -1)
-		{
-			RenderSystem.setShaderTexture(0, this.renderer.getMeshGenerator().getCloudRegionTextureId());
-			RenderSystem.setShader(GameRenderer::getPositionTexShader);
-			Matrix4f matrix4f = stack.pose().last().pose();
-			BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-			bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-			bufferbuilder.vertex(matrix4f, this.width - 100.0F, 0.0F, 0.0F).uv(0.0F, 0.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, this.width - 100.0F, 100.0F, 0.0F).uv(0.0F, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, this.width, 100.0F, 0.0F).uv(1.0F, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, this.width, 0.0F, 0.0F).uv(1.0F, 0.0F).endVertex();
-			BufferUploader.drawWithShader(bufferbuilder.end());
-		}
+//		
+//		if (this.renderer.getMeshGenerator().getCloudRegionTextureId() != -1)
+//		{
+//			RenderSystem.setShaderTexture(0, this.renderer.getMeshGenerator().getCloudRegionTextureId());
+//			RenderSystem.setShader(GameRenderer::getPositionTexShader);
+//			Matrix4f matrix4f = stack.pose().last().pose();
+//			BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+//			bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+//			bufferbuilder.vertex(matrix4f, this.width - 100.0F, 0.0F, 0.0F).uv(0.0F, 0.0F).endVertex();
+//			bufferbuilder.vertex(matrix4f, this.width - 100.0F, 100.0F, 0.0F).uv(0.0F, 1.0F).endVertex();
+//			bufferbuilder.vertex(matrix4f, this.width, 100.0F, 0.0F).uv(1.0F, 1.0F).endVertex();
+//			bufferbuilder.vertex(matrix4f, this.width, 0.0F, 0.0F).uv(1.0F, 0.0F).endVertex();
+//			BufferUploader.drawWithShader(bufferbuilder.end());
+//		}
 	}
 	
 	@Override
 	protected void render3D(PoseStack stack, MultiBufferSource buffers, int mouseX, int mouseY, float partialTick)
 	{
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
-		renderer.generateMesh(this.renderer.getPreviewNoiseSettings(), 0.0D, 0.0D, 0.0D, null);
+		renderer.generateMesh(0.0D, 0.0D, 0.0D, null);
 		renderer.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F);
 		
 		float radius = CloudMeshGenerator.getCloudRenderDistance();

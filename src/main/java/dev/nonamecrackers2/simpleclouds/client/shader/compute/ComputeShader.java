@@ -88,6 +88,8 @@ public class ComputeShader implements AutoCloseable
 			LOGGER.warn("Could not find uniform with name '{}'", name);
 		else
 			consumer.accept(loc);
+//		if (loc != -1)
+//			consumer.accept(loc);
 		ProgramManager.glUseProgram(0);
 	}
 	

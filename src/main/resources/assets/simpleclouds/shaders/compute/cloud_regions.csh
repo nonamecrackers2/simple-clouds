@@ -1,17 +1,65 @@
 #version 430
 
+#moj_import <simpleclouds:random.glsl>
+
 #define LOCAL_SIZE vec3(${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z})
 layout(local_size_x = ${LOCAL_SIZE_X}, local_size_y = ${LOCAL_SIZE_Y}, local_size_z = ${LOCAL_SIZE_Z}) in;
 
-layout(r32ui, binding = 0) uniform uimage2D mainImage;
+//layout(rgba32f, binding = 0) uniform image2D mainImage;
+
+layout(binding = 0, std430) restrict buffer LodScales {
+	float data[];
+}
+lodScales;
+
+layout(rg8, binding = 0) uniform image3D mainImage;
+
+uniform vec2 Scroll;
+uniform float Scale = 10.0;
+uniform float Spread = 1.0;
+uniform int TotalCloudTypes = 3;
+uniform vec2 Offset;
+
+vec2 cloudRegionIndexWithDist(vec2 pos) 
+{
+    vec2 indexUv = pos - mod(pos, Scale);
+	vec2 fractUv = mod(pos, Scale);
+	float minimumDist = Scale;  
+	vec2 minimumPoint;
+	for (int y = -1; y <= 1; y++) 
+	{
+		for (int x = -1; x <= 1; x++) 
+		{
+			vec2 neighbor = vec2(float(x) * Scale, float(y) * Scale);
+            vec2 point = vec2(random_vec2(indexUv + neighbor) * Scale * Spread);
+			vec2 diff = neighbor + point - fractUv;
+			float dist = length(diff);
+			if (dist < minimumDist) 
+			{
+				minimumDist = dist;
+				minimumPoint = point;
+			}
+		}
+	}
+	return vec2(floor(random_vec2(minimumPoint) * float(TotalCloudTypes)), minimumDist / Scale);
+}
+
+// https://gist.github.com/983/e170a24ae8eba2cd174f
+//vec3 hsv2rgb(vec3 c)
+//{
+//    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+//    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+//    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+//}
 
 void main()
- {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+{
+	uint lod = gl_GlobalInvocationID.z;
+	float scale = lodScales.data[lod];
+
+	vec2 centerOffset = vec2(imageSize(mainImage).xy) / 2.0;
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-	
-    value.x = float(texelCoord.x)/(gl_NumWorkGroups.x * LOCAL_SIZE.x);
-    value.y = float(texelCoord.y)/(gl_NumWorkGroups.y * LOCAL_SIZE.y);
-	
-    imageStore(mainImage, texelCoord, ivec4(gl_GlobalInvocationID.x, 0, 0, 255));
+	vec2 info = cloudRegionIndexWithDist((vec2(gl_GlobalInvocationID.xy) - centerOffset) * scale + centerOffset + Scroll + Offset);
+	//vec3 col = hsv2rgb(vec3(float(id) / float(TotalCloudTypes), 1.0, 1.0));
+    imageStore(mainImage, ivec3(texelCoord, lod), vec4(info, 0.0, 0.0));//vec4(col, 1.0));
 }

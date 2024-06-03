@@ -1,7 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer;
 
 import java.io.IOException;
-import java.nio.IntBuffer;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -11,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -20,7 +18,6 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -112,7 +109,12 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.arrayObjectId = -1;
 		}
 		
-		this.meshGenerator.init(manager);
+		this.mc.getProfiler().push("cloud_mesh_generator");
+		NoiseSettings[] settings = new NoiseSettings[CloudMeshGenerator.MAX_CLOUD_TYPES];
+		settings[0] = StaticNoiseSettings.DEFAULT;
+		settings[1] = this.previewNoiseSettings;
+		this.meshGenerator.init(manager, settings);
+		this.mc.getProfiler().pop();
 		
 		if (this.meshGenerator.getShader() != null)
 		{
@@ -198,10 +200,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.scrollZ += this.scrollDirection.z() * speed;
 	}
 	
-	public void generateMesh(NoiseSettings settings, double camX, double camY, double camZ, @Nullable Frustum frustum)
+	public void generateMesh(double camX, double camY, double camZ, @Nullable Frustum frustum)
 	{
 		this.setupMeshGenerator();
-		this.meshGenerator.generateMesh(settings, SimpleCloudsConfig.CLIENT.movementSmoothing.get(), camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE, frustum);
+		this.meshGenerator.generateMesh(SimpleCloudsConfig.CLIENT.movementSmoothing.get(), camX, camY, camZ, SimpleCloudsConfig.CLIENT.noiseThreshold.get().floatValue(), (float)CLOUD_SCALE, frustum);
 		this.totalSides = this.meshGenerator.getShader().<AtomicCounter>getBufferObject(0).get();
 		this.totalIndices = this.totalSides * 6;
 		this.nextMeshRebuild = MESH_REBUILD_TIME;
@@ -242,7 +244,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			{
 				this.nextMeshRebuild--;
 				if (this.nextMeshRebuild == 0)
-					this.generateMesh(this.previewToggled ? this.previewNoiseSettings : StaticNoiseSettings.DEFAULT, camX, camY - 128.0D, camZ, this.cullFrustum);
+					this.generateMesh(camX, camY - 128.0D, camZ, this.cullFrustum);
 			}
 			
 			this.cloudTarget.clear(Minecraft.ON_OSX);
