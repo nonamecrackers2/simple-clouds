@@ -13,6 +13,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL45;
 
 import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -215,18 +216,31 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			BufferUploader.reset();
 			
-			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShader);
 			RenderSystem.disableBlend();
 			RenderSystem.enableDepthTest();
 			RenderSystem.setShaderColor(r, g, b, 1.0F);
 			
 			GL30.glBindVertexArray(this.arrayObjectId);
 			
-			ShaderInstance shader = RenderSystem.getShader();
-			prepareShader(shader, stack.last().pose(), projMat);
-			shader.apply();
+			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShader);
+			prepareShader(RenderSystem.getShader(), stack.last().pose(), projMat);
+			RenderSystem.getShader().apply();
 			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.totalIndices, GL11.GL_UNSIGNED_INT);
-			shader.clear();
+			RenderSystem.getShader().clear();
+
+			
+			stack.pushPose();
+			stack.scale(1.0F, -1.0F, 1.0F);
+			stack.translate(0.0D, -16.0D, 0.0D);
+			RenderSystem.setShaderColor(0.4F, 0.4F, 0.6F, 1.0F);
+			RenderSystem.setShader(SimpleCloudsShaders::getStormReflectionShader);
+			prepareShader(RenderSystem.getShader(), stack.last().pose(), projMat);
+			stack.popPose();
+			GL11.glCullFace(GL11.GL_FRONT); 
+			RenderSystem.getShader().apply();
+			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.totalIndices, GL11.GL_UNSIGNED_INT);
+			RenderSystem.getShader().clear();
+			GL11.glCullFace(GL11.GL_BACK);
 			
 			GL30.glBindVertexArray(0);
 			
