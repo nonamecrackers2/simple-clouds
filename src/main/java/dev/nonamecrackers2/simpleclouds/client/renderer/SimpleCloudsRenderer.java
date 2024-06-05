@@ -59,6 +59,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private static final Vector3f DIFFUSE_LIGHT_0 = (new Vector3f(0.2F, 1.0F, -0.7F)).normalize();
 	private static final Vector3f DIFFUSE_LIGHT_1 = (new Vector3f(-0.2F, 1.0F, 0.7F)).normalize();
 	private static final ResourceLocation POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/cloud_post.json");
+	private static final ResourceLocation STORM_FOG_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/storm_fog.json");
 	public static final int CLOUD_SCALE = 8;
 	private static final int MESH_REBUILD_TIME = 3;
 	private static @Nullable SimpleCloudsRenderer instance;
@@ -68,6 +69,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private final ModifiableLayeredNoise previewNoiseSettings = new ModifiableLayeredNoise().addNoiseLayer(new ModifiableNoiseSettings());
 	private @Nullable RenderTarget cloudTarget;
 	private @Nullable PostChain cloudsPostProcessing;
+	private @Nullable PostChain stormFogPostProcessing;
 	private int arrayObjectId = -1;
 	private int totalIndices;
 	private int totalSides;
@@ -139,6 +141,23 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			LOGGER.warn("Failed to load shader: {}", POST_PROCESSING_LOC, e);
 		}
+		
+		if (this.stormFogPostProcessing != null)
+			this.stormFogPostProcessing.close();
+		
+		try
+		{
+			this.stormFogPostProcessing = new PostChain(this.mc.getTextureManager(), manager, this.mc.getMainRenderTarget(), STORM_FOG_POST_PROCESSING_LOC);
+			this.stormFogPostProcessing.resize(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight());
+		}
+		catch (JsonSyntaxException e)
+		{
+			LOGGER.warn("Failed to parse shader: {}", STORM_FOG_POST_PROCESSING_LOC, e);
+		}
+		catch (IOException e)
+		{
+			LOGGER.warn("Failed to load shader: {}", STORM_FOG_POST_PROCESSING_LOC, e);
+		}
 	}
 	
 	private void rebindBuffers()
@@ -180,6 +199,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.cloudTarget.resize(width, height, Minecraft.ON_OSX);
 		if (this.cloudsPostProcessing != null)
 			this.cloudsPostProcessing.resize(width, height);
+		if (this.stormFogPostProcessing != null)
+			this.stormFogPostProcessing.resize(width, height);
 	}
 		
 	public void shutdown()
@@ -190,6 +211,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.cloudsPostProcessing != null)
 			this.cloudsPostProcessing.close();
 		this.cloudsPostProcessing = null;
+		if (this.stormFogPostProcessing != null)
+			this.stormFogPostProcessing.close();
+		this.stormFogPostProcessing = null;
 		this.meshGenerator.close();
 	}
 	
@@ -228,19 +252,18 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.totalIndices, GL11.GL_UNSIGNED_INT);
 			RenderSystem.getShader().clear();
 
-			
-			stack.pushPose();
-			stack.scale(1.0F, -1.0F, 1.0F);
-			stack.translate(0.0D, -16.0D, 0.0D);
-			RenderSystem.setShaderColor(0.4F, 0.4F, 0.6F, 1.0F);
-			RenderSystem.setShader(SimpleCloudsShaders::getStormReflectionShader);
-			prepareShader(RenderSystem.getShader(), stack.last().pose(), projMat);
-			stack.popPose();
-			GL11.glCullFace(GL11.GL_FRONT); 
-			RenderSystem.getShader().apply();
-			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.totalIndices, GL11.GL_UNSIGNED_INT);
-			RenderSystem.getShader().clear();
-			GL11.glCullFace(GL11.GL_BACK);
+//			stack.pushPose();
+//			stack.scale(1.0F, -1.0F, 1.0F);
+//			stack.translate(0.0D, -16.0D, 0.0D);
+//			RenderSystem.setShaderColor(0.4F, 0.4F, 0.6F, 1.0F);
+//			RenderSystem.setShader(SimpleCloudsShaders::getStormReflectionShader);
+//			prepareShader(RenderSystem.getShader(), stack.last().pose(), projMat);
+//			stack.popPose();
+//			GL11.glCullFace(GL11.GL_FRONT); 
+//			RenderSystem.getShader().apply();
+//			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.totalIndices, GL11.GL_UNSIGNED_INT);
+//			RenderSystem.getShader().clear();
+//			GL11.glCullFace(GL11.GL_BACK);
 			
 			GL30.glBindVertexArray(0);
 			
@@ -283,6 +306,22 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.cloudTarget.blitToScreen(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), false);
 			RenderSystem.disableBlend();
 	        RenderSystem.defaultBlendFunc();
+	        
+	        if (this.stormFogPostProcessing != null)
+			{
+				RenderSystem.disableDepthTest();
+				RenderSystem.resetTextureMatrix();
+				
+				for (PostPass pass : ((MixinPostChain)this.stormFogPostProcessing).simpleclouds$getPostPasses())
+				{
+					EffectInstance effect = pass.getEffect();
+					effect.safeGetUniform("WorldProjMat").set(projMat);
+					effect.safeGetUniform("ModelViewMat").set(stack.last().pose());
+					effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
+				}
+				
+				this.stormFogPostProcessing.process(partialTick);
+			}
 		}
 	}
 	
