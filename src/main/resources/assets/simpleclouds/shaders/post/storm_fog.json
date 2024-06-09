@@ -1,0 +1,23 @@
+{
+    "targets": [
+        "toOut"
+    ],
+    "passes": [
+        {
+            "name": "simpleclouds:storm_fog",
+            "intarget": "minecraft:main",
+            "outtarget": "toOut",
+            "auxtargets": [
+            	{
+            		"name": "DiffuseDepthSampler",
+            		"id": "minecraft:main:depth"
+            	}
+            ]
+        },
+        {
+            "name": "blit",
+            "intarget": "toOut",
+            "outtarget": "minecraft:main"
+        }
+    ]
+}
