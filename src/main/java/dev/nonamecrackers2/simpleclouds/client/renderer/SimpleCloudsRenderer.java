@@ -236,6 +236,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void renderInWorld(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
+		this.mc.getProfiler().push("simple_clouds");
 		if (this.arrayObjectId != -1)
 		{
 			this.cullFrustum = new Frustum(stack.last().pose(), projMat);
@@ -270,6 +271,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.disableBlend();
 	        RenderSystem.defaultBlendFunc();
 		}
+		this.mc.getProfiler().pop();
 	}
 	
 	private void doPostProcessing(PoseStack stack, float partialTick, Matrix4f projMat)
