@@ -8,16 +8,14 @@
 struct LayerGroup {
 	int StartIndex;
 	int EndIndex;
+	float Storminess;
 };
 
 struct Vertex {
 	float x;
 	float y;
 	float z;
-//	float r;
-//	float g;
-//	float b;
-//	float a;
+	float brightness;
 	float nx;
 	float ny;
 	float nz;
@@ -104,24 +102,24 @@ bool shouldNotOcclude(int index)
 	}
 }
 
-void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal)
+void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal, float brightness)
 {
 	uint currentFace = atomicCounterIncrement(counter);
 	uint lastIndex = currentFace * 6;
 	uint lastVertex = currentFace * 4;
 	Side side;
-	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, normal.x, normal.y, normal.z);
-	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, normal.x, normal.y, normal.z);
-	side.c = Vertex(offset.x + corner3.x, offset.y + corner3.y, offset.z + corner3.z, normal.x, normal.y, normal.z);
-	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, normal.x, normal.y, normal.z);
+	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, brightness, normal.x, normal.y, normal.z);
+	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, brightness, normal.x, normal.y, normal.z);
+	side.c = Vertex(offset.x + corner3.x, offset.y + corner3.y, offset.z + corner3.z, brightness, normal.x, normal.y, normal.z);
+	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, brightness, normal.x, normal.y, normal.z);
 	sides.data[currentFace] = side;
 	for (uint i = 0; i < sideIndices.length; i++)
 		indices.data[lastIndex + i] = lastVertex + sideIndices[i];
 }
 
-void createFaceInvert(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal)
+void createFaceInvert(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal, float brightness)
 {
-	createFace(offset, corner4, corner3, corner2, corner1, normal);
+	createFace(offset, corner4, corner3, corner2, corner1, normal, brightness);
 }
 
 float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
@@ -140,37 +138,41 @@ float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
 	}
 }
 
-bool isPosValid(float x, float y, float z, int nx, int ny, int nz)
+float isPosValid(float x, float y, float z, int nx, int ny, int nz)
 {
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xz + RegionSampleOffset) + ivec2(nx, nz);
     vec4 info = imageLoad(regions, ivec3(texelCoord, LodLevel));
     uint regionId = uint(info.r);
     float fade = info.g - 0.2F;
     LayerGroup group = layerGroupings.data[regionId];
-    return getNoiseForLayerGroup(group, x, y, z) + log(1.0 - fade) > 0.0F;
+    bool passedThresh = getNoiseForLayerGroup(group, x, y, z) + log(1.0 - fade) > 0.0F;
+    if (passedThresh)
+    	return 1.0 - group.Storminess;
+    else
+    	return -1.0;
 }
 
-void createCube(float x, float y, float z, bool occlude, float cubeRadius)
+void createCube(float x, float y, float z, bool occlude, float cubeRadius, float brightness)
 {
 	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
 	//-Y
-	if (!occlude || !isPosValid(x, y - Scale, z, 0, -1, 0) || shouldNotOcclude(2))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, -1.0, 0.0));
+	if (!occlude || isPosValid(x, y - Scale, z, 0, -1, 0) == -1.0 || shouldNotOcclude(2))
+		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, -1.0, 0.0), brightness);
 	//+Y
-	if (!occlude || !isPosValid(x, y + Scale, z, 0, 1, 0) || shouldNotOcclude(3))
-		createFaceInvert(offset, vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(0.0, 1.0, 0.0));
+	if (!occlude || isPosValid(x, y + Scale, z, 0, 1, 0) == -1.0 || shouldNotOcclude(3))
+		createFaceInvert(offset, vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(0.0, 1.0, 0.0), brightness);
 	//-X
-	if (!occlude || !isPosValid(x - Scale, y, z, -1, 0, 0) || shouldNotOcclude(0))
-		createFaceInvert(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-1.0, 0.0, 0.0));
+	if (!occlude || isPosValid(x - Scale, y, z, -1, 0, 0) == -1.0 || shouldNotOcclude(0))
+		createFaceInvert(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-1.0, 0.0, 0.0), brightness);
 	//+X
-	if (!occlude || !isPosValid(x + Scale, y, z, 1, 0, 0) || shouldNotOcclude(1))
-		createFace(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(1.0, 0.0, 0.0));
+	if (!occlude || isPosValid(x + Scale, y, z, 1, 0, 0) == -1.0 || shouldNotOcclude(1))
+		createFace(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(1.0, 0.0, 0.0), brightness);
 	//-Z
-	if (!occlude || !isPosValid(x, y, z - Scale, 0, 0, -1) || shouldNotOcclude(4))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(0.0, 0.0, -1.0));
+	if (!occlude || isPosValid(x, y, z - Scale, 0, 0, -1) == -1.0 || shouldNotOcclude(4))
+		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(0.0, 0.0, -1.0), brightness);
 	//+Z
-	if (!occlude || !isPosValid(x, y, z + Scale, 0, 0, 1) || shouldNotOcclude(5))
-		createFaceInvert(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, 0.0, 1.0));
+	if (!occlude || isPosValid(x, y, z + Scale, 0, 0, 1) == -1.0 || shouldNotOcclude(5))
+		createFaceInvert(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, 0.0, 1.0), brightness);
 }
 
 void main() 
@@ -180,9 +182,10 @@ void main()
     float y = id.y * Scale + RenderOffset.y;
     float z = id.z * Scale + RenderOffset.z;
     
-    if (isPosValid(x, y, z, 0, 0, 0))
+    float brightness = isPosValid(x, y, z, 0, 0, 0);
+    if (brightness != -1.0)
     {
-		createCube(x, y, z, true, Scale / 2.0);
+		createCube(x, y, z, true, Scale / 2.0, brightness);
     }
 	//else if (AddMovementSmoothing)
 	//{

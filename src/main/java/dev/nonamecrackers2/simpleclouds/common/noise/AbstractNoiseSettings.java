@@ -3,16 +3,17 @@ package dev.nonamecrackers2.simpleclouds.common.noise;
 import dev.nonamecrackers2.simpleclouds.client.renderer.CloudMeshGenerator;
 import net.minecraft.util.Mth;
 
-public abstract class AbstractNoiseSettings implements NoiseSettings
+public abstract class AbstractNoiseSettings<T extends AbstractNoiseSettings<T>> implements NoiseSettings
 {
 	private float[] packedParameters;
 	
-	public final AbstractNoiseSettings setParam(AbstractNoiseSettings.Param param, float value)
+	@SuppressWarnings("unchecked")
+	public final T setParam(AbstractNoiseSettings.Param param, float value)
 	{
 		value = Mth.clamp(value, param.getMinInclusive(), param.getMaxInclusive());
 		if (this.setParamRaw(param, value))
 			this.packParameters();
-		return this;
+		return (T)this;
 	}
 	
 	public abstract float getParam(AbstractNoiseSettings.Param param);

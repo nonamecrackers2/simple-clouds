@@ -3,6 +3,7 @@
 #define SHADE vec3(0.6, 0.7, 0.8)
 
 in vec3 Position;
+in float Darkness;
 in vec3 Normal;
 
 uniform sampler2D Sampler2;
@@ -36,6 +37,6 @@ void main()
     gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
 
     normal = ModelViewMat * vec4(Normal, 0.0);
-	vertexColor = mix_light(Light0_Direction, Light1_Direction, Normal, vec4(1.0, 1.0, 1.0, 1.0));
+	vertexColor = mix_light(Light0_Direction, Light1_Direction, Normal, vec4(vec3(Darkness), 1.0));
     //vertexDistance = fog_distance(ModelViewMat, Position, FogShape);
 }

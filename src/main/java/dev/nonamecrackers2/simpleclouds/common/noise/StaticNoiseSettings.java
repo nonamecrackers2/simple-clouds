@@ -5,12 +5,12 @@ import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
 
-public class StaticNoiseSettings extends AbstractNoiseSettings
+public class StaticNoiseSettings extends AbstractNoiseSettings<StaticNoiseSettings>
 {
 	public static final StaticNoiseSettings DEFAULT = new StaticNoiseSettings();
 	private final Map<AbstractNoiseSettings.Param, Float> values;
 	
-	public StaticNoiseSettings(AbstractNoiseSettings settings)
+	public StaticNoiseSettings(AbstractNoiseSettings<?> settings)
 	{
 		ImmutableMap.Builder<AbstractNoiseSettings.Param, Float> builder = ImmutableMap.builder();
 		for (AbstractNoiseSettings.Param param : AbstractNoiseSettings.Param.values())

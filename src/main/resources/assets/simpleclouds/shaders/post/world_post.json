@@ -4,7 +4,7 @@
     ],
     "passes": [
         {
-            "name": "simpleclouds:storm_fog",
+            "name": "simpleclouds:shadows",
             "intarget": "minecraft:main",
             "outtarget": "toOut",
             "auxtargets": [

@@ -6,7 +6,7 @@ import java.util.Objects;
 
 import com.google.common.collect.Maps;
 
-public class ModifiableNoiseSettings extends AbstractNoiseSettings
+public class ModifiableNoiseSettings extends AbstractNoiseSettings<ModifiableNoiseSettings>
 {
 	private final Map<AbstractNoiseSettings.Param, Float> values = Maps.newEnumMap(AbstractNoiseSettings.Param.class);
 	

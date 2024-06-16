@@ -21,6 +21,7 @@ import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.AtomicCounter;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.BufferObject;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.client.renderer.culling.Frustum;
@@ -47,7 +48,7 @@ public class CloudMeshGenerator implements AutoCloseable
 	public static final int WORK_SIZE = 4;
 	public static final int LOCAL_SIZE = 8;
 	public static final int CLOUD_REGION_TEXTURE_SIZE;
-	private final NoiseSettings[] noiseSettings = new NoiseSettings[MAX_CLOUD_TYPES];
+	private final CloudType[] cloudTypes = new CloudType[MAX_CLOUD_TYPES];
 	private @Nullable ComputeShader shader;
 	private @Nullable ComputeShader cloudRegionShader;
 	private float scrollX;
@@ -94,19 +95,28 @@ public class CloudMeshGenerator implements AutoCloseable
 	{
 		if (this.shader != null)
 			this.shader.close();
+		
+		if (this.cloudRegionShader != null)
+			this.cloudRegionShader.close();
+		
+		if (this.cloudRegionTexture >= 0)
+		{
+			TextureUtil.releaseTextureId(this.cloudRegionTexture);
+			this.cloudRegionTexture = -1;
+		}
 	}
 	
-	public void init(ResourceManager manager, NoiseSettings[] settings)
+	public void init(ResourceManager manager, CloudType[] cloudTypes)
 	{
-		if (settings.length != this.noiseSettings.length)
-			throw new IllegalArgumentException("Length of noise settings must match total amount of cloud types. Received " + settings.length + ", expected " + MAX_CLOUD_TYPES);
+		if (cloudTypes.length != this.cloudTypes.length)
+			throw new IllegalArgumentException("Length of noise settings must match total amount of cloud types. Received " + cloudTypes.length + ", expected " + MAX_CLOUD_TYPES);
 		
 		LOGGER.debug("Initializing mesh generator...");
 		
 		RenderSystem.assertOnRenderThreadOrInit();
 		
 		for (int i = 0; i < MAX_CLOUD_TYPES; i++)
-			this.noiseSettings[i] = settings[i];
+			this.cloudTypes[i] = cloudTypes[i];
 		
 		if (this.cloudRegionTexture >= 0)
 		{
@@ -140,7 +150,7 @@ public class CloudMeshGenerator implements AutoCloseable
 			this.shader.bindShaderStorageBuffer(1, GL15.GL_DYNAMIC_DRAW).allocateBuffer(368435456); //Vertex data, arbitrary size
 			this.shader.bindShaderStorageBuffer(2, GL15.GL_DYNAMIC_DRAW).allocateBuffer(107108864); //Index data, arbitrary size
 			this.shader.bindShaderStorageBuffer(3, GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * MAX_CLOUD_TYPES);
-			this.shader.bindShaderStorageBuffer(4, GL15.GL_STATIC_DRAW).allocateBuffer(8 * MAX_CLOUD_TYPES);
+			this.shader.bindShaderStorageBuffer(4, GL15.GL_STATIC_DRAW).allocateBuffer(12 * MAX_CLOUD_TYPES);
 			this.generateMesh(false, 0.0F, 0.0F, 0.0F, 0.5F, 1.0F, null);
 			LOGGER.debug("Created mesh generator compute shader");
 		}
@@ -219,11 +229,13 @@ public class CloudMeshGenerator implements AutoCloseable
 			int previousLayerIndex = 0;
 			for (int i = 0; i < MAX_CLOUD_TYPES; i++)
 			{
-				NoiseSettings settings = this.noiseSettings[i];
-				int layerCount = settings.layerCount();
+				CloudType type = this.cloudTypes[i];
+				int layerCount = type.noiseConfig().layerCount();
 				b.putInt(currentIndex, previousLayerIndex);
 				currentIndex += 4;
 				b.putInt(currentIndex, previousLayerIndex + layerCount);
+				currentIndex += 4;
+				b.putFloat(currentIndex, type.storminess());
 				currentIndex += 4;
 				previousLayerIndex += layerCount;
 			}
@@ -233,7 +245,7 @@ public class CloudMeshGenerator implements AutoCloseable
 			int index = 0;
 			for (int i = 0; i < MAX_CLOUD_TYPES; i++)
 			{
-				NoiseSettings settings = this.noiseSettings[i];
+				NoiseSettings settings = this.cloudTypes[i].noiseConfig();
 				float[] packed = settings.packForShader();
 				for (int j = 0; j < packed.length && j < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; j++)
 				{
@@ -258,7 +270,7 @@ public class CloudMeshGenerator implements AutoCloseable
 			float offsetZ = (float)z * chunkSizeLod;
 			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
 			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
-			if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSizeLod, offsetY + chunkSizeLod, offsetZ + chunkSizeLod).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
+			if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY + 1000.0F, offsetZ, offsetX + chunkSizeLod, offsetY - 1000.0F, offsetZ + chunkSizeLod).move(camOffsetX, 0.0F, camOffsetZ).move(-camX, -camY, -camZ)))
 			{
 				this.shader.forUniform("LodLevel", loc -> {
 					GL20.glUniform1i(loc, lodLevel);

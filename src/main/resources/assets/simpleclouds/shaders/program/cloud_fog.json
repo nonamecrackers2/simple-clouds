@@ -5,17 +5,23 @@
         "dstrgb": "1-srcalpha"
     },
     "vertex": "blit",
-    "fragment": "simpleclouds:storm_fog",
+    "fragment": "simpleclouds:cloud_fog",
     "attributes": [ "Position" ],
     "samplers": [
         { "name": "DiffuseSampler" },
-        { "name": "DiffuseDepthSampler" }
+        { "name": "DiffuseDepthSampler" },
+        { "name": "ShadowMap" },
+        { "name": "ShadowMapColor" }
     ],
     "uniforms": [
         { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "OutSize", "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
         { "name": "WorldProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
-        { "name": "CameraPos", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] }
+        { "name": "ShadowProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ShadowModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "CameraPos", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+        { "name": "FogStart", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "FogEnd", "type": "float", "count": 1, "values": [ 2.0 ] }
     ]
 }
