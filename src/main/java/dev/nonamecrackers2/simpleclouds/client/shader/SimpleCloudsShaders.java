@@ -13,7 +13,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 public class SimpleCloudsShaders
 {
 	private static ShaderInstance clouds;
-	private static ShaderInstance stormReflection;
+	private static ShaderInstance cloudsShadowMap;
 	
 	@SubscribeEvent
 	public static void registerShaders(RegisterShadersEvent event) throws IOException
@@ -21,8 +21,8 @@ public class SimpleCloudsShaders
 		event.registerShader(new ShaderInstance(event.getResourceProvider(), SimpleCloudsMod.id("clouds"), DefaultVertexFormat.POSITION_COLOR_NORMAL), s -> {
 			clouds = s;
 		});
-		event.registerShader(new ShaderInstance(event.getResourceProvider(), SimpleCloudsMod.id("storm_reflection"), DefaultVertexFormat.POSITION_COLOR_NORMAL), s -> {
-			stormReflection = s;
+		event.registerShader(new ShaderInstance(event.getResourceProvider(), SimpleCloudsMod.id("clouds_shadow_map"), DefaultVertexFormat.POSITION_COLOR_NORMAL), s -> {
+			cloudsShadowMap = s;
 		});
 	}
 	
@@ -31,8 +31,8 @@ public class SimpleCloudsShaders
 		return Objects.requireNonNull(clouds, "Clouds shader not initialized yet");
 	}
 	
-	public static ShaderInstance getStormReflectionShader()
+	public static ShaderInstance getCloudsShadowMapShader()
 	{
-		return Objects.requireNonNull(stormReflection, "Storm reflection shader not initialized yet");
+		return Objects.requireNonNull(cloudsShadowMap, "Clouds shadow map shader not initialized yet");
 	}
 }

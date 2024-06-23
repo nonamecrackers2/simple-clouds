@@ -59,7 +59,7 @@ void main()
 
 	vec2 centerOffset = vec2(imageSize(mainImage).xy) / 2.0;
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-	vec2 info = cloudRegionIndexWithDist((vec2(gl_GlobalInvocationID.xy) - centerOffset) * scale + centerOffset + Scroll + Offset);
+	vec2 info = cloudRegionIndexWithDist((vec2(gl_GlobalInvocationID.xy) - centerOffset + Scroll) * scale + centerOffset + Offset);
 	//vec3 col = hsv2rgb(vec3(float(id) / float(TotalCloudTypes), 1.0, 1.0));
     imageStore(mainImage, ivec3(texelCoord, lod), vec4(info, 0.0, 0.0));//vec4(col, 1.0));
 }

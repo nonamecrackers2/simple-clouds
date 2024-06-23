@@ -7,12 +7,12 @@
     		"name": "simpleclouds:cloud_fog",
     		"intarget": "minecraft:main",
     		"outtarget": "out",
-            "auxtargets": [
-            	{
+    		"auxtargets": [
+    			{
             		"name": "DiffuseDepthSampler",
             		"id": "minecraft:main:depth"
             	}
-            ]
+    		]
     	},
         {
             "name": "blit",

@@ -1,12 +1,12 @@
 {
     "targets": [
-        "toOut"
+        "out"
     ],
     "passes": [
         {
             "name": "simpleclouds:shadows",
             "intarget": "minecraft:main",
-            "outtarget": "toOut",
+            "outtarget": "out",
             "auxtargets": [
             	{
             		"name": "DiffuseDepthSampler",
@@ -16,7 +16,7 @@
         },
         {
             "name": "blit",
-            "intarget": "toOut",
+            "intarget": "out",
             "outtarget": "minecraft:main"
         }
     ]

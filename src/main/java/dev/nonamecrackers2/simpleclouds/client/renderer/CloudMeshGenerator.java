@@ -180,7 +180,7 @@ public class CloudMeshGenerator implements AutoCloseable
 				}
 			});
 			this.cloudRegionShader.forUniform("Scale", loc -> {
-				GL20.glUniform1f(loc, 1000.0F);//Mth.clamp(Mth.sin(this.test * 0.01F), 0.1F, 1.0F));
+				GL20.glUniform1f(loc, 2000.0F);//Mth.clamp(Mth.sin(this.test * 0.01F), 0.1F, 1.0F));
 			});
 			this.cloudRegionShader.forUniform("TotalCloudTypes", loc -> {
 				GL20.glUniform1i(loc, MAX_CLOUD_TYPES);
