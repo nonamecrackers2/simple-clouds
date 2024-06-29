@@ -1,6 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.common.noise;
 
-import dev.nonamecrackers2.simpleclouds.client.renderer.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import net.minecraft.util.Mth;
 
 public abstract class AbstractNoiseSettings<T extends AbstractNoiseSettings<T>> implements NoiseSettings
@@ -48,13 +48,13 @@ public abstract class AbstractNoiseSettings<T extends AbstractNoiseSettings<T>> 
 	public static enum Param
 	{
 		HEIGHT(32.0F, 1.0F, CloudMeshGenerator.LOCAL_SIZE * CloudMeshGenerator.WORK_SIZE * CloudMeshGenerator.VERTICAL_CHUNK_SPAN),
-		VALUE_OFFSET(-0.5F, -1.0F, 1.0F),
-		SCALE_X(30.0F, 0.1F, 1000.0F),
-		SCALE_Y(10.0F, 0.1F, 1000.0F),
-		SCALE_Z(30.0F, 0.1F, 1000.0F),
+		VALUE_OFFSET(-0.5F, -8.0F, 8.0F),
+		SCALE_X(30.0F, 0.1F, 3200.0F),
+		SCALE_Y(10.0F, 0.1F, 3200.0F),
+		SCALE_Z(30.0F, 0.1F, 3200.0F),
 		FADE_DISTANCE(10.0F, 1.0F, CloudMeshGenerator.LOCAL_SIZE * CloudMeshGenerator.WORK_SIZE * CloudMeshGenerator.VERTICAL_CHUNK_SPAN / 2),
 		HEIGHT_OFFSET(0.0F, 0.0F, CloudMeshGenerator.LOCAL_SIZE * CloudMeshGenerator.WORK_SIZE * CloudMeshGenerator.VERTICAL_CHUNK_SPAN),
-		VALUE_SCALE(1.0F, 0.1F, 10.0F);
+		VALUE_SCALE(1.0F, -10.0F, 10.0F);
 		
 		private final float defaultValue;
 		private final float minInclusive;

@@ -109,7 +109,7 @@ void main()
     if (finalCol.a > 0.0)
     {
 	    float fogFactor = 1.0 - min(max(depth - FogStart, 0.0) / (FogEnd - FogStart), 1.0);
-	    finalCol = vec4(finalCol.rgb, fogFactor);
+	    finalCol = vec4(finalCol.rgb, finalCol.a * fogFactor);
     }
 #endif
 

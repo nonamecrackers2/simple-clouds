@@ -17,6 +17,7 @@
         { "name": "InverseWorldProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "InverseModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "FogStart", "type": "float", "count": 1, "values": [ 1.0 ] },
-        { "name": "FogEnd", "type": "float", "count": 1, "values": [ 2.0 ] }
+        { "name": "FogEnd", "type": "float", "count": 1, "values": [ 2.0 ] },
+        { "name": "DefaultFogColor", "type": "float", "count": 3, "values": [ 1.0, 1.0, 1.0 ] }
     ]
 }

@@ -6,7 +6,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import dev.nonamecrackers2.simpleclouds.client.renderer.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.client.renderer.GameRenderer;
 
@@ -30,6 +31,7 @@ public class MixinGameRenderer
 	public void simpleclouds$shutdownRenderer_close(CallbackInfo ci)
 	{
 		SimpleCloudsRenderer.getInstance().shutdown();
+		CloudPreviewerScreen.destroyMeshGenerator();
 	}
 	
 	@Inject(method = "resize", at = @At("TAIL"))

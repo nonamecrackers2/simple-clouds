@@ -6,11 +6,6 @@
 		{
 			"name": "simpleclouds:storm_fog",
 			"intarget": "minecraft:main",
-			"outtarget": "stormFog"
-		},
-		{
-			"name": "blit",
-			"intarget": "stormFog",
 			"outtarget": "minecraft:main"
 		}
 	]

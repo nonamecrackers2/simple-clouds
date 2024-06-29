@@ -24,11 +24,11 @@ public class MixinLevelRenderer
 		ci.cancel();
 	}
 	
-	@Inject(method = "renderSky", at = @At("TAIL"))
+	@Inject(method = "renderSky", at = @At("TAIL")) // @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;blendFuncSeparate(Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;)V", ordinal = 0)
 	public void simpleclouds$injectCustomCloudRendering_renderSky(PoseStack stack, Matrix4f projMat, float partialTick, Camera camera, boolean flag, Runnable fogSetup, CallbackInfo ci)
 	{
 		if (SimpleCloudsRenderer.isEnabled())
-			SimpleCloudsRenderer.getInstance().renderInWorldPre(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+			SimpleCloudsRenderer.getInstance().renderInWorld(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
 	@Inject(method = "tick", at = @At("HEAD"))
@@ -36,10 +36,10 @@ public class MixinLevelRenderer
 	{
 		SimpleCloudsRenderer.getInstance().tick();
 	}
-	
-	@Inject(method = "renderLevel", at = @At("TAIL"))
-	public void simpleclouds$renderPost_renderLevel(PoseStack stack, float partialTicks, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
-	{
-		SimpleCloudsRenderer.getInstance().renderInWorldPost(stack, partialTicks, projMat, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
-	}
+//	
+//	@Inject(method = "renderLevel", at = @At("TAIL"))
+//	public void simpleclouds$renderPost_renderLevel(PoseStack stack, float partialTicks, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
+//	{
+//		SimpleCloudsRenderer.getInstance().renderInWorldPost(stack, partialTicks, projMat, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+//	}
 }

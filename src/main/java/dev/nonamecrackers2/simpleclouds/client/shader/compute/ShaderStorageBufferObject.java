@@ -4,21 +4,20 @@ import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL43;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-public class BufferObject implements AutoCloseable
+public class ShaderStorageBufferObject
 {
-	protected final int type;
 	protected int id;
 	protected final int binding;
 	protected final int usage;
 	
-	public BufferObject(int type, int id, int binding, int usage)
+	public ShaderStorageBufferObject(int id, int binding, int usage)
 	{
-		this.type = type;
 		this.id = id;
 		this.binding = binding;
 		this.usage = usage;
@@ -28,9 +27,9 @@ public class BufferObject implements AutoCloseable
 	{
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
-		GlStateManager._glBindBuffer(this.type, this.id);
-		GlStateManager._glBufferData(this.type, buffer, this.usage);
-		GlStateManager._glBindBuffer(this.type, 0);
+		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.id);
+		GlStateManager._glBufferData(GL43.GL_SHADER_STORAGE_BUFFER, buffer, this.usage);
+		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, 0);
 	}
 	
 	public void allocateBuffer(int bytes)
@@ -38,7 +37,6 @@ public class BufferObject implements AutoCloseable
 		this.uploadData(MemoryTracker.create(bytes));
 	}
 	
-	@Override
 	public void close()
 	{
 		RenderSystem.assertOnRenderThread();
@@ -54,10 +52,10 @@ public class BufferObject implements AutoCloseable
 	{
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
-		GlStateManager._glBindBuffer(this.type, this.id);
-		consumer.accept(GlStateManager._glMapBuffer(this.type, access));
-		GlStateManager._glUnmapBuffer(this.type);
-		GlStateManager._glBindBuffer(this.type, 0);
+		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.id);
+		consumer.accept(GlStateManager._glMapBuffer(GL43.GL_SHADER_STORAGE_BUFFER, access));
+		GlStateManager._glUnmapBuffer(GL43.GL_SHADER_STORAGE_BUFFER);
+		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, 0);
 	}
 	
 	public void readData(Consumer<ByteBuffer> consumer)

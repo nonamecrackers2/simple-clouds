@@ -26,7 +26,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.button.add_layer.title", "Add Layer");
 		this.add("gui.simpleclouds.cloud_previewer.button.remove_layer.title", "Remove Layer");
 		this.add("gui.simpleclouds.cloud_previewer.button.toggle_preview.title", "Toggle Preview");
-		this.add("gui.simpleclouds.cloud_previewer.layers", "Layers");
+		this.add("gui.simpleclouds.cloud_previewer.current_layer", "Current Layer: %s");
 		this.add("simpleclouds.key.openGenPreviewer", "Open Cloud Gen Previewer");
 		this.add("simpleclouds.key.categories.main", ModList.get().getModContainerById(SimpleCloudsMod.MODID).get().getModInfo().getDisplayName());
 		for (AbstractNoiseSettings.Param parameter : AbstractNoiseSettings.Param.values())
@@ -38,5 +38,11 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 			this.add(key, StringUtils.join(splitted, " "));
 		}
 		this.add("gui.simpleclouds.noise_settings.param.range", "Range: %s - %s");
+		this.add("gui.simpleclouds.cloud_previewer.button.previous_layer.title", "Previous layer");
+		this.add("gui.simpleclouds.cloud_previewer.button.next_layer.title", "Next layer");
+		this.add("gui.simpleclouds.cloud_previewer.warning.too_many_cubes", "Warning: Too many cubes");
+		this.add("gui.simpleclouds.cloud_previewer.storminess.title", "Storminess");
+		this.add("gui.simpleclouds.cloud_previewer.storm_start.title", "Storm Start Level");
+		this.add("gui.simpleclouds.cloud_previewer.storm_fade_distance.title", "Storm Fade Distance");
 	}
 }

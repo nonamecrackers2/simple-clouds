@@ -4,9 +4,11 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
+import com.mojang.serialization.Codec;
 
 public class StaticNoiseSettings extends AbstractNoiseSettings<StaticNoiseSettings>
 {
+	public static final Codec<StaticNoiseSettings> CODEC = ModifiableNoiseSettings.CODEC.xmap(ModifiableNoiseSettings::toStatic, ModifiableNoiseSettings::new);
 	public static final StaticNoiseSettings DEFAULT = new StaticNoiseSettings();
 	private final Map<AbstractNoiseSettings.Param, Float> values;
 	
@@ -38,5 +40,10 @@ public class StaticNoiseSettings extends AbstractNoiseSettings<StaticNoiseSettin
 	protected boolean setParamRaw(AbstractNoiseSettings.Param param, float values)
 	{
 		return false;
+	}
+	
+	public ModifiableNoiseSettings toModifiable()
+	{
+		return new ModifiableNoiseSettings(this);
 	}
 }

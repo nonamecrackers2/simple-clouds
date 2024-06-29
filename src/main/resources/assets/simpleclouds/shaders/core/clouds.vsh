@@ -12,6 +12,7 @@ uniform vec3 Light0_Direction;
 uniform vec3 Light1_Direction;
 uniform float LightPower;
 uniform float AmbientLight;
+uniform vec3 DarknessColorModifier;
 
 out vec4 vertexColor;
 
@@ -29,5 +30,5 @@ vec4 mixLight(vec3 lightDir0, vec3 lightDir1, vec3 normal, vec4 color)
 void main() 
 {
     gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
-	vertexColor = mixLight(Light0_Direction, Light1_Direction, Normal, vec4(vec3(Darkness), 1.0));
+	vertexColor = mixLight(Light0_Direction, Light1_Direction, Normal, vec4(mix(DarknessColorModifier, vec3(1.0), Darkness), 1.0));
 }

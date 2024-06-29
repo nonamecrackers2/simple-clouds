@@ -1,14 +1,29 @@
 #version 430
 
-#moj_import <simpleclouds:simplex_noise.glsl>
-#moj_import <simpleclouds:noise_shaper.glsl>
+#define TYPE ${TYPE}    //0 for multi-region, 1 for single cloud type
 
 #define LOCAL_SIZE vec3(${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z})
+layout(local_size_x = ${LOCAL_SIZE_X}, local_size_y = ${LOCAL_SIZE_Y}, local_size_z = ${LOCAL_SIZE_Z}) in;
+
+#moj_import <simpleclouds:simplex_noise.glsl>
 
 struct LayerGroup {
 	int StartIndex;
 	int EndIndex;
 	float Storminess;
+	float StormStart;
+	float StormFadeDistance;
+};
+
+struct NoiseLayer {
+	float Height;
+	float ValueOffset;
+	float ScaleX;
+	float ScaleY;
+	float ScaleZ;
+	float FadeDistance;
+	float HeightOffset;
+	float ValueScale;
 };
 
 struct Vertex {
@@ -32,38 +47,52 @@ const uint sideIndices[6] = {
 	0, 1, 2, 0, 2, 3
 };
 
-layout(local_size_x = ${LOCAL_SIZE_X}, local_size_y = ${LOCAL_SIZE_Y}, local_size_z = ${LOCAL_SIZE_Z}) in;
+layout(std430) coherent buffer Counter {
+	uint counter;
+};
 
-layout(binding = 0) uniform atomic_uint counter;
-
-layout(binding = 1, std430) restrict buffer SideDataBuffer {
+layout(std430) restrict buffer SideDataBuffer {
     Side data[];
 }
 sides;
 
-layout(binding = 2, std430) restrict buffer IndexBuffer {
+layout(std430) restrict buffer IndexBuffer {
 	uint data[];
 }
 indices;
 
-layout(binding = 3, std430) readonly buffer NoiseLayers {
+layout(std430) readonly buffer NoiseLayers {
 	NoiseLayer data[];
 }
 layers;
 
-layout(binding = 4, std430) readonly buffer LayerGroupings {
+layout(std430) readonly buffer LayerGroupings {
 	LayerGroup data[];
 }
 layerGroupings;
 
+#if TYPE == 0
 layout(rg8, binding = 0) uniform image3D regions;
+#endif
 
-//Render params
 uniform int LodLevel;
 uniform vec3 RenderOffset;
-uniform vec2 RegionSampleOffset;
 uniform float Scale = 1.0;
-uniform bool AddMovementSmoothing;
+uniform vec3 Scroll;
+uniform vec3 Origin;
+uniform bool TestFacesFacingAway;
+uniform int DoNotOccludeSide = -1;
+
+#if TYPE == 0
+
+uniform vec2 RegionSampleOffset;
+
+#elif TYPE == 1
+
+uniform float FadeStart;
+uniform float FadeEnd;
+
+#endif
 
 //Faces:
 //-X = 0
@@ -73,7 +102,52 @@ uniform bool AddMovementSmoothing;
 //-Z = 4
 //+Z = 5
 
-uniform int DoNotOccludeSide = -1;
+float getNoiseForLayer(NoiseLayer layer, float x, float y, float z)
+{
+	if (y < layer.HeightOffset || y > layer.HeightOffset + layer.Height)
+		return 0.0;
+	float noise = snoise((vec3(x, y, z) + Scroll) / vec3(layer.ScaleX, layer.ScaleY, layer.ScaleZ)) * layer.ValueScale + layer.ValueOffset;
+	noise -= 1.0 - clamp((y - layer.HeightOffset) / layer.FadeDistance, 0.0, 1.0);
+	noise -= 1.0 - clamp((layer.Height - (y - layer.HeightOffset)) / layer.FadeDistance, 0.0, 1.0);
+	return noise;
+}
+
+float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
+{
+	int totalLayers = group.EndIndex - group.StartIndex;
+	if (totalLayers > 0)
+	{
+		float combinedNoise = getNoiseForLayer(layers.data[group.StartIndex], x, y, z);
+		for (int i = 1; i < totalLayers; i++)
+			combinedNoise += getNoiseForLayer(layers.data[i + group.StartIndex], x, y, z);
+		return combinedNoise;
+	}
+	else
+	{
+		return 0.0F;
+	}
+}
+
+bool isPosValid(float x, float y, float z, LayerGroup group, float fade)
+{
+	return getNoiseForLayerGroup(group, x, y, z) + fade > 0.0F;
+}
+
+bool isPosValid(float x, float y, float z, int nx, int nz)
+{
+#if TYPE == 0
+	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xz + RegionSampleOffset) + ivec2(nx, nz);
+    vec4 info = imageLoad(regions, ivec3(texelCoord, LodLevel));
+    uint regionId = uint(info.r);
+    LayerGroup group = layerGroupings.data[regionId];
+    float fade = -5.0 * pow(info.g, 10.0);
+#elif TYPE == 1
+	LayerGroup group = layerGroupings.data[0];
+	float len = distance(vec2(x, z), Origin.xz);
+	float fade = -5.0 * min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0);
+#endif
+    return isPosValid(x, y, z, group, fade);
+}
 
 bool shouldNotOcclude(int index)
 {
@@ -104,7 +178,7 @@ bool shouldNotOcclude(int index)
 
 void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal, float brightness)
 {
-	uint currentFace = atomicCounterIncrement(counter);
+	uint currentFace = atomicAdd(counter, 1u);
 	uint lastIndex = currentFace * 6;
 	uint lastVertex = currentFace * 4;
 	Side side;
@@ -117,60 +191,27 @@ void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corn
 		indices.data[lastIndex + i] = lastVertex + sideIndices[i];
 }
 
-void createFaceInvert(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal, float brightness)
+void createCube(float x, float y, float z, float cubeRadius, float brightness, float fade, LayerGroup group)
 {
-	createFace(offset, corner4, corner3, corner2, corner1, normal, brightness);
-}
-
-float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
-{
-	int totalLayers = group.EndIndex - group.StartIndex;
-	if (totalLayers > 0)
-	{
-		float combinedNoise = getNoiseForLayer(layers.data[group.StartIndex], x, y, z);
-		for (int i = 1; i < totalLayers; i++)
-			combinedNoise += getNoiseForLayer(layers.data[i + group.StartIndex], x, y, z);
-		return combinedNoise;
-	}
-	else
-	{
-		return 0.0F;
-	}
-}
-
-float getBrightnessForPosition(float x, float y, float z, int nx, int ny, int nz)
-{
-	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xz + RegionSampleOffset) + ivec2(nx, nz);
-    vec4 info = imageLoad(regions, ivec3(texelCoord, LodLevel));
-    uint regionId = uint(info.r);
-    LayerGroup group = layerGroupings.data[regionId];
-    bool passedThresh = getNoiseForLayerGroup(group, x, y, z) + log(1.0 - info.g) > 0.0F;
-    if (passedThresh)
-    	return 1.0 - group.Storminess;
-    else
-    	return -1.0;
-}
-
-void createCube(float x, float y, float z, bool occlude, float cubeRadius, float brightness)
-{
+	vec3 norm = normalize(vec3(x, y, z) - Origin);
 	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
 	//-Y
-	if (!occlude || getBrightnessForPosition(x, y - Scale, z, 0, -1, 0) == -1.0 || shouldNotOcclude(2))
+	if (!isPosValid(x, y - Scale, z, group, fade) || shouldNotOcclude(2))
 		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, -1.0, 0.0), brightness);
 	//+Y
-	if (!occlude || getBrightnessForPosition(x, y + Scale, z, 0, 1, 0) == -1.0 || shouldNotOcclude(3))
+	if (!isPosValid(x, y + Scale, z, group, fade) || shouldNotOcclude(3))
 		createFace(offset, vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(0.0, 1.0, 0.0), brightness);
 	//-X
-	if (!occlude || getBrightnessForPosition(x - Scale, y, z, -1, 0, 0) == -1.0 || shouldNotOcclude(0))
+	if ((TestFacesFacingAway || dot(norm, vec3(-1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x - Scale, y, z, -1, 0) || shouldNotOcclude(0)))
 		createFace(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-1.0, 0.0, 0.0), brightness);
 	//+X
-	if (!occlude || getBrightnessForPosition(x + Scale, y, z, 1, 0, 0) == -1.0 || shouldNotOcclude(1))
+	if ((TestFacesFacingAway || dot(norm, vec3(1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x + Scale, y, z, 1, 0) || shouldNotOcclude(1)))
 		createFace(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(1.0, 0.0, 0.0), brightness);
 	//-Z
-	if (!occlude || getBrightnessForPosition(x, y, z - Scale, 0, 0, -1) == -1.0 || shouldNotOcclude(4))
+	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, -1.0)) <= 0.0) && (!isPosValid(x, y, z - Scale, 0, -1) || shouldNotOcclude(4)))
 		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(0.0, 0.0, -1.0), brightness);
 	//+Z
-	if (!occlude || getBrightnessForPosition(x, y, z + Scale, 0, 0, 1) == -1.0 || shouldNotOcclude(5))
+	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, 1.0)) <= 0.0) && (!isPosValid(x, y, z + Scale, 0, 1) || shouldNotOcclude(5)))
 		createFace(offset, vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, 0.0, 1.0), brightness);
 }
 
@@ -181,7 +222,20 @@ void main()
     float y = id.y * Scale + RenderOffset.y;
     float z = id.z * Scale + RenderOffset.z;
     
-    float brightness = getBrightnessForPosition(x, y, z, 0, 0, 0);
-    if (brightness != -1.0)
-		createCube(x, y, z, true, Scale / 2.0, brightness);
+#if TYPE == 0
+	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xz + RegionSampleOffset);
+    vec4 info = imageLoad(regions, ivec3(texelCoord, LodLevel));
+    uint regionId = uint(info.r);
+    LayerGroup group = layerGroupings.data[regionId];
+    float fade = -5.0 * pow(info.g, 10.0);
+#elif TYPE == 1
+	LayerGroup group = layerGroupings.data[0];
+	float len = distance(vec2(x, z), Origin.xz);
+	float fade = -5.0 * min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0);
+#endif
+    if (isPosValid(x, y, z, group, fade))
+    {
+    	float brightness = clamp(1.0 - group.Storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
+    	createCube(x, y, z, Scale / 2.0, brightness, fade, group);
+    }
 }

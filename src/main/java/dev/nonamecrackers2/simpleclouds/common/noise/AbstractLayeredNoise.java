@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-public abstract class AbstractLayeredNoise<T extends AbstractNoiseSettings> implements NoiseSettings
+public abstract class AbstractLayeredNoise<T extends AbstractNoiseSettings<T>> implements NoiseSettings
 {
 	protected final List<T> noiseLayers;
 	

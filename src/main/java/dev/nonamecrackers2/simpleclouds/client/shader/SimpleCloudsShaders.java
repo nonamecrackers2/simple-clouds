@@ -14,6 +14,7 @@ public class SimpleCloudsShaders
 {
 	private static ShaderInstance clouds;
 	private static ShaderInstance cloudsShadowMap;
+	private static ShaderInstance cloudRegionTex;
 	
 	@SubscribeEvent
 	public static void registerShaders(RegisterShadersEvent event) throws IOException
@@ -23,6 +24,9 @@ public class SimpleCloudsShaders
 		});
 		event.registerShader(new ShaderInstance(event.getResourceProvider(), SimpleCloudsMod.id("clouds_shadow_map"), DefaultVertexFormat.POSITION_COLOR_NORMAL), s -> {
 			cloudsShadowMap = s;
+		});
+		event.registerShader(new ShaderInstance(event.getResourceProvider(), SimpleCloudsMod.id("cloud_region_tex"), DefaultVertexFormat.POSITION_TEX), s -> {
+			cloudRegionTex = s;
 		});
 	}
 	
@@ -34,5 +38,10 @@ public class SimpleCloudsShaders
 	public static ShaderInstance getCloudsShadowMapShader()
 	{
 		return Objects.requireNonNull(cloudsShadowMap, "Clouds shadow map shader not initialized yet");
+	}
+	
+	public static ShaderInstance getCloudRegionTexShader()
+	{
+		return Objects.requireNonNull(cloudRegionTex, "Cloud region tex shader not initialized yet");
 	}
 }
