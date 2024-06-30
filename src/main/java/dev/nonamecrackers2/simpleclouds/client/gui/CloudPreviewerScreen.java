@@ -1,14 +1,22 @@
 package dev.nonamecrackers2.simpleclouds.client.gui;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
 
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -21,10 +29,16 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
+import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.noise.AbstractLayeredNoise;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.noise.ModifiableLayeredNoise;
 import dev.nonamecrackers2.simpleclouds.common.noise.ModifiableNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -40,42 +54,34 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import nonamecrackers2.crackerslib.client.gui.Popup;
 import nonamecrackers2.crackerslib.client.gui.Screen3D;
 
 public class CloudPreviewerScreen extends Screen3D
 {
-	private static final SingleRegionCloudMeshGenerator GENERATOR = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(SimpleCloudsRenderer.DEFAULT, CloudMeshGenerator.getCloudAreaMaxRadius() / 2.0F, CloudMeshGenerator.getCloudAreaMaxRadius()).setTestFacesFacingAway(true);
+	private static final SingleRegionCloudMeshGenerator GENERATOR = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(SimpleCloudsRenderer.FALLBACK, 3, CloudMeshGenerator.getCloudAreaMaxRadius() / 2.0F, CloudMeshGenerator.getCloudAreaMaxRadius()).setTestFacesFacingAway(true);
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	private static final Logger LOGGER = LogManager.getLogger();
 	private static final int PADDING = 10;
 	private static final Component WARNING_TOO_MANY_CUBES = Component.translatable("gui.simpleclouds.cloud_previewer.warning.too_many_cubes").withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withBold(true));;
 	private static final Component STORMINESS_TITLE = Component.translatable("gui.simpleclouds.cloud_previewer.storminess.title");
 	private static final Component STORM_START_TITLE = Component.translatable("gui.simpleclouds.cloud_previewer.storm_start.title");
 	private static final Component STORM_FADE_DISTANCE_TITLE = Component.translatable("gui.simpleclouds.cloud_previewer.storm_fade_distance.title");
+	private static final Component LOAD = Component.translatable("gui.simpleclouds.cloud_previewer.load.title");
+	private static final Component EXPORT = Component.translatable("gui.simpleclouds.cloud_previewer.export.title");
+	private static final Component SELECT_A_CLOUD_TYPE = Component.translatable("gui.simpleclouds.cloud_previewer.popup.select.cloud_type");
+	private static final Component EXPORT_CLOUD_TYPE = Component.translatable("gui.simpleclouds.cloud_previewer.popup.export.cloud_type");
+	private static final Component FILE_ALREADY_EXISTS = Component.translatable("gui.simpleclouds.cloud_previewer.popup.export.exists");
+	private static final Component INFO = Component.translatable("gui.simpleclouds.cloud_previewer.info");
 	private Button addLayer;
 	private Button removeLayer;
 	private @Nullable Screen prev;
 	private final List<ModifiableNoiseSettings> layers;
 	private final List<LayerEditor> layerEditors = Lists.newArrayList();
 	private int currentLayer;
-	private float storminess = 0.6F;
+	private float storminess = 0.0F;
 	private float stormStart = 16.0F;
-	private float stormFadeDistance = 128.0F;
-	private final NoiseSettings previewNoiseSettings = new NoiseSettings()
-	{
-		@Override
-		public float[] packForShader()
-		{
-			float[] values = new float[] {};
-			for (NoiseSettings layer : CloudPreviewerScreen.this.layers)
-				values = ArrayUtils.addAll(values, layer.packForShader());
-			return values;
-		}
-		
-		@Override
-		public int layerCount()
-		{
-			return CloudPreviewerScreen.this.layers.size();
-		}
-	};
+	private float stormFadeDistance = 32.0F;
 	private final CloudInfo cloudType = new CloudInfo()
 	{
 		@Override
@@ -99,14 +105,21 @@ public class CloudPreviewerScreen extends Screen3D
 		@Override
 		public NoiseSettings noiseConfig()
 		{
-			return CloudPreviewerScreen.this.previewNoiseSettings;
+			if (CloudPreviewerScreen.this.layers.isEmpty())
+				return NoiseSettings.EMPTY;
+			else if (CloudPreviewerScreen.this.layers.size() > 1)
+				return new ModifiableLayeredNoise(CloudPreviewerScreen.this.layers);
+			else
+				return CloudPreviewerScreen.this.layers.get(0);
 		}
 	};
+	private final File directory;
 	private int toolbarHeight;
-	private boolean needsMeshRegen;
+	private boolean needsMeshRegen = true;
 	private EditBox storminessBox;
 	private EditBox stormStartBox;
 	private EditBox stormFadeDistanceBox;
+	private Button exportButton;
 	
 	public static void addCloudMeshListener(RegisterClientReloadListenersEvent event)
 	{
@@ -125,33 +138,10 @@ public class CloudPreviewerScreen extends Screen3D
 		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.25F, 5000.0F);
 		this.prev = prev;
 		this.layers = Lists.newArrayList();
-		this.layers.add(new ModifiableNoiseSettings()
-				.setParam(AbstractNoiseSettings.Param.HEIGHT, 32.0F)
-				.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 1.0F)
-				.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
-				.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
-				.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
-				.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 10.0F)
-				.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
-				.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F));
-		this.layers.add(new ModifiableNoiseSettings()
-				.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
-				.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F)
-				.setParam(AbstractNoiseSettings.Param.SCALE_X, 400.0F)
-				.setParam(AbstractNoiseSettings.Param.SCALE_Y, 400.0F)
-				.setParam(AbstractNoiseSettings.Param.SCALE_Z, 400.0F)
-				.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 32.0F)
-				.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
-				.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F));
-		this.layers.add(new ModifiableNoiseSettings()
-				.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
-				.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F)
-				.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
-				.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
-				.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
-				.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 16.0F)
-				.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
-				.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.1F));
+		this.layers.add(new ModifiableNoiseSettings());
+		this.directory = new File(Minecraft.getInstance().gameDirectory, "simpleclouds/cloud_types");
+		if (!this.directory.exists())
+			this.directory.mkdirs();
 	}
 	
 	private void swapToLayer(int index)
@@ -177,7 +167,8 @@ public class CloudPreviewerScreen extends Screen3D
 	private void generateMesh()
 	{
 		GENERATOR.setCloudType(this.cloudType);
-		GENERATOR.generateMesh(0.0D, 0.0D, 0.0D, 1.0F, null);
+		while (GENERATOR.tick(0.0D, 0.0D, 0.0D, 1.0F, null)) {}
+		this.needsMeshRegen = false;
 	}
 	
 	private EditBox valueEditor(float currentValue, EditBox box, Consumer<Float> valueSetter, float min, float max)
@@ -190,7 +181,6 @@ public class CloudPreviewerScreen extends Screen3D
 				if (parsed < min || parsed > max)
 				{
 					valueSetter.accept(Mth.clamp(parsed, min, max));
-					System.out.println("yes");
 					box.setTextColor(ChatFormatting.RED.getColor());
 				}
 				else
@@ -208,27 +198,110 @@ public class CloudPreviewerScreen extends Screen3D
 		return box;
 	}
 	
+	private void loadCloudType()
+	{
+		Popup.<CloudType>createOptionListPopup(this, list -> 
+		{
+			for (var entry : CloudTypeDataManager.INSTANCE.getCloudTypes().entrySet())
+			{
+				CloudType type = entry.getValue();
+				if (type.noiseConfig() instanceof AbstractNoiseSettings || type.noiseConfig() instanceof AbstractLayeredNoise)
+					list.addObject(Component.literal(entry.getKey().toString()), type);
+			}
+		}, type -> 
+		{
+			this.clearAllLayers();
+			if (type.noiseConfig() instanceof AbstractNoiseSettings<?> settings)
+			{
+				this.addLayer(new ModifiableNoiseSettings(settings));
+			}
+			else if (type.noiseConfig() instanceof AbstractLayeredNoise<?> layeredSettings)
+			{
+				for (AbstractNoiseSettings<?> settings : layeredSettings.getNoiseLayers())
+					this.addLayer(new ModifiableNoiseSettings(settings));
+			}
+			this.storminess = type.storminess();
+			this.storminessBox.setValue(String.valueOf(this.storminess));
+			this.stormStart = type.stormStart();
+			this.stormStartBox.setValue(String.valueOf(this.stormStart));
+			this.stormFadeDistance = type.stormFadeDistance();
+			this.stormFadeDistanceBox.setValue(String.valueOf(this.stormFadeDistance));
+		}, 200, 100, SELECT_A_CLOUD_TYPE);
+	}
+	
+	private void attemptToExportCloudType()
+	{
+		Popup.createTextFieldPopup(this, value -> {
+			File file = new File(this.directory, value.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") + ".json");
+			if (!file.exists())
+			{
+				this.exportCloudType(file);
+				Popup.createInfoPopup(this, 200, Component.translatable("gui.simpleclouds.cloud_previewer.popup.exported.cloud_type", file.getAbsolutePath()));
+			}
+			else
+			{
+				Popup.createYesNoPopup(this, () -> {
+					this.exportCloudType(file);
+					Popup.createInfoPopup(this, 200, Component.translatable("gui.simpleclouds.cloud_previewer.popup.exported.cloud_type", file.getAbsolutePath()));
+				}, this::attemptToExportCloudType, 200, FILE_ALREADY_EXISTS);
+			}
+		}, 200, EXPORT_CLOUD_TYPE);
+	}
+	
+	private void exportCloudType(File file)
+	{
+		try (FileWriter writer = new FileWriter(file))
+		{
+			GSON.toJson(this.cloudType.toJson(), writer);
+		}
+		catch (JsonIOException | IOException e)
+		{
+			LOGGER.error("Failed to export cloud type json file", e);
+		}
+		catch (JsonSyntaxException | IllegalStateException e)
+		{
+			LOGGER.error("An internal error occured while serializing cloud type", e);
+		}
+	}
+	
+	private void addLayer(ModifiableNoiseSettings layer)
+	{
+		this.layers.add(layer);
+		this.layerEditors.add(new LayerEditor(layer, this.minecraft, PADDING, PADDING + this.font.lineHeight, Math.max(200, this.width / 4), this.height - PADDING * 2 - this.toolbarHeight - this.font.lineHeight, () -> {
+			this.needsMeshRegen = true;
+		}));
+		this.swapToLayer(this.layers.indexOf(layer));
+		this.addLayer.active = this.layers.size() < CloudMeshGenerator.MAX_NOISE_LAYERS;
+		this.removeLayer.active = true;
+		this.exportButton.active = true;
+		this.needsMeshRegen = true;
+	}
+	
+	private void clearAllLayers()
+	{
+		var layerEditorIterator = this.layerEditors.iterator();
+		while (layerEditorIterator.hasNext())
+		{
+			this.removeWidget(layerEditorIterator.next());
+			layerEditorIterator.remove();
+		}
+		this.layers.clear();
+		this.addLayer.active = true;
+		this.removeLayer.active = false;
+		this.exportButton.active = false;
+		this.needsMeshRegen = true;
+	}
+	
 	@Override
 	protected void init()
 	{
 		super.init();
 	
-		this.generateMesh();
-		
 		GridLayout layersToolbar = new GridLayout().columnSpacing(5);
 		GridLayout.RowHelper layersToolbarRow = layersToolbar.createRowHelper(4);
 		
-		this.addLayer = layersToolbarRow.addChild(Button.builder(Component.literal("+").withStyle(ChatFormatting.GREEN), b -> 
-		{
-			ModifiableNoiseSettings layer = new ModifiableNoiseSettings();
-			this.layers.add(layer);
-			this.layerEditors.add(new LayerEditor(layer, this.minecraft, PADDING, PADDING + this.font.lineHeight, Math.max(200, this.width / 4), this.height - PADDING * 2 - this.toolbarHeight - this.font.lineHeight, () -> {
-				this.needsMeshRegen = true;
-			}));
-			this.swapToLayer(this.layers.indexOf(layer));
-			this.addLayer.active = this.layers.size() < CloudMeshGenerator.MAX_NOISE_LAYERS;
-			this.removeLayer.active = true;
-			this.needsMeshRegen = true;
+		this.addLayer = layersToolbarRow.addChild(Button.builder(Component.literal("+").withStyle(ChatFormatting.GREEN), b -> {
+			this.addLayer(new ModifiableNoiseSettings());
 		}).tooltip(Tooltip.create(Component.translatable("gui.simpleclouds.cloud_previewer.button.add_layer.title"))).width(20).build());
 		this.addLayer.active = this.layers.size() < CloudMeshGenerator.MAX_NOISE_LAYERS;
 		
@@ -239,6 +312,7 @@ public class CloudPreviewerScreen extends Screen3D
 			this.layerEditors.remove(this.currentLayer);
 			this.swapToLayer(this.currentLayer);
 			this.removeLayer.active = !this.layers.isEmpty();
+			this.exportButton.active = !this.layers.isEmpty();
 			this.addLayer.active = true;
 			this.needsMeshRegen = true;
 		}).tooltip(Tooltip.create(Component.translatable("gui.simpleclouds.cloud_previewer.button.remove_layer.title"))).width(20).build());
@@ -255,29 +329,30 @@ public class CloudPreviewerScreen extends Screen3D
 		layersToolbar.arrangeElements();
 		int height = layersToolbar.getHeight();
 		this.toolbarHeight = height;
-		FrameLayout.alignInRectangle(layersToolbar, 10, this.height - height - PADDING, this.width / 2, height + PADDING, 0.0F, 0.5F);
+		FrameLayout.alignInRectangle(layersToolbar, PADDING, this.height - height - PADDING, this.width / 2, height + PADDING, 0.0F, 0.5F);
 		layersToolbar.visitWidgets(this::addRenderableWidget);
 		
-//		GridLayout secondaryToolbar = new GridLayout().columnSpacing(5);
-//		GridLayout.RowHelper secondaryToolbarRow = secondaryToolbar.createRowHelper(1);
-//		
-//		Button togglePreview = secondaryToolbarRow.addChild(Button.builder(Component.translatable("gui.simpleclouds.cloud_previewer.button.toggle_preview.title"), b -> 
-//		{
-//			this.renderer.togglePreview(!this.renderer.previewToggled());
-//			if (this.renderer.previewToggled())
-//				this.onClose();
-//		}).width(100).build());
-//		togglePreview.active = this.minecraft.level != null;
-//		
-//		secondaryToolbar.arrangeElements();
-//		FrameLayout.alignInRectangle(secondaryToolbar, this.width / 2, this.height - height - PADDING, this.width / 2 - 5, height + PADDING, 1.0F, 0.5F);
-//		secondaryToolbar.visitWidgets(this::addRenderableWidget);
+		GridLayout secondaryToolbar = new GridLayout().spacing(5);
+		GridLayout.RowHelper secondaryToolbarRow = secondaryToolbar.createRowHelper(1);
+		
+		secondaryToolbarRow.addChild(Button.builder(LOAD, b -> {
+			this.loadCloudType();
+		}).size(100, 20).build());
+		
+		this.exportButton = secondaryToolbarRow.addChild(Button.builder(EXPORT, b -> {
+			this.attemptToExportCloudType();
+		}).size(100, 20).build());
+		this.exportButton.active = !this.layers.isEmpty();
+		
+		secondaryToolbar.arrangeElements();
+		FrameLayout.alignInRectangle(secondaryToolbar, PADDING, PADDING, this.width - PADDING * 2, this.height - PADDING * 2, 1.0F, 1.0F);
+		secondaryToolbar.visitWidgets(this::addRenderableWidget);
 		
 		GridLayout cloudTypeOptions = new GridLayout().rowSpacing(this.font.lineHeight + 5);
 		GridLayout.RowHelper cloudTypeOptionsRow = cloudTypeOptions.createRowHelper(1);
-		this.storminessBox = this.valueEditor(this.storminess, cloudTypeOptionsRow.addChild(new EditBox(this.font, 0, 0, 100, 20, CommonComponents.EMPTY)), f -> this.storminess = f, 0.0F, 1.0F);
-		this.stormStartBox = this.valueEditor(this.stormStart, cloudTypeOptionsRow.addChild(new EditBox(this.font, 0, 0, 100, 20, CommonComponents.EMPTY)), f -> this.stormStart = f, 0.0F, CloudMeshGenerator.LOCAL_SIZE * CloudMeshGenerator.WORK_SIZE * CloudMeshGenerator.VERTICAL_CHUNK_SPAN);
-		this.stormFadeDistanceBox = this.valueEditor(this.stormFadeDistance, cloudTypeOptionsRow.addChild(new EditBox(this.font, 0, 0, 100, 20, CommonComponents.EMPTY)), f -> this.stormFadeDistance = f, 0.0F, 1600.0F);
+		this.storminessBox = this.valueEditor(this.storminess, cloudTypeOptionsRow.addChild(new EditBox(this.font, 0, 0, 100, 20, CommonComponents.EMPTY)), f -> this.storminess = f, 0.0F, CloudInfo.STORMINESS_MAX);
+		this.stormStartBox = this.valueEditor(this.stormStart, cloudTypeOptionsRow.addChild(new EditBox(this.font, 0, 0, 100, 20, CommonComponents.EMPTY)), f -> this.stormStart = f, 0.0F, CloudInfo.STORM_START_MAX);
+		this.stormFadeDistanceBox = this.valueEditor(this.stormFadeDistance, cloudTypeOptionsRow.addChild(new EditBox(this.font, 0, 0, 100, 20, CommonComponents.EMPTY)), f -> this.stormFadeDistance = f, 0.0F, CloudInfo.STORM_FADE_DISTANCE_MAX);
 		cloudTypeOptions.arrangeElements();
 		FrameLayout.alignInRectangle(cloudTypeOptions, 10, 10 + this.font.lineHeight, this.width - 20, this.height - 20 - this.font.lineHeight * 2, 1.0F, 0.0F);
 		cloudTypeOptions.visitWidgets(this::addRenderableWidget);
@@ -298,6 +373,12 @@ public class CloudPreviewerScreen extends Screen3D
 	@Override
 	public void render(GuiGraphics stack, int pMouseX, int pMouseY, float pPartialTick)
 	{
+		if (SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup.get())
+		{
+			Popup.createInfoPopup(this, 200, INFO);
+			SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup.set(false);
+		}
+		
 		this.renderBackground(stack);
 		super.render(stack, pMouseX, pMouseY, pPartialTick);
 		stack.drawString(this.font, Component.translatable("gui.simpleclouds.cloud_previewer.current_layer", Component.literal(this.layers.isEmpty() ? "NONE" : String.valueOf(this.currentLayer + 1)).withStyle(Style.EMPTY.withBold(true))), 10, 5, 0xFFFFFFFF);
@@ -314,10 +395,7 @@ public class CloudPreviewerScreen extends Screen3D
 	protected void render3D(PoseStack stack, MultiBufferSource buffers, int mouseX, int mouseY, float partialTick)
 	{
 		if (this.needsMeshRegen)
-		{
 			this.generateMesh();
-			this.needsMeshRegen = false;
-		}
 		GENERATOR.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F);
 		
 		float radius = CloudMeshGenerator.getCloudAreaMaxRadius();

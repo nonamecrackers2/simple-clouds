@@ -2,20 +2,15 @@ package dev.nonamecrackers2.simpleclouds.client.mesh;
 
 import java.io.IOException;
 
-import javax.annotation.Nullable;
-
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 
 import com.google.common.collect.ImmutableMap;
 
-import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
-import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
@@ -24,9 +19,9 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	private final float fadeStart;
 	private final float fadeEnd;
 	
-	public SingleRegionCloudMeshGenerator(CloudType type, float fadeStart, float fadeEnd)
+	public SingleRegionCloudMeshGenerator(CloudType type, int meshGenInterval, float fadeStart, float fadeEnd)
 	{
-		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR);
+		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, meshGenInterval);
 		this.type = type;
 		if (fadeStart > fadeEnd)
 		{
@@ -66,25 +61,22 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	}
 	
 	@Override
-	public void generateMesh(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)
+	protected void doMeshGenning(double camX, double camY, double camZ, float scale)
 	{
-		if (this.shader != null && this.shader.isValid())
+		this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
 		{
-			this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
-			{
-				float[] packed = this.type.noiseConfig().packForShader();
-				for (int i = 0; i < packed.length && i < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; i++)
-					b.putFloat(i * 4, packed[i]);
-			});
-			this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b -> {
-				b.putInt(0, 0);
-				b.putInt(4, this.type.noiseConfig().layerCount());
-				b.putFloat(8, this.type.storminess());
-				b.putFloat(12, this.type.stormStart());
-				b.putFloat(16, this.type.stormFadeDistance());
-			});
-		}
+			float[] packed = this.type.noiseConfig().packForShader();
+			for (int i = 0; i < packed.length && i < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; i++)
+				b.putFloat(i * 4, packed[i]);
+		});
+		this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b -> {
+			b.putInt(0, 0);
+			b.putInt(4, this.type.noiseConfig().layerCount());
+			b.putFloat(8, this.type.storminess());
+			b.putFloat(12, this.type.stormStart());
+			b.putFloat(16, this.type.stormFadeDistance());
+		});
 		
-		super.generateMesh(camX, camY, camZ, scale, frustum);
+		super.doMeshGenning(camX, camY, camZ, scale);
 	}
 }

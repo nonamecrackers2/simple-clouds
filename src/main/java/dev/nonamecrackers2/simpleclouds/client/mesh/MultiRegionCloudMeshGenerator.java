@@ -22,7 +22,6 @@ import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
@@ -30,7 +29,7 @@ import net.minecraft.util.Mth;
 public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");
-	private static final int MAX_CLOUD_TYPES = 32;
+	public static final int MAX_CLOUD_TYPES = 32;
 	private static final ResourceLocation CLOUD_REGIONS_GENERATOR = SimpleCloudsMod.id("cloud_regions");
 	public static final int CLOUD_REGION_TEXTURE_SIZE;
 	private CloudInfo[] cloudTypes;
@@ -45,9 +44,9 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		CLOUD_REGION_TEXTURE_SIZE = requiredRegionTexSize * 32;
 	}
 	
-	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes)
+	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, int meshGenInterval)
 	{
-		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR);
+		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, meshGenInterval);
 		this.setCloudTypes(cloudTypes);
 	}
 	
@@ -157,10 +156,9 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	}
 	
 	@Override
-	public void generateMesh(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)
+	protected void doMeshGenning(double camX, double camY, double camZ, float scale)
 	{
-		boolean flag = true;
-		if (this.cloudRegionShader != null && this.cloudRegionShader.isValid() && flag)
+		if (this.cloudRegionShader != null && this.cloudRegionShader.isValid())
 		{
 			this.cloudRegionShader.forUniform("Scroll", loc -> {
 				GL20.glUniform2f(loc, this.scrollX, this.scrollZ);
@@ -175,48 +173,46 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.cloudRegionShader.dispatchAndWait(CLOUD_REGION_TEXTURE_SIZE / 8, CLOUD_REGION_TEXTURE_SIZE / 8, LEVEL_OF_DETAIL.length + 1);
 		}
 		
-		if (this.shader != null && this.shader.isValid())
+		this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b -> 
 		{
-			this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b -> 
+			int currentIndex = 0;
+			int previousLayerIndex = 0;
+			for (int i = 0; i < this.cloudTypes.length; i++)
 			{
-				int currentIndex = 0;
-				int previousLayerIndex = 0;
-				for (int i = 0; i < this.cloudTypes.length; i++)
-				{
-					CloudInfo type = this.cloudTypes[i];
-					int layerCount = type.noiseConfig().layerCount();
-					b.putInt(currentIndex, previousLayerIndex);
-					currentIndex += 4;
-					b.putInt(currentIndex, previousLayerIndex + layerCount);
-					currentIndex += 4;
-					b.putFloat(currentIndex, type.storminess());
-					currentIndex += 4;
-					b.putFloat(currentIndex, type.stormStart());
-					currentIndex += 4;
-					b.putFloat(currentIndex, type.stormFadeDistance());
-					currentIndex += 4;
-					previousLayerIndex += layerCount;
-				}
-			});
-			
-			this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
-			{
-				int index = 0;
-				for (int i = 0; i < this.cloudTypes.length; i++)
-				{
-					NoiseSettings settings = this.cloudTypes[i].noiseConfig();
-					float[] packed = settings.packForShader();
-					for (int j = 0; j < packed.length && j < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; j++)
-					{
-						b.putFloat(index, packed[j]);
-						index += 4;
-					}
-				}
-			});
-		}
+				CloudInfo type = this.cloudTypes[i];
+				int layerCount = type.noiseConfig().layerCount();
+				b.putInt(currentIndex, previousLayerIndex);
+				currentIndex += 4;
+				b.putInt(currentIndex, previousLayerIndex + layerCount);
+				currentIndex += 4;
+				b.putFloat(currentIndex, type.storminess());
+				currentIndex += 4;
+				b.putFloat(currentIndex, type.stormStart());
+				currentIndex += 4;
+				b.putFloat(currentIndex, type.stormFadeDistance());
+				currentIndex += 4;
+				previousLayerIndex += layerCount;
+			}
+		});
 		
-		super.generateMesh(camX, camY, camZ, scale, frustum);
+		this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
+		{
+			int index = 0;
+			for (int i = 0; i < this.cloudTypes.length; i++)
+			{
+				NoiseSettings settings = this.cloudTypes[i].noiseConfig();
+				float[] packed = settings.packForShader();
+				for (int j = 0; j < packed.length && j < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; j++)
+				{
+					b.putFloat(index, packed[j]);
+					index += 4;
+				}
+			}
+		});
+		
+		super.doMeshGenning(camX, camY, camZ, scale);
 	}
+	
 	
 	public int getCloudRegionTextureId()
 	{

@@ -130,7 +130,7 @@ float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
 
 bool isPosValid(float x, float y, float z, LayerGroup group, float fade)
 {
-	return getNoiseForLayerGroup(group, x, y, z) + fade > 0.0F;
+	return getNoiseForLayerGroup(group, x, y, z) + fade > 0.0;
 }
 
 bool isPosValid(float x, float y, float z, int nx, int nz)
@@ -196,10 +196,10 @@ void createCube(float x, float y, float z, float cubeRadius, float brightness, f
 	vec3 norm = normalize(vec3(x, y, z) - Origin);
 	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
 	//-Y
-	if (!isPosValid(x, y - Scale, z, group, fade) || shouldNotOcclude(2))
+	if ((TestFacesFacingAway || dot(norm, vec3(0.0, -1.0, 0.0)) <= 0.0) && (!isPosValid(x, y - Scale, z, group, fade) || shouldNotOcclude(2)))
 		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, -1.0, 0.0), brightness);
 	//+Y
-	if (!isPosValid(x, y + Scale, z, group, fade) || shouldNotOcclude(3))
+	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 1.0, 0.0)) <= 0.0) && (!isPosValid(x, y + Scale, z, group, fade) || shouldNotOcclude(3)))
 		createFace(offset, vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(0.0, 1.0, 0.0), brightness);
 	//-X
 	if ((TestFacesFacingAway || dot(norm, vec3(-1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x - Scale, y, z, -1, 0) || shouldNotOcclude(0)))
@@ -233,7 +233,8 @@ void main()
 	float len = distance(vec2(x, z), Origin.xz);
 	float fade = -5.0 * min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0);
 #endif
-    if (isPosValid(x, y, z, group, fade))
+	float noise = getNoiseForLayerGroup(group, x, y, z) + fade;
+    if (noise > 0.0)
     {
     	float brightness = clamp(1.0 - group.Storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
     	createCube(x, y, z, Scale / 2.0, brightness, fade, group);

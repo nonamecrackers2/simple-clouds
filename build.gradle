@@ -129,7 +129,7 @@ repositories {
     }
     maven {
         name "nonamecrackers2Maven"
-        url "https://maven.nonamecrackers2.dev/releases"
+        url "https://maven.nonamecrackers2.dev/snapshots"
     }
 }
 

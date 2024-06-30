@@ -38,10 +38,8 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
-import dev.nonamecrackers2.simpleclouds.common.noise.ModifiableLayeredNoise;
-import dev.nonamecrackers2.simpleclouds.common.noise.ModifiableNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
 import net.minecraft.client.Minecraft;
@@ -72,83 +70,83 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private static final ResourceLocation WORLD_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/world_post.json");
 	private static final ResourceLocation STORM_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/storm_post.json");
 	private static final ResourceLocation BLUR_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/blur_post.json");
-	public static final CloudType DEFAULT = new CloudType(0.0F, 16.0F, 32.0F, StaticNoiseSettings.DEFAULT);
-	public static final CloudType TEST_LARGE = new CloudType(0.6F, 16.0F, 32.0F, new ModifiableLayeredNoise()
-			.addNoiseLayer(new ModifiableNoiseSettings()
-					.setParam(AbstractNoiseSettings.Param.HEIGHT, 128.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_X, 50.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 50.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 50.0F)
-					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 16.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.1F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.5F)).toStatic()
-	);
-	public static final CloudType TEST_LARGE_2 = new CloudType(0.6F, 16.0F, 32.0F, new ModifiableLayeredNoise()
-			.addNoiseLayer(new ModifiableNoiseSettings()
-					.setParam(AbstractNoiseSettings.Param.HEIGHT, 32.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 1.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 16.0F)
-					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 8.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F))
-			.addNoiseLayer(new ModifiableNoiseSettings()
-					.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, -0.5F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_X, 800.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 1600.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 800.0F)
-					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 16.0F)
-					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F))
-			.addNoiseLayer(new ModifiableNoiseSettings()
-					.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 10.0F)
-					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.1F))
-			.toStatic()
-	);
-	public static final CloudType TEST_LARGE_3 = new CloudType(0.6F, 16.0F, 128.0F, new ModifiableLayeredNoise()
-			.addNoiseLayer(new ModifiableNoiseSettings()
-					.setParam(AbstractNoiseSettings.Param.HEIGHT, 32.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 1.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 10.0F)
-					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F))
-			.addNoiseLayer(new ModifiableNoiseSettings()
-					.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_X, 400.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 400.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 400.0F)
-					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 32.0F)
-					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F))
-			.addNoiseLayer(new ModifiableNoiseSettings()
-					.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
-					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 16.0F)
-					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
-					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.1F))
-			.toStatic()
-	);
+	public static final CloudType FALLBACK = new CloudType(0.0F, 16.0F, 32.0F, StaticNoiseSettings.DEFAULT);
+//	public static final CloudType TEST_LARGE = new CloudType(0.6F, 16.0F, 32.0F, new ModifiableLayeredNoise()
+//			.addNoiseLayer(new ModifiableNoiseSettings()
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT, 128.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_X, 50.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 50.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 50.0F)
+//					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 16.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.1F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.5F)).toStatic()
+//	);
+//	public static final CloudType TEST_LARGE_2 = new CloudType(0.6F, 16.0F, 32.0F, new ModifiableLayeredNoise()
+//			.addNoiseLayer(new ModifiableNoiseSettings()
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT, 32.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 1.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 16.0F)
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 8.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F))
+//			.addNoiseLayer(new ModifiableNoiseSettings()
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, -0.5F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_X, 800.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 1600.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 800.0F)
+//					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 16.0F)
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F))
+//			.addNoiseLayer(new ModifiableNoiseSettings()
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 10.0F)
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.1F))
+//			.toStatic()
+//	);
+//	public static final CloudType TEST_LARGE_3 = new CloudType(0.6F, 16.0F, 128.0F, new ModifiableLayeredNoise()
+//			.addNoiseLayer(new ModifiableNoiseSettings()
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT, 32.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 1.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 10.0F)
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F))
+//			.addNoiseLayer(new ModifiableNoiseSettings()
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_X, 400.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 400.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 400.0F)
+//					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 32.0F)
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 1.0F))
+//			.addNoiseLayer(new ModifiableNoiseSettings()
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT, 256.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_X, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Y, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.SCALE_Z, 30.0F)
+//					.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, 16.0F)
+//					.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, 0.0F)
+//					.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.1F))
+//			.toStatic()
+//	);
 	public static final int CLOUD_SCALE = 8;
-	private static final int MESH_REBUILD_TIME = 3;
+//	private static final int MESH_REBUILD_TIME = 3;
 	private static final int SHADOW_MAP_SIZE = 1024;
 	private static @Nullable SimpleCloudsRenderer instance;
 	private final Minecraft mc;
-	private final CloudMeshGenerator meshGenerator;
+	private final MultiRegionCloudMeshGenerator meshGenerator;
 	private final RandomSource random;
 	private final Matrix4f shadowMapProjMat;
 	private @Nullable RenderTarget cloudTarget;
@@ -165,7 +163,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private Vector3f scrollDirection = new Vector3f(1.0F, 0.0F, 0.0F);
 	private boolean previewToggled;
 	private Frustum cullFrustum;
-	private int nextMeshRebuild = MESH_REBUILD_TIME;
+//	private int nextMeshRebuild = MESH_REBUILD_TIME;
 	private int shadowMapBufferId = -1;
 	private int shadowMapDepthTextureId = -1;
 	private int shadowMapColorTextureId = -1;
@@ -176,7 +174,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
 		this.mc = mc;
-		this.meshGenerator = new MultiRegionCloudMeshGenerator(new CloudType[] { DEFAULT, TEST_LARGE_3 });
+		this.meshGenerator = new MultiRegionCloudMeshGenerator(new CloudType[] { FALLBACK }, 3);
 		this.setupMeshGenerator();
 		this.random = RandomSource.create();
 		int span = CloudMeshGenerator.EFFECTIVE_CHUNK_SPAN * 32 * CLOUD_SCALE;
@@ -211,6 +209,12 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.blurTarget = new TextureTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), false, Minecraft.ON_OSX);
 		this.blurTarget.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 		this.blurTarget.setFilterMode(GL11.GL_LINEAR);
+		
+		var cloudTypes = CloudTypeDataManager.INSTANCE.getCloudTypes();
+		if (cloudTypes.size() > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
+			LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
+		else
+			this.meshGenerator.setCloudTypes(cloudTypes.values().toArray(i -> new CloudType[i]));
 		
 		this.meshGenerator.init(manager);
 		
@@ -381,12 +385,12 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.fogEnd = renderDistance;
 	}
 	
-	public void generateMesh(double camX, double camY, double camZ, @Nullable Frustum frustum)
-	{
-		this.setupMeshGenerator();
-		this.meshGenerator.generateMesh(camX, camY, camZ, (float)CLOUD_SCALE, frustum);
-		this.nextMeshRebuild = MESH_REBUILD_TIME;
-	}
+//	public void generateMesh(double camX, double camY, double camZ, @Nullable Frustum frustum)
+//	{
+//		this.setupMeshGenerator();
+//		this.meshGenerator.generateMesh(camX, camY, camZ, (float)CLOUD_SCALE, frustum);
+//		this.nextMeshRebuild = MESH_REBUILD_TIME;
+//	}
 	
 	private void renderShadowMap(PoseStack stack, double camX, double camY, double camZ)
 	{
@@ -408,7 +412,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT, Minecraft.ON_OSX);
 			
 			int span = CloudMeshGenerator.EFFECTIVE_CHUNK_SPAN * 32 * CLOUD_SCALE;
-			stack.translate(span / 2.0D, span / 2.0D, -300.0D);
+			stack.translate(span / 2.0D, span / 2.0D, -400.0D);
 			stack.mulPose(Axis.XP.rotationDegrees(90.0F));
 			float chunkSizeUpscaled = 32.0F * (float)CLOUD_SCALE;
 			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
@@ -446,12 +450,14 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.cullFrustum = new Frustum(stack.last().pose(), projMat);
 			
 			this.mc.getProfiler().push("mesh_generation");
-			if (this.nextMeshRebuild > 0)
-			{
-				this.nextMeshRebuild--;
-				if (this.nextMeshRebuild == 0)
-					this.generateMesh(camX, camY - 128.0D, camZ, this.cullFrustum);
-			}
+//			if (this.nextMeshRebuild > 0)
+//			{
+//				this.nextMeshRebuild--;
+//				if (this.nextMeshRebuild == 0)
+//					this.generateMesh(camX, camY - 128.0D, camZ, this.cullFrustum);
+//			}
+			this.setupMeshGenerator();
+			this.meshGenerator.tick(camX, camY - 128.0D, camZ, (float)CLOUD_SCALE, this.cullFrustum);
 			this.mc.getProfiler().pop();
 			
 			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);

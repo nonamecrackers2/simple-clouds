@@ -8,7 +8,6 @@ import com.mojang.serialization.Codec;
 
 public class StaticNoiseSettings extends AbstractNoiseSettings<StaticNoiseSettings>
 {
-	public static final Codec<StaticNoiseSettings> CODEC = ModifiableNoiseSettings.CODEC.xmap(ModifiableNoiseSettings::toStatic, ModifiableNoiseSettings::new);
 	public static final StaticNoiseSettings DEFAULT = new StaticNoiseSettings();
 	private final Map<AbstractNoiseSettings.Param, Float> values;
 	

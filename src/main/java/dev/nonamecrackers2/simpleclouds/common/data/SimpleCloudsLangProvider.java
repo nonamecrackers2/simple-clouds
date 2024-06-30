@@ -44,5 +44,12 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.storminess.title", "Storminess");
 		this.add("gui.simpleclouds.cloud_previewer.storm_start.title", "Storm Start Level");
 		this.add("gui.simpleclouds.cloud_previewer.storm_fade_distance.title", "Storm Fade Distance");
+		this.add("gui.simpleclouds.cloud_previewer.load.title", "Load");
+		this.add("gui.simpleclouds.cloud_previewer.export.title", "Export");
+		this.add("gui.simpleclouds.cloud_previewer.popup.select.cloud_type", "Select a cloud type:");
+		this.add("gui.simpleclouds.cloud_previewer.popup.export.cloud_type", "What would you like to name your cloud type?");
+		this.add("gui.simpleclouds.cloud_previewer.popup.export.exists", "A file with that name already exists. Would you like to override it?");
+		this.add("gui.simpleclouds.cloud_previewer.popup.exported.cloud_type", "Your cloud type has been exported to %s");
+		this.add("gui.simpleclouds.cloud_previewer.info", "Welcome to the cloud previewer!\n\nAdd, remove, and customize noise layers seen in the left of the screen to create custom cloud types. Use the load button in the bottom right to load existing cloud types to edit them, and use the export button to export your cloud types as JSON files.");
 	}
 }

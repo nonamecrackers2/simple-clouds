@@ -8,6 +8,7 @@ import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsDebugOverlayRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -18,6 +19,7 @@ import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.config.ModConfig;
+import nonamecrackers2.crackerslib.client.event.impl.AddConfigEntryToMenuEvent;
 import nonamecrackers2.crackerslib.client.event.impl.ConfigMenuButtonEvent;
 import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;
 import nonamecrackers2.crackerslib.client.gui.ConfigHomeScreen;
@@ -32,6 +34,7 @@ public class SimpleCloudsClientEvents
 	
 	public static void registerReloadListeners(RegisterClientReloadListenersEvent event)
 	{
+		event.registerReloadListener(CloudTypeDataManager.INSTANCE);
 		SimpleCloudsRenderer.initialize();
 		event.registerReloadListener((ResourceManagerReloadListener)(manager -> {
 			ComputeShader.destroyCompiledShaders();
@@ -50,6 +53,16 @@ public class SimpleCloudsClientEvents
 	public static void registerConfigMenuButton(ConfigMenuButtonEvent event)
 	{
 		event.defaultButtonWithSingleCharacter('S', 0xFFADF7FF);
+	}
+	
+	@SubscribeEvent
+	public static void onAddConfigOptionToMenu(AddConfigEntryToMenuEvent event)
+	{
+		if (event.getModId().equals(SimpleCloudsMod.MODID) && event.getType() == ModConfig.Type.CLIENT)
+		{
+			if (event.isValue(SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup))
+				event.setCanceled(true);
+		}
 	}
 	
 	@SubscribeEvent
