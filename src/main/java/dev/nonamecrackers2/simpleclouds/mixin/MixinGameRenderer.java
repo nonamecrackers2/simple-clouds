@@ -16,13 +16,6 @@ public class MixinGameRenderer
 	@Inject(method = "getDepthFar", at = @At("HEAD"), cancellable = true)
 	public void simpleclouds$extendFarPlane_getDepthFar(CallbackInfoReturnable<Float> ci)
 	{
-//		if (SimpleCloudsRenderer.isExtendingFarPlane())
-//		{
-//			float amount = SimpleCloudsRenderer.getExtendedFarPlane();
-//			if (amount < 0.0F)
-//				throw new IllegalStateException("Extended far plane amount must be greater than zero!");
-//			ci.setReturnValue(amount);
-//		}
 		ci.setReturnValue((float)SimpleCloudsRenderer.getInstance().getMeshGenerator().getCloudAreaMaxRadius() * (float)SimpleCloudsRenderer.CLOUD_SCALE);
 	}
 	
