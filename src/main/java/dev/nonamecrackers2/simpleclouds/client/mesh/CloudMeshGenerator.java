@@ -556,7 +556,7 @@ public abstract class CloudMeshGenerator implements AutoCloseable
 			float offsetX = (float)this.x * chunkSizeLod;
 			float offsetY = (float)this.y * chunkSizeLod;
 			float offsetZ = (float)this.z * chunkSizeLod;
-			if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY + 1000.0F, offsetZ, offsetX + chunkSizeLod, offsetY - 1000.0F, offsetZ + chunkSizeLod).move(globalOffsetX, 0.0F, globalOffsetZ).move(-camX, -camY, -camZ)))
+			if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSizeLod, offsetY+ chunkSizeLod, offsetZ + chunkSizeLod).inflate(0.0D, 500.0D, 0.0D).move(globalOffsetX, 0.0F, globalOffsetZ).move(-camX, -camY, -camZ)))
 			{
 				generator.chunkGenTasks.add(() -> generator.generateChunk(this.lodLevel, this.lodScale, this.x, this.y, this.z, offsetX, offsetY, offsetZ, scale, globalOffsetX, globalOffsetZ, this.noOcclusionDirectionIndex));
 				return true;
