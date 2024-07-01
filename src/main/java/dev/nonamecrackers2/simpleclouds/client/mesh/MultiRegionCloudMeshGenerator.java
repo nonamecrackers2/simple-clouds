@@ -16,12 +16,14 @@ import org.lwjgl.opengl.GL42;
 
 import com.google.common.collect.ImmutableMap;
 import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
@@ -31,23 +33,26 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");
 	public static final int MAX_CLOUD_TYPES = 32;
 	private static final ResourceLocation CLOUD_REGIONS_GENERATOR = SimpleCloudsMod.id("cloud_regions");
-	public static final int CLOUD_REGION_TEXTURE_SIZE;
+	private int requiredRegionTexSize;
+	private boolean needsRegionTextureUpdated;
 	private CloudInfo[] cloudTypes;
 	private @Nullable ComputeShader cloudRegionShader;
 	private int cloudRegionTexture;
 	
-	static
+	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval)
 	{
-		int requiredRegionTexSize = PRIMARY_CHUNK_SPAN;
-		for (CloudMeshGenerator.LevelOfDetailConfig config : LEVEL_OF_DETAIL)
-			requiredRegionTexSize += config.spread() * 2;
-		CLOUD_REGION_TEXTURE_SIZE = requiredRegionTexSize * 32;
+		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
+		this.setCloudTypes(cloudTypes);
 	}
 	
-	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, int meshGenInterval)
+	@Override
+	public void setLodConfig(CloudMeshGenerator.LevelOfDetailConfig lodConfig)
 	{
-		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, meshGenInterval);
-		this.setCloudTypes(cloudTypes);
+		if (lodConfig != this.lodConfig)
+		{
+			super.setLodConfig(lodConfig);
+			this.needsRegionTextureUpdated = true;
+		}
 	}
 	
 	public void setCloudTypes(CloudInfo[] cloudTypes)
@@ -87,9 +92,15 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		this.shader.bindShaderStorageBuffer("LayerGroupings", GL15.GL_STATIC_DRAW).allocateBuffer(20 * this.cloudTypes.length);
 	}
 	
-	@Override
-	public void init(ResourceManager manager)
+	private void createRegionTexture()
 	{
+		RenderSystem.assertOnRenderThreadOrInit();
+		
+		int requiredRegionTexSize = this.lodConfig.getPrimaryChunkSpan();
+		for (CloudMeshGenerator.LevelOfDetail config : this.lodConfig.getLods())
+			requiredRegionTexSize += config.spread() * 2;
+		this.requiredRegionTexSize = requiredRegionTexSize * 32;
+		
 		if (this.cloudRegionTexture >= 0)
 		{
 			TextureUtil.releaseTextureId(this.cloudRegionTexture);
@@ -103,11 +114,46 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		GL11.glTexParameteri(GL12.GL_TEXTURE_3D, GL12.GL_TEXTURE_WRAP_R, GL12.GL_CLAMP_TO_EDGE);
 		GL11.glTexParameteri(GL12.GL_TEXTURE_3D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
 		GL11.glTexParameteri(GL12.GL_TEXTURE_3D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
-		GL42.glTexImage3D(GL12.GL_TEXTURE_3D, 0, GL30.GL_RG32F, CLOUD_REGION_TEXTURE_SIZE, CLOUD_REGION_TEXTURE_SIZE, LEVEL_OF_DETAIL.length + 1, 0, GL30.GL_RG, GL11.GL_UNSIGNED_BYTE, (IntBuffer)null);
+		GL42.glTexImage3D(GL12.GL_TEXTURE_3D, 0, GL30.GL_RG32F, this.requiredRegionTexSize, this.requiredRegionTexSize, this.lodConfig.getLods().length + 1, 0, GL30.GL_RG, GL11.GL_UNSIGNED_BYTE, (IntBuffer)null);
 		GL42.glBindImageTexture(0, this.cloudRegionTexture, 0, true, 0, GL42.GL_READ_WRITE, GL30.GL_RG32F);
 		GL11.glBindTexture(GL12.GL_TEXTURE_3D, 0);
 		
-		LOGGER.debug("Created cloud region texture {} with size {}x{}x{}", this.cloudRegionTexture, CLOUD_REGION_TEXTURE_SIZE, CLOUD_REGION_TEXTURE_SIZE, LEVEL_OF_DETAIL.length + 1);
+		LOGGER.debug("Created cloud region texture {} with size {}x{}x{}", this.cloudRegionTexture, this.requiredRegionTexSize, this.requiredRegionTexSize, this.lodConfig.getLods().length + 1);
+	}
+	
+	private void setupCloudRegionShader()
+	{
+		RenderSystem.assertOnRenderThreadOrInit();
+		
+		if (this.cloudRegionShader == null || !this.cloudRegionShader.isValid())
+			return;
+		
+		var buffer = this.cloudRegionShader.getShaderStorageBuffer("LodScales");
+		buffer.writeData(b -> 
+		{
+			b.putFloat(0, 1.0F);
+			for (int i = 0; i < this.lodConfig.getLods().length; i++)
+			{
+				LevelOfDetail config =this.lodConfig.getLods()[i];
+				b.putFloat((i + 1) * 4, (float)config.chunkScale());
+			}
+		});
+		
+		this.cloudRegionShader.forUniform("Scale", loc -> {
+			GL20.glUniform1f(loc, 2000.0F);//Mth.clamp(Mth.sin(this.test * 0.01F), 0.1F, 1.0F));
+		});
+	}
+	
+	private void recalibrateForLods()
+	{
+		this.createRegionTexture();
+		this.setupCloudRegionShader();
+	}
+	
+	@Override
+	public void init(ResourceManager manager)
+	{
+		this.createRegionTexture();
 		
 		if (this.cloudRegionShader != null)
 		{
@@ -118,21 +164,9 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		try
 		{
 			this.cloudRegionShader = ComputeShader.loadShader(CLOUD_REGIONS_GENERATOR, manager, 8, 8, 1);
-			var buffer = this.cloudRegionShader.bindShaderStorageBuffer("LodScales", GL15.GL_STATIC_DRAW);
-			buffer.allocateBuffer((LEVEL_OF_DETAIL.length + 1) * 4);
-			buffer.writeData(b -> 
-			{
-				b.putFloat(0, 1.0F);
-				for (int i = 0; i < LEVEL_OF_DETAIL.length; i++)
-				{
-					LevelOfDetailConfig config = LEVEL_OF_DETAIL[i];
-					b.putFloat((i + 1) * 4, (float)config.chunkScale());
-				}
-			});
-			this.cloudRegionShader.forUniform("Scale", loc -> {
-				GL20.glUniform1f(loc, 2000.0F);//Mth.clamp(Mth.sin(this.test * 0.01F), 0.1F, 1.0F));
-			});
-			this.cloudRegionShader.dispatchAndWait(CLOUD_REGION_TEXTURE_SIZE / 8, CLOUD_REGION_TEXTURE_SIZE / 8, LEVEL_OF_DETAIL.length + 1);
+			this.cloudRegionShader.bindShaderStorageBuffer("LodScales", GL15.GL_STATIC_DRAW).allocateBuffer((this.lodConfig.getLods().length + 1) * 4);
+			this.setupCloudRegionShader();
+			this.cloudRegionShader.dispatchAndWait(this.requiredRegionTexSize / 8, this.requiredRegionTexSize / 8, this.lodConfig.getLods().length + 1);
 			LOGGER.debug("Created cloud region texture generator compute shader");
 		}
 		catch (IOException e)
@@ -147,9 +181,20 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	protected void generateChunk(int lodLevel, int lodScale, int x, int y, int z, float offsetX, float offsetY, float offsetZ, float scale, float camOffsetX, float camOffsetZ, int noOcclusionDirectionIndex)
 	{
 		this.shader.forUniform("RegionSampleOffset", loc -> {
-			GL20.glUniform2f(loc, x * 32.0F + (float)CLOUD_REGION_TEXTURE_SIZE / 2.0F, z * 32.0F + (float)CLOUD_REGION_TEXTURE_SIZE / 2.0F);
+			GL20.glUniform2f(loc, x * 32.0F + (float)this.requiredRegionTexSize / 2.0F, z * 32.0F + (float)this.requiredRegionTexSize / 2.0F);
 		});
 		super.generateChunk(lodLevel, lodScale, x, y, z, offsetX, offsetY, offsetZ, scale, camOffsetX, camOffsetZ, noOcclusionDirectionIndex);
+	}
+	
+	@Override
+	protected void populateChunkGenTasks(double camX, double camY, double camZ, float scale, Frustum frustum)
+	{
+		if (this.needsRegionTextureUpdated)
+		{
+			this.recalibrateForLods();
+			this.needsRegionTextureUpdated = false;
+		}
+		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
 	}
 	
 	@Override
@@ -170,7 +215,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.cloudRegionShader.forUniform("TotalCloudTypes", loc -> {
 				GL20.glUniform1i(loc, this.getTotalCloudTypes());
 			});
-			this.cloudRegionShader.dispatchAndWait(CLOUD_REGION_TEXTURE_SIZE / 8, CLOUD_REGION_TEXTURE_SIZE / 8, LEVEL_OF_DETAIL.length + 1);
+			this.cloudRegionShader.dispatchAndWait(this.requiredRegionTexSize / 8, this.requiredRegionTexSize / 8, this.lodConfig.getLods().length + 1);
 		}
 		
 		this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b -> 

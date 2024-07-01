@@ -2,12 +2,12 @@ package dev.nonamecrackers2.simpleclouds.client.mesh;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
@@ -40,16 +40,7 @@ public abstract class CloudMeshGenerator implements AutoCloseable
 {
 	public static final int MAX_NOISE_LAYERS = 4;
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudMeshGenerator");
-	public static final CloudMeshGenerator.LevelOfDetailConfig[] LEVEL_OF_DETAIL = new CloudMeshGenerator.LevelOfDetailConfig[] {
-		new CloudMeshGenerator.LevelOfDetailConfig(2, 4),
-		new CloudMeshGenerator.LevelOfDetailConfig(4, 3),
-		new CloudMeshGenerator.LevelOfDetailConfig(8, 2)
-	};
-	public static final int PRIMARY_CHUNK_COUNT;
-	private static final List<CloudMeshGenerator.PreparedChunk> PREPARED_CHUNKS;
 	public static final ResourceLocation MAIN_CUBE_MESH_GENERATOR = SimpleCloudsMod.id("cube_mesh");
-	public static final int EFFECTIVE_CHUNK_SPAN; //The total span of the complete renderable area, including all level of detail layers
-	public static final int PRIMARY_CHUNK_SPAN = 8; //The total span of the primary, full detail cloud area
 	public static final int VERTICAL_CHUNK_SPAN = 8;
 	public static final int WORK_SIZE = 4;
 	public static final int LOCAL_SIZE = 8;
@@ -59,8 +50,9 @@ public abstract class CloudMeshGenerator implements AutoCloseable
 	public static final int BYTES_PER_SIDE = BYTES_PER_VERTEX * 4;
 	public static final int INDEX_BUFFER_SIZE = 107108864;
 	protected final ResourceLocation meshShaderLoc;
-	protected final int meshGenInterval;
 	protected final Queue<Runnable> chunkGenTasks = Queues.newArrayDeque();
+	protected CloudMeshGenerator.LevelOfDetailConfig lodConfig;
+	protected int meshGenInterval;
 	protected int tasksPerTick;
 	protected @Nullable ComputeShader shader;
 	protected float scrollX;
@@ -77,81 +69,28 @@ public abstract class CloudMeshGenerator implements AutoCloseable
 	private double currentCamZ;
 	private float currentScale;
 	
-	static
-	{
-		int radius = PRIMARY_CHUNK_SPAN / 2;
-		for (CloudMeshGenerator.LevelOfDetailConfig config : LEVEL_OF_DETAIL)
-			radius += config.chunkScale() * config.spread();
-		EFFECTIVE_CHUNK_SPAN = radius * 2;
-		var result = prepareChunks();
-		PREPARED_CHUNKS = result.getRight();
-		PRIMARY_CHUNK_COUNT = result.getLeft();
-	}
-	
-	private static Pair<Integer, List<CloudMeshGenerator.PreparedChunk>> prepareChunks()
-	{
-		ImmutableList.Builder<CloudMeshGenerator.PreparedChunk> builder = ImmutableList.builder();
-		
-		int currentRadius = PRIMARY_CHUNK_SPAN / 2;
-		int primaryChunkCount = 0;
-		for (int r = 0; r <= currentRadius; r++)
-		{
-			for (int y = 0; y < VERTICAL_CHUNK_SPAN; y++)
-			{
-				for (int x = -r; x < r; x++)
-				{
-					builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, x, y, -r, -1));
-					builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, x, y, r - 1, -1));
-					primaryChunkCount += 2;
-				}
-				for (int z = -r + 1; z < r - 1; z++)
-				{
-					builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, -r, y, z, -1));
-					builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, r - 1, y, z, -1));
-					primaryChunkCount += 2;
-				}
-			}
-		}
-		
-		for (int i = 0; i < LEVEL_OF_DETAIL.length; i++)
-		{
-			CloudMeshGenerator.LevelOfDetailConfig config = LEVEL_OF_DETAIL[i];
-			int chunkCount = 0;
-			int lodLevel = i + 1;
-			for (int deltaR = 1; deltaR <= config.spread(); deltaR++)
-			{
-				int ySpan = Mth.ceil((float)VERTICAL_CHUNK_SPAN / (float)config.chunkScale());
-				boolean noOcclusion = deltaR == 1;
-				for (int y = 0; y < ySpan; y++)
-				{
-					int r = currentRadius / config.chunkScale() + deltaR;
-					for (int x = -r; x < r; x++)
-					{
-						builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), x, y, -r, noOcclusion ? 5 : -1));
-						builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), x, y, r - 1, noOcclusion ? 4 : -1));
-						chunkCount += 2;
-					}
-					for (int z = -r + 1; z < r - 1; z++)
-					{
-						builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), -r, y, z, noOcclusion ? 1 : -1));
-						builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), r - 1, y, z, noOcclusion ? 0 : -1));
-						chunkCount += 2;
-					}
-				}
-			}
-			currentRadius = currentRadius + config.spread() * config.chunkScale();
-			config.setChunkCount(chunkCount);
-		}
-		
-		return Pair.of(primaryChunkCount, builder.build());
-	}
-	
-	public CloudMeshGenerator(ResourceLocation meshShaderLoc, int meshGenInterval)
+	public CloudMeshGenerator(ResourceLocation meshShaderLoc, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval)
 	{
 		this.meshShaderLoc = meshShaderLoc;
-		if (meshGenInterval <= 0)
+		this.setLodConfig(lodConfig);
+		this.setMeshGenInterval(meshGenInterval);
+	}
+	
+	public void setLodConfig(CloudMeshGenerator.LevelOfDetailConfig config)
+	{
+		this.lodConfig = Objects.requireNonNull(config);
+	}
+	
+	public CloudMeshGenerator.LevelOfDetailConfig getLodConfig()
+	{
+		return this.lodConfig;
+	}
+	
+	public void setMeshGenInterval(int interval)
+	{
+		if (interval <= 0)
 			throw new IllegalArgumentException("Please input a mesh gen interval greater than 0");
-		this.meshGenInterval = meshGenInterval;
+		this.meshGenInterval = interval;
 	}
 	
 	public CloudMeshGenerator setTestFacesFacingAway(boolean flag)
@@ -160,9 +99,9 @@ public abstract class CloudMeshGenerator implements AutoCloseable
 		return this;
 	}
 	
-	public static int getCloudAreaMaxRadius()
+	public int getCloudAreaMaxRadius()
 	{
-		return EFFECTIVE_CHUNK_SPAN * WORK_SIZE * LOCAL_SIZE / 2;
+		return this.lodConfig.getEffectiveChunkSpan() * WORK_SIZE * LOCAL_SIZE / 2;
 	}
 	
 	@Override
@@ -412,7 +351,7 @@ public abstract class CloudMeshGenerator implements AutoCloseable
 		float chunkSizeUpscaled = 32.0F * scale;
 		float globalOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
 		float globalOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
-		for (CloudMeshGenerator.PreparedChunk chunk : PREPARED_CHUNKS)
+		for (CloudMeshGenerator.PreparedChunk chunk : this.lodConfig.preparedChunks)
 		{
 			if (chunk.checkIfVisibleAndQueue(this, camX, camY, camZ, scale, globalOffsetX, globalOffsetZ, frustum))
 				chunkCount++;
@@ -462,11 +401,110 @@ public abstract class CloudMeshGenerator implements AutoCloseable
 	
 	public static class LevelOfDetailConfig
 	{
+		private final CloudMeshGenerator.LevelOfDetail[] lods;
+		private final int primaryChunkSpan;
+		private final int effectiveChunkSpan;
+		private List<CloudMeshGenerator.PreparedChunk> preparedChunks;
+		private int primaryChunkCount;
+		
+		public LevelOfDetailConfig(int primaryChunkSpan, CloudMeshGenerator.LevelOfDetail... lods)
+		{
+			this.primaryChunkSpan = primaryChunkSpan;
+			this.lods = lods;
+			int radius = primaryChunkSpan / 2;
+			for (var lod : this.lods)
+				radius += lod.chunkScale() * lod.spread();
+			this.effectiveChunkSpan = radius * 2;
+			this.prepareChunks();
+		}
+		
+		private void prepareChunks()
+		{
+			ImmutableList.Builder<CloudMeshGenerator.PreparedChunk> builder = ImmutableList.builder();
+			
+			int currentRadius = this.primaryChunkSpan / 2;
+			int primaryChunkCount = 0;
+			for (int r = 0; r <= currentRadius; r++)
+			{
+				for (int y = 0; y < VERTICAL_CHUNK_SPAN; y++)
+				{
+					for (int x = -r; x < r; x++)
+					{
+						builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, x, y, -r, -1));
+						builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, x, y, r - 1, -1));
+						primaryChunkCount += 2;
+					}
+					for (int z = -r + 1; z < r - 1; z++)
+					{
+						builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, -r, y, z, -1));
+						builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, r - 1, y, z, -1));
+						primaryChunkCount += 2;
+					}
+				}
+			}
+			
+			for (int i = 0; i < this.lods.length; i++)
+			{
+				CloudMeshGenerator.LevelOfDetail config = this.lods[i];
+				int chunkCount = 0;
+				int lodLevel = i + 1;
+				for (int deltaR = 1; deltaR <= config.spread(); deltaR++)
+				{
+					int ySpan = Mth.ceil((float)VERTICAL_CHUNK_SPAN / (float)config.chunkScale());
+					boolean noOcclusion = deltaR == 1;
+					for (int y = 0; y < ySpan; y++)
+					{
+						int r = currentRadius / config.chunkScale() + deltaR;
+						for (int x = -r; x < r; x++)
+						{
+							builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), x, y, -r, noOcclusion ? 5 : -1));
+							builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), x, y, r - 1, noOcclusion ? 4 : -1));
+							chunkCount += 2;
+						}
+						for (int z = -r + 1; z < r - 1; z++)
+						{
+							builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), -r, y, z, noOcclusion ? 1 : -1));
+							builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), r - 1, y, z, noOcclusion ? 0 : -1));
+							chunkCount += 2;
+						}
+					}
+				}
+				currentRadius = currentRadius + config.spread() * config.chunkScale();
+				config.setChunkCount(chunkCount);
+			}
+			
+			this.primaryChunkCount = primaryChunkCount;
+			this.preparedChunks = builder.build();
+		}
+		
+		public CloudMeshGenerator.LevelOfDetail[] getLods()
+		{
+			return this.lods;
+		}
+		
+		public int getPrimaryChunkSpan()
+		{
+			return this.primaryChunkSpan;
+		}
+		
+		public int getEffectiveChunkSpan()
+		{
+			return this.effectiveChunkSpan;
+		}
+		
+		public int getPrimaryChunkCount()
+		{
+			return this.primaryChunkCount;
+		}
+	}
+	
+	public static class LevelOfDetail
+	{
 		private final int chunkScale;
 		private final int spread;
 		private int chunkCount;
 		
-		private LevelOfDetailConfig(int chunkScale, int spread)
+		public LevelOfDetail(int chunkScale, int spread)
 		{
 			this.chunkScale = chunkScale;
 			this.spread = spread;

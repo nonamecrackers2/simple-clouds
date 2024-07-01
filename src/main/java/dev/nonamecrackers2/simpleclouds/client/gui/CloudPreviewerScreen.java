@@ -26,6 +26,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 
 import dev.nonamecrackers2.simpleclouds.client.gui.widget.LayerEditor;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
@@ -59,7 +60,7 @@ import nonamecrackers2.crackerslib.client.gui.Screen3D;
 
 public class CloudPreviewerScreen extends Screen3D
 {
-	private static final SingleRegionCloudMeshGenerator GENERATOR = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(SimpleCloudsRenderer.FALLBACK, 3, CloudMeshGenerator.getCloudAreaMaxRadius() / 2.0F, CloudMeshGenerator.getCloudAreaMaxRadius()).setTestFacesFacingAway(true);
+	private static final SingleRegionCloudMeshGenerator GENERATOR = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(SimpleCloudsRenderer.FALLBACK, LevelOfDetailOptions.HIGH.getConfig(), 3, 0.5F, 1.0F).setTestFacesFacingAway(true);
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final int PADDING = 10;
@@ -398,7 +399,7 @@ public class CloudPreviewerScreen extends Screen3D
 			this.generateMesh();
 		GENERATOR.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F);
 		
-		float radius = CloudMeshGenerator.getCloudAreaMaxRadius();
+		float radius = GENERATOR.getCloudAreaMaxRadius();
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder builder = tesselator.getBuilder();
 		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);

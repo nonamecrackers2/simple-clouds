@@ -35,12 +35,12 @@ public class SimpleCloudsDebugOverlayRenderer
 					Matrix4f matrix4f = stack.pose().last().pose();
 					BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
 					bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-					bufferbuilder.vertex(matrix4f, width - 200.0F, height - 100.0F, -100.0F).uv(0.0F, 0.0F).endVertex();
-					bufferbuilder.vertex(matrix4f, width - 200.0F, height, -100.0F).uv(0.0F, 1.0F).endVertex();
-					bufferbuilder.vertex(matrix4f, width - 100.0F, height, -100.0F).uv(1.0F, 1.0F).endVertex();
-					bufferbuilder.vertex(matrix4f, width - 100.0F, height - 100.0F, -100.0F).uv(1.0F, 0.0F).endVertex();
+					bufferbuilder.vertex(matrix4f, width - 100.0F, height - 50.0F, -100.0F).uv(0.0F, 0.0F).endVertex();
+					bufferbuilder.vertex(matrix4f, width - 100.0F, height, -100.0F).uv(0.0F, 1.0F).endVertex();
+					bufferbuilder.vertex(matrix4f, width - 50.0F, height, -100.0F).uv(1.0F, 1.0F).endVertex();
+					bufferbuilder.vertex(matrix4f, width - 50.0F, height - 50.0F, -100.0F).uv(1.0F, 0.0F).endVertex();
 					ShaderInstance shader = RenderSystem.getShader();
-					shader.safeGetUniform("LodLevel").set(3);
+					shader.safeGetUniform("LodLevel").set(meshGenerator.getLodConfig().getLods().length);
 					shader.safeGetUniform("TotalCloudTypes").set(meshGenerator.getTotalCloudTypes());
 					ProgramManager.glUseProgram(shader.getId());
 					int loc = Uniform.glGetUniformLocation(shader.getId(), "TexRegionSampler");
@@ -55,10 +55,10 @@ public class SimpleCloudsDebugOverlayRenderer
 			Matrix4f matrix4f = stack.pose().last().pose();
 			BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
 			bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-			bufferbuilder.vertex(matrix4f, width - 100.0F, height - 100.0F, -100.0F).uv(0.0F, 0.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, width - 100.0F, height, -100.0F).uv(0.0F, 1.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, width - 50.0F, height - 50.0F, -100.0F).uv(0.0F, 0.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, width - 50.0F, height, -100.0F).uv(0.0F, 1.0F).endVertex();
 			bufferbuilder.vertex(matrix4f, width, height, -100.0F).uv(1.0F, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, width, height - 100.0F, -100.0F).uv(1.0F, 0.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, width, height - 50.0F, -100.0F).uv(1.0F, 0.0F).endVertex();
 			BufferUploader.drawWithShader(bufferbuilder.end());
 		}
 	}

@@ -19,19 +19,19 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	private final float fadeStart;
 	private final float fadeEnd;
 	
-	public SingleRegionCloudMeshGenerator(CloudType type, int meshGenInterval, float fadeStart, float fadeEnd)
+	public SingleRegionCloudMeshGenerator(CloudType type, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, float fadeStart, float fadeEnd)
 	{
-		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, meshGenInterval);
+		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
 		this.type = type;
 		if (fadeStart > fadeEnd)
 		{
-			this.fadeStart = fadeEnd;
-			this.fadeEnd = fadeStart;
+			this.fadeStart = fadeEnd * (float)this.getCloudAreaMaxRadius();
+			this.fadeEnd = fadeStart * (float)this.getCloudAreaMaxRadius();
 		}
 		else
 		{
-			this.fadeStart = fadeStart;
-			this.fadeEnd = fadeEnd;
+			this.fadeStart = fadeStart * (float)this.getCloudAreaMaxRadius();
+			this.fadeEnd = fadeEnd * (float)this.getCloudAreaMaxRadius();
 		}
 	}
 	

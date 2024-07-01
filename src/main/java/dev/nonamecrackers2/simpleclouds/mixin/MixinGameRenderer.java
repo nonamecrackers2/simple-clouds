@@ -7,7 +7,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.client.renderer.GameRenderer;
 
@@ -24,7 +23,7 @@ public class MixinGameRenderer
 //				throw new IllegalStateException("Extended far plane amount must be greater than zero!");
 //			ci.setReturnValue(amount);
 //		}
-		ci.setReturnValue((float)CloudMeshGenerator.getCloudAreaMaxRadius() * (float)SimpleCloudsRenderer.CLOUD_SCALE);
+		ci.setReturnValue((float)SimpleCloudsRenderer.getInstance().getMeshGenerator().getCloudAreaMaxRadius() * (float)SimpleCloudsRenderer.CLOUD_SCALE);
 	}
 	
 	@Inject(method = "close", at = @At("TAIL"))
