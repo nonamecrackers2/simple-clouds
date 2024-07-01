@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
 
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.util.GsonHelper;
 
@@ -22,6 +23,9 @@ public record CloudType(float storminess, float stormStart, float stormFadeDista
 		NoiseSettings settings = NoiseSettings.STATIC.parse(JsonOps.INSTANCE, object.get("noise_settings")).resultOrPartial(error -> {
 			throw new JsonSyntaxException(error);
 		}).orElseThrow();
+		
+		if (settings.layerCount() > CloudMeshGenerator.MAX_NOISE_LAYERS)
+			throw new JsonSyntaxException("Too many noise layers. Maximum amount of layers allowed is " + CloudMeshGenerator.MAX_NOISE_LAYERS);
 		
 		float storminess = getOptionalRangedParam(object, "storminess", 0.0F, 0.0F, CloudInfo.STORMINESS_MAX);
 		float stormStart = getOptionalRangedParam(object, "storm_start", 16.0F, 0.0F, CloudInfo.STORM_START_MAX);
