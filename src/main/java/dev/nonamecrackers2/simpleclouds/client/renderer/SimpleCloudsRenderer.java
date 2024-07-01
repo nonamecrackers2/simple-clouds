@@ -381,7 +381,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.scrollY += this.scrollDirection.y() * speed;
 		this.scrollZ += this.scrollDirection.z() * speed;
 		float renderDistance = (float)CloudMeshGenerator.getCloudAreaMaxRadius() * (float)CLOUD_SCALE;
-		this.fogStart = renderDistance / 2.0F;
+		this.fogStart = renderDistance / 4.0F;
 		this.fogEnd = renderDistance;
 	}
 	

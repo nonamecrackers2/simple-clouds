@@ -103,8 +103,8 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		GL11.glTexParameteri(GL12.GL_TEXTURE_3D, GL12.GL_TEXTURE_WRAP_R, GL12.GL_CLAMP_TO_EDGE);
 		GL11.glTexParameteri(GL12.GL_TEXTURE_3D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
 		GL11.glTexParameteri(GL12.GL_TEXTURE_3D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
-		GL42.glTexImage3D(GL12.GL_TEXTURE_3D, 0, GL30.GL_RG8, CLOUD_REGION_TEXTURE_SIZE, CLOUD_REGION_TEXTURE_SIZE, LEVEL_OF_DETAIL.length + 1, 0, GL30.GL_RG, GL11.GL_UNSIGNED_BYTE, (IntBuffer)null);
-		GL42.glBindImageTexture(0, this.cloudRegionTexture, 0, true, 0, GL42.GL_READ_WRITE, GL30.GL_RG8);
+		GL42.glTexImage3D(GL12.GL_TEXTURE_3D, 0, GL30.GL_RG32F, CLOUD_REGION_TEXTURE_SIZE, CLOUD_REGION_TEXTURE_SIZE, LEVEL_OF_DETAIL.length + 1, 0, GL30.GL_RG, GL11.GL_UNSIGNED_BYTE, (IntBuffer)null);
+		GL42.glBindImageTexture(0, this.cloudRegionTexture, 0, true, 0, GL42.GL_READ_WRITE, GL30.GL_RG32F);
 		GL11.glBindTexture(GL12.GL_TEXTURE_3D, 0);
 		
 		LOGGER.debug("Created cloud region texture {} with size {}x{}x{}", this.cloudRegionTexture, CLOUD_REGION_TEXTURE_SIZE, CLOUD_REGION_TEXTURE_SIZE, LEVEL_OF_DETAIL.length + 1);
@@ -131,9 +131,6 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			});
 			this.cloudRegionShader.forUniform("Scale", loc -> {
 				GL20.glUniform1f(loc, 2000.0F);//Mth.clamp(Mth.sin(this.test * 0.01F), 0.1F, 1.0F));
-			});
-			this.cloudRegionShader.forUniform("TotalCloudTypes", loc -> {
-				GL20.glUniform1i(loc, this.cloudTypes.length);
 			});
 			this.cloudRegionShader.dispatchAndWait(CLOUD_REGION_TEXTURE_SIZE / 8, CLOUD_REGION_TEXTURE_SIZE / 8, LEVEL_OF_DETAIL.length + 1);
 			LOGGER.debug("Created cloud region texture generator compute shader");
@@ -169,6 +166,9 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 				float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * 32.0F);
 				float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * 32.0F);
 				GL20.glUniform2f(loc, camOffsetX, camOffsetZ);
+			});
+			this.cloudRegionShader.forUniform("TotalCloudTypes", loc -> {
+				GL20.glUniform1i(loc, this.getTotalCloudTypes());
 			});
 			this.cloudRegionShader.dispatchAndWait(CLOUD_REGION_TEXTURE_SIZE / 8, CLOUD_REGION_TEXTURE_SIZE / 8, LEVEL_OF_DETAIL.length + 1);
 		}

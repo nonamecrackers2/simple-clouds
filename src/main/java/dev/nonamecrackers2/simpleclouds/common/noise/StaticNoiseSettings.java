@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
-import com.mojang.serialization.Codec;
 
 public class StaticNoiseSettings extends AbstractNoiseSettings<StaticNoiseSettings>
 {

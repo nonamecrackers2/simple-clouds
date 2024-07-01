@@ -4,8 +4,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.collect.Maps;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 public class ModifiableNoiseSettings extends AbstractNoiseSettings<ModifiableNoiseSettings>
 {

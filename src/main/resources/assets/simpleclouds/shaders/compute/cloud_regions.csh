@@ -12,12 +12,12 @@ layout(std430) restrict buffer LodScales {
 }
 lodScales;
 
-layout(rg8, binding = 0) uniform image3D mainImage;
+layout(rg32f, binding = 0) uniform image3D mainImage;
 
 uniform vec2 Scroll;
 uniform float Scale = 10.0;
 uniform float Spread = 1.0;
-uniform int TotalCloudTypes = 3;
+uniform int TotalCloudTypes = 1;
 uniform vec2 Offset;
 
 //vec2 cloudRegionIndexWithDist(vec2 pos) 
