@@ -6,6 +6,8 @@ import com.mojang.serialization.JsonOps;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.noise.StaticLayeredNoise;
+import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import net.minecraft.util.GsonHelper;
 
 public record CloudType(float storminess, float stormStart, float stormFadeDistance, NoiseSettings noiseConfig) implements CloudInfo
@@ -20,10 +22,24 @@ public record CloudType(float storminess, float stormStart, float stormFadeDista
 	
 	public static CloudType readFromJson(JsonObject object) throws JsonSyntaxException
 	{
-		NoiseSettings settings = NoiseSettings.STATIC.parse(JsonOps.INSTANCE, object.get("noise_settings")).resultOrPartial(error -> {
-			throw new JsonSyntaxException(error);
-		}).orElseThrow();
-		
+		NoiseSettings settings;
+		if (object.has("noise_settings"))
+		{
+			settings = StaticNoiseSettings.CODEC.parse(JsonOps.INSTANCE, object.get("noise_settings")).resultOrPartial(error -> {
+				throw new JsonSyntaxException(error);
+			}).orElseThrow();
+		}
+		else if (object.has("noise_layers"))
+		{
+			settings = StaticLayeredNoise.CODEC.parse(JsonOps.INSTANCE, object.get("noise_layers")).resultOrPartial(error -> {
+				throw new JsonSyntaxException(error);
+			}).orElseThrow();
+		}
+		else
+		{
+			throw new JsonSyntaxException("No noise settings specified. Please include 'noise_settings' or 'noise_layers'");
+		}
+			
 		if (settings.layerCount() > CloudMeshGenerator.MAX_NOISE_LAYERS)
 			throw new JsonSyntaxException("Too many noise layers. Maximum amount of layers allowed is " + CloudMeshGenerator.MAX_NOISE_LAYERS);
 		

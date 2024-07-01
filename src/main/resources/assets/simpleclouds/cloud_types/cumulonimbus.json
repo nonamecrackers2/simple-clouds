@@ -2,7 +2,7 @@
 	"storminess": 0.6,
 	"storm_start": 16.0,
 	"storm_fade_distance": 128.0,
-	"noise_settings": [
+	"noise_layers": [
 		{
 			"height": 32.0,
 			"value_offset": 1.0,

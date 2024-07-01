@@ -23,10 +23,7 @@ public class SimpleCloudsKeybinds
 	public static void onClientTick(TickEvent.ClientTickEvent event)
 	{
 		Minecraft mc = Minecraft.getInstance();
-		if (!FMLEnvironment.production)
-		{
-			while (OPEN_GEN_PREVIEWER.consumeClick())
-				mc.setScreen(new CloudPreviewerScreen(null));
-		}
+		while (OPEN_GEN_PREVIEWER.consumeClick())
+			mc.setScreen(new CloudPreviewerScreen(null));
 	}
 }

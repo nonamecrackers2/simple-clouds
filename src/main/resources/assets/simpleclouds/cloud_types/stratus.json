@@ -1,5 +1,5 @@
 {
-  "noise_settings": [
+  "noise_layers": [
     {
       "scale_z": 100.0,
       "fade_distance": 10.0,

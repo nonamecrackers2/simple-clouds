@@ -36,7 +36,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 
-public abstract class CloudMeshGenerator implements AutoCloseable
+public abstract class CloudMeshGenerator
 {
 	public static final int MAX_NOISE_LAYERS = 4;
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudMeshGenerator");
@@ -104,7 +104,6 @@ public abstract class CloudMeshGenerator implements AutoCloseable
 		return this.lodConfig.getEffectiveChunkSpan() * WORK_SIZE * LOCAL_SIZE / 2;
 	}
 	
-	@Override
 	public void close()
 	{
 		if (this.shader != null)

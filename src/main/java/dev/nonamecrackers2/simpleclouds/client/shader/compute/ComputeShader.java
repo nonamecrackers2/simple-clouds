@@ -113,34 +113,6 @@ public class ComputeShader implements AutoCloseable
 		ProgramManager.glUseProgram(0);
 	}
 	
-//	private int newBuffer(int binding)
-//	{
-//		RenderSystem.assertOnRenderThread();
-//		this.assertValid();
-//		if (this.buffers.containsKey(binding))
-//			throw new IllegalArgumentException("Buffer already binded!");
-//		return GlStateManager._glGenBuffers();
-//	}
-//	
-//	private <T extends BufferObject> T putBufferObject(int type, String name, T object)
-//	{
-//		this.buffers.computeIfAbsent(type, t -> new HashMap<>()).put(name, object);
-//		return object;
-//	}
-//	
-//	private <T extends BufferObject> T bindBuffer(ComputeShader.BufferFactory<T> factory, int type, int binding, String name, int usage)
-//	{
-//		int id = this.newBuffer(binding);
-//		GL30.glBindBufferBase(type, binding, id);
-//		T buffer = this.putBufferObject(type, name, factory.make(type, id, binding, usage));
-//		return buffer;
-//	}
-//	
-//	private int getNextBindingForType(int type)
-//	{
-//		return BINDINGS.computeIfAbsent(type, t -> new AtomicInteger()).getAndIncrement();
-//	}
-	
 	/**
 	 * Automatically creates a shader storage buffer using the next available binding in the context. 
 	 * In other words, makes a new SSBO unique to this shader.
@@ -167,18 +139,6 @@ public class ComputeShader implements AutoCloseable
 		ALL_SHADER_STORAGE_BUFFERS.put(binding, buffer);
 		return buffer;
 	}
-	
-//	public AtomicCounter bindAtomicCounter(int binding, int usage)
-//	{
-//		return this.bindBuffer(AtomicCounter::new, GL42.GL_ATOMIC_COUNTER_BUFFER, binding, String.valueOf(binding), usage);
-//	}
-	
-//	@SuppressWarnings("unchecked")
-//	public <T extends BufferObject> T getBufferObject(int binding)
-//	{
-//		RenderSystem.assertOnRenderThread();
-//		return (T)Objects.requireNonNull(this.buffers.get(binding), "Shader storage buffer with binding " + binding + " does not exist");
-//	}
 	
 	public ShaderStorageBufferObject getShaderStorageBuffer(String name)
 	{

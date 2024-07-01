@@ -38,7 +38,7 @@ public class ModifiableNoiseSettings extends AbstractNoiseSettings<ModifiableNoi
 		}
 		return false;
 	}
-
+	
 	public StaticNoiseSettings toStatic()
 	{
 		return new StaticNoiseSettings(this);

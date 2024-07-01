@@ -7,7 +7,11 @@ import com.mojang.serialization.JsonOps;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractLayeredNoise;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.noise.ModifiableLayeredNoise;
+import dev.nonamecrackers2.simpleclouds.common.noise.ModifiableNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.noise.StaticLayeredNoise;
+import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import net.minecraft.util.Mth;
 
 public interface CloudInfo
@@ -29,13 +33,27 @@ public interface CloudInfo
 		JsonObject object = new JsonObject();
 		if (this.noiseConfig() instanceof AbstractNoiseSettings<?> settings)
 		{
-			object.add("noise_settings", AbstractNoiseSettings.CODEC.encodeStart(JsonOps.INSTANCE, settings).resultOrPartial(error -> {
+			StaticNoiseSettings toSerialize;
+			if (settings instanceof StaticNoiseSettings staticSettings)
+				toSerialize = staticSettings;
+			else if (settings instanceof ModifiableNoiseSettings modifiable)
+				toSerialize = modifiable.toStatic();
+			else
+				throw new IllegalStateException("Unable to encode noise config: unknown type");
+			object.add("noise_settings", StaticNoiseSettings.CODEC.encodeStart(JsonOps.INSTANCE, toSerialize).resultOrPartial(error -> {
 				throw new JsonSyntaxException(error);
 			}).orElseThrow());
 		}
 		else if (this.noiseConfig() instanceof AbstractLayeredNoise<?> layered)
 		{
-			object.add("noise_settings", AbstractLayeredNoise.CODEC.encodeStart(JsonOps.INSTANCE, layered).resultOrPartial(error -> {
+			StaticLayeredNoise toSerialize;
+			if (layered instanceof StaticLayeredNoise staticSettings)
+				toSerialize = staticSettings;
+			else if (layered instanceof ModifiableLayeredNoise modifiable)
+				toSerialize = modifiable.toStatic();
+			else
+				throw new IllegalStateException("Unable to encode noise config: unknown type");
+			object.add("noise_layers", StaticLayeredNoise.CODEC.encodeStart(JsonOps.INSTANCE, toSerialize).resultOrPartial(error -> {
 				throw new JsonSyntaxException(error);
 			}).orElseThrow());
 		}

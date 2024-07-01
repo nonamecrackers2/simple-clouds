@@ -8,13 +8,6 @@ import com.mojang.serialization.Codec;
 
 public abstract class AbstractLayeredNoise<T extends AbstractNoiseSettings<T>> implements NoiseSettings
 {
-	@SuppressWarnings("unchecked")
-	public static final Codec<AbstractLayeredNoise<?>> CODEC = Codec.list(AbstractNoiseSettings.CODEC).xmap(list -> {
-		ModifiableLayeredNoise layered = new ModifiableLayeredNoise();
-		for (AbstractNoiseSettings<?> settings : list)
-			layered.addNoiseLayer((ModifiableNoiseSettings)settings);
-		return layered;
-	}, layered -> (List<AbstractNoiseSettings<?>>)layered.getNoiseLayers());
 	protected final List<T> noiseLayers;
 	
 	public AbstractLayeredNoise(List<T> noiseLayers)

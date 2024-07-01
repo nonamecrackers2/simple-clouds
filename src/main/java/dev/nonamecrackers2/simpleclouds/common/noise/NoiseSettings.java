@@ -21,10 +21,7 @@ public interface NoiseSettings
 			return 0;
 		}
 	};
-	public static Decoder<NoiseSettings> STATIC = new EitherCodec<>(StaticNoiseSettings.CODEC, StaticLayeredNoise.CODEC).map(either -> {
-		return either.map(Function.identity(), Function.identity());
-	});
-	public static Decoder<NoiseSettings> MODIFIABLE = new EitherCodec<>(ModifiableNoiseSettings.CODEC, ModifiableLayeredNoise.CODEC).map(either -> {
+	public static Decoder<NoiseSettings> DECODER = new EitherCodec<>(StaticNoiseSettings.CODEC, StaticLayeredNoise.CODEC).map(either -> {
 		return either.map(Function.identity(), Function.identity());
 	});
 	
