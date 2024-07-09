@@ -362,9 +362,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		stack.scale((float)CLOUD_SCALE, (float)CLOUD_SCALE, (float)CLOUD_SCALE);
 	}
 	
-	public void renderInWorldPre(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	public void prepare(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
-		this.mc.getProfiler().push("simple_clouds_pre");
+		this.mc.getProfiler().push("simple_clouds_prepare");
 		if (this.meshGenerator.getArrayObjectId() != -1)
 		{
 			this.cullFrustum = new Frustum(stack.last().pose(), projMat);
@@ -374,44 +374,49 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.meshGenerator.tick(camX, camY - (double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), camZ, (float)CLOUD_SCALE, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
 			this.mc.getProfiler().pop();
 			
-			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
-			float cloudR = (float)cloudCol.x;
-			float cloudG = (float)cloudCol.y;
-			float cloudB = (float)cloudCol.z;
-			
 			this.mc.getProfiler().push("shadow_map");
 			PoseStack shadowMapStack = new PoseStack();
 			shadowMapStack.setIdentity();
 			this.renderShadowMap(shadowMapStack, camX, camY, camZ);
 			this.mc.getProfiler().pop();
+			this.shadowMapStack = shadowMapStack;
 			
-			if (SimpleCloudsConfig.CLIENT.renderStormFog.get() && !CompatHelper.areShadersRunning())
-			{
-				this.mc.getProfiler().push("storm_fog");
-				this.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
-				this.blurTarget.clear(Minecraft.ON_OSX);
-				this.blurTarget.bindWrite(true);
-				BlitUtils.blitTargetPreservingAlpha(this.stormFogTarget, this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight());
-				this.doBlurPostProcessing(partialTick);
-				this.mc.getMainRenderTarget().bindWrite(false);
-				RenderSystem.enableBlend();
-				RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
-				this.blurTarget.blitToScreen(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), false);
-				RenderSystem.disableBlend();
-				RenderSystem.defaultBlendFunc();
-				this.mc.getProfiler().pop();
-			}
+			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
+			float cloudR = (float)cloudCol.x;
+			float cloudG = (float)cloudCol.y;
+			float cloudB = (float)cloudCol.z;
+		
+			this.doStormPostProcessing(stack, this.shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
+			this.blurTarget.clear(Minecraft.ON_OSX);
+			this.blurTarget.bindWrite(true);
+			BlitUtils.blitTargetPreservingAlpha(this.stormFogTarget, this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight());
+			this.doBlurPostProcessing(partialTick);
+			this.mc.getMainRenderTarget().bindWrite(false);
 			
 			RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
-			
-			this.shadowMapStack = shadowMapStack;
 		}
 		this.mc.getProfiler().pop();
 	}
 	
-	public void renderInWorldPost(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	public void renderStormFog(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
-		this.mc.getProfiler().push("simple_clouds_post");
+		this.mc.getProfiler().push("simple_clouds_storm_fog");
+		
+		this.mc.getMainRenderTarget().bindWrite(false);
+		RenderSystem.enableBlend();
+		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+		this.blurTarget.blitToScreen(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), false);
+		RenderSystem.disableBlend();
+		RenderSystem.defaultBlendFunc();
+		
+		RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
+		
+		this.mc.getProfiler().pop();
+	}
+	
+	public void renderInWorld(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	{
+		this.mc.getProfiler().push("simple_clouds");
 		if (this.meshGenerator.getArrayObjectId() != -1)
 		{
 			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
