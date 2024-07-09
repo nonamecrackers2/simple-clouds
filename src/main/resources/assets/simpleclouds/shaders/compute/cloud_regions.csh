@@ -48,7 +48,6 @@ uniform vec2 Offset;
 //https://www.shadertoy.com/view/llG3zy
 vec2 cloudRegionIndexWithBoundaryFade(vec2 pos) 
 {
-    pos = pos / Scale;
     vec2 indexUv = floor(pos);
 	vec2 fractUv = fract(pos);
 
@@ -101,7 +100,8 @@ void main()
 
 	vec2 centerOffset = vec2(imageSize(mainImage).xy) / 2.0;
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-	vec2 info = cloudRegionIndexWithBoundaryFade((vec2(gl_GlobalInvocationID.xy) - centerOffset) * scale + centerOffset + Scroll + Offset);
+    vec2 uv = ((vec2(gl_GlobalInvocationID.xy) - centerOffset) * scale + Scroll + Offset) / Scale;
+	vec2 info = cloudRegionIndexWithBoundaryFade(uv);
 	//vec3 col = hsv2rgb(vec3(float(id) / float(TotalCloudTypes), 1.0, 1.0));
     imageStore(mainImage, ivec3(texelCoord, lod), vec4(info, 0.0, 0.0));//vec4(col, 1.0));
 }

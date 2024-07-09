@@ -43,10 +43,9 @@ vec4 shadowMapColorAt(vec3 pos)
 	vec3 ndc = shadowMapPos.xyz / shadowMapPos.w;
 	vec3 coord = ndc * 0.5 + 0.5;
 	float shadowMapDepth = texture(ShadowMap, coord.xy).x;
-	if (shadowMapDepth < coord.z)
+	if (shadowMapDepth < 1.0 &&shadowMapDepth < coord.z)
 		return vec4(texture(ShadowMapColor, coord.xy).rgb, 1.0);
-	else
-		return vec4(0.0);
+	return vec4(0.0);
 }
 
 // The MIT License

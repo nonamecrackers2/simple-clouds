@@ -100,7 +100,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.meshGenerator = new MultiRegionCloudMeshGenerator(new CloudType[] { FALLBACK }, LevelOfDetailOptions.HIGH.getConfig(), 3);
 		this.random = RandomSource.create();
 		int span = this.meshGenerator.getLodConfig().getEffectiveChunkSpan() * 32 * CLOUD_SCALE;
-		this.shadowMapProjMat = new Matrix4f().setOrtho(0.0F, span, span, 0.0F, 0.0F, 1000.0F);
+		this.shadowMapProjMat = new Matrix4f().setOrtho(0.0F, span, span, 0.0F, 0.0F, 10000.0F);
 	}
 	
 	private void setupMeshGenerator()
@@ -330,12 +330,14 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT, Minecraft.ON_OSX);
 			
 			int span = this.meshGenerator.getLodConfig().getEffectiveChunkSpan() * 32 * CLOUD_SCALE;
-			stack.translate(span / 2.0D, span / 2.0D, -400.0D);
-			stack.mulPose(Axis.XP.rotationDegrees(90.0F));
+			stack.translate(span / 2.0D, span / 2.0D, -5000.0D);
+			float yaw = (float)Mth.atan2((double)this.scrollDirection.x, (double)this.scrollDirection.z);
+			stack.mulPose(Axis.XP.rotationDegrees(SimpleCloudsConfig.CLIENT.stormFogAngle.get().floatValue()));
+			stack.mulPose(Axis.YP.rotation(yaw));
 			float chunkSizeUpscaled = 32.0F * (float)CLOUD_SCALE;
 			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
 			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
-			stack.translate(-camOffsetX, 0.0D, -camOffsetZ);
+			stack.translate(-camOffsetX, -(double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), -camOffsetZ);
 			stack.pushPose();
 			translateClouds(stack, 0.0D, 0.0D, 0.0D);
 			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShadowMapShader);

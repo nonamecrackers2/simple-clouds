@@ -27,6 +27,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Boolean> renderStormFog;
 		public final ForgeConfigSpec.ConfigValue<LevelOfDetailOptions> levelOfDetail;
 		public final ForgeConfigSpec.ConfigValue<Boolean> frustumCulling;
+		public final ForgeConfigSpec.ConfigValue<Double> stormFogAngle; 
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -36,7 +37,9 @@ public class SimpleCloudsConfig
 			
 			this.speedModifier = this.createRangedDoubleValue(1.0D, 0.1D, 32.0D, "speedModifier", false, "Specifies the movement speed of the clouds");
 			
-			this.cloudHeight = this.createRangedIntValue(128, 0, 1024, "cloudHeight", false, "Specifies the render Y offset for the clouds");
+			this.cloudHeight = this.createRangedIntValue(128, 0, 2048, "cloudHeight", false, "Specifies the render Y offset for the clouds");
+			
+			this.stormFogAngle = this.createRangedDoubleValue(80.0D, 50.0D, 90.0D, "stormFogAngle", false, "Specifies the angle parellel to the horizon that the storm fog should be directed to");
 			
 			builder.comment("Performance").push("performance");
 			
