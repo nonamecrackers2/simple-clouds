@@ -60,7 +60,6 @@ public class ComputeShader implements AutoCloseable
 	private final ComputeShader.CompiledShader compiledShader;
 	private final String name;
 	private final Map<String, ShaderStorageBufferObject> shaderStorageBuffers = Maps.newHashMap();
-//	private final Map<String, Integer> imageBuffers = Maps.newHashMap();
 	private final List<String> missingUniformErrors = Lists.newArrayList();
 	
 	private ComputeShader(int id, ComputeShader.CompiledShader compiledShader, String name)
@@ -118,10 +117,6 @@ public class ComputeShader implements AutoCloseable
 			ALL_SHADER_STORAGE_BUFFERS.remove(buffer.getBinding());
 		});
 		this.shaderStorageBuffers.clear();
-//		this.imageBuffers.values().forEach(binding -> {
-//			ALL_IMAGE_BINDINGS.remove(binding);
-//		});
-//		this.imageBuffers.clear();
 		if (this.id != -1)
 		{
 			GlStateManager.glDeleteProgram(this.id);
@@ -184,53 +179,6 @@ public class ComputeShader implements AutoCloseable
 		GL41.glProgramUniform1i(this.id, loc, unit);
 	}
 	
-//	public void removeImageUnit(String name, int textureId)
-//	{
-//		if (this.imageBuffers.containsKey(name))
-//		{
-//			int binding = this.imageBuffers.remove(name);
-//			ALL_IMAGE_BINDINGS.remove(binding);
-//		}
-//	}
-//	
-//	public void bindAndAssignImageUnit(String name, int usage, int textureId, int level, boolean layered, int layer, int format)
-//	{
-//		RenderSystem.assertOnRenderThreadOrInit();
-//		this.assertValid();
-//		if (this.imageBuffers.containsKey(name))
-//			throw new IllegalArgumentException("Image with name '" + name + "' is already defined");
-//		int loc = GL20.glGetUniformLocation(this.id, name);
-//		if (loc == -1)
-//			throw new NullPointerException("Unknown image with name '" + name + "'");
-//		int binding = -1;
-//		binding = getAvailableImageBinding();
-//		GL42.glBindImageTexture(binding, textureId, level, layered, layer, usage, format);
-//		ALL_IMAGE_BINDINGS.put(binding, textureId);
-//		GL41.glProgramUniform1i(this.id, loc, binding);
-//		this.imageBuffers.put(name, binding);
-//	}
-//	
-//	public void assignImageUnit(String name, int textureId)
-//	{
-//		RenderSystem.assertOnRenderThreadOrInit();
-//		this.assertValid();
-//		if (this.imageBuffers.containsKey(name))
-//			throw new IllegalArgumentException("Image with name '" + name + "' is already defined");
-//		int loc = GL20.glGetUniformLocation(this.id, name);
-//		if (loc == -1)
-//			throw new NullPointerException("Unknown image with name '" + name + "'");
-//		int binding = -1;
-//		for (var entry : ALL_IMAGE_BINDINGS.int2IntEntrySet())
-//		{
-//			if (entry.getIntValue() == textureId)
-//				binding = entry.getIntKey();
-//		}
-//		if (binding == -1)
-//			throw new IllegalStateException("Image is not binded!");
-//		GL41.glProgramUniform1i(this.id, loc, binding);
-//		this.imageBuffers.put(name, binding);
-//	}
-//	
 	public ShaderStorageBufferObject getShaderStorageBuffer(String name)
 	{
 		RenderSystem.assertOnRenderThread();

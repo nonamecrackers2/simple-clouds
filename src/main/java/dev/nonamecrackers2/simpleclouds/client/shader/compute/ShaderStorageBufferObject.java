@@ -43,7 +43,7 @@ public class ShaderStorageBufferObject
 		if (this.id != -1)
 		{
 			ComputeShader.LOGGER.debug("Deleting buffer id={}, binding={}", this.id, this.binding);
-			RenderSystem.glDeleteBuffers(this.id);
+			GL15.glDeleteBuffers(this.id);
 			this.id = -1;
 		}
 	}
