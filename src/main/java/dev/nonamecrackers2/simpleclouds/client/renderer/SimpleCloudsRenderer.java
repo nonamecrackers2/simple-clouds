@@ -386,32 +386,37 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			float cloudG = (float)cloudCol.y;
 			float cloudB = (float)cloudCol.z;
 		
-			this.doStormPostProcessing(stack, this.shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
-			this.blurTarget.clear(Minecraft.ON_OSX);
-			this.blurTarget.bindWrite(true);
-			BlitUtils.blitTargetPreservingAlpha(this.stormFogTarget, this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight());
-			this.doBlurPostProcessing(partialTick);
-			this.mc.getMainRenderTarget().bindWrite(false);
-			
-			RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
+			if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
+			{
+				this.doStormPostProcessing(stack, this.shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
+				this.blurTarget.clear(Minecraft.ON_OSX);
+				this.blurTarget.bindWrite(true);
+				BlitUtils.blitTargetPreservingAlpha(this.stormFogTarget, this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight());
+				this.doBlurPostProcessing(partialTick);
+				this.mc.getMainRenderTarget().bindWrite(false);
+				RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
+			}
 		}
 		this.mc.getProfiler().pop();
 	}
 	
 	public void renderStormFog(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
-		this.mc.getProfiler().push("simple_clouds_storm_fog");
-		
-		this.mc.getMainRenderTarget().bindWrite(false);
-		RenderSystem.enableBlend();
-		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
-		this.blurTarget.blitToScreen(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), false);
-		RenderSystem.disableBlend();
-		RenderSystem.defaultBlendFunc();
-		
-		RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
-		
-		this.mc.getProfiler().pop();
+		if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
+		{
+			this.mc.getProfiler().push("simple_clouds_storm_fog");
+			
+			this.mc.getMainRenderTarget().bindWrite(false);
+			RenderSystem.enableBlend();
+			RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+			this.blurTarget.blitToScreen(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), false);
+			RenderSystem.disableBlend();
+			RenderSystem.defaultBlendFunc();
+			
+			RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
+			
+			this.mc.getProfiler().pop();
+		}
 	}
 	
 	public void renderInWorld(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
