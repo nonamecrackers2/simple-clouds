@@ -32,6 +32,7 @@ public class SimpleCloudsMod
 		modBus.addListener(SimpleCloudsDataEvents::gatherData);
 		modBus.addListener(SimpleCloudsKeybinds::registerKeyMappings);
 		modBus.addListener(SimpleCloudsClientEvents::registerOverlays);
+		modBus.addListener(SimpleCloudsClientEvents::registerClientPresets);
 		ModLoadingContext context = ModLoadingContext.get();
 		context.registerConfig(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC);
 	}

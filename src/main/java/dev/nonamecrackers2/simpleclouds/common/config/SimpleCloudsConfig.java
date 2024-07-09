@@ -26,6 +26,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Boolean> testSidesThatAreOccluded;
 		public final ForgeConfigSpec.ConfigValue<Boolean> renderStormFog;
 		public final ForgeConfigSpec.ConfigValue<LevelOfDetailOptions> levelOfDetail;
+		public final ForgeConfigSpec.ConfigValue<Boolean> frustumCulling;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -39,13 +40,15 @@ public class SimpleCloudsConfig
 			
 			builder.comment("Performance").push("performance");
 			
-			this.cloudMeshGenerateTime = this.createRangedIntValue(3, 1, 12, "cloudMeshGenerateTime", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts");
+			this.cloudMeshGenerateTime = this.createRangedIntValue(3, 1, 32, "cloudMeshGenerateTime", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts");
 			
 			this.testSidesThatAreOccluded = this.createValue(false, "testSidesThatAreOccluded", false, "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of some visual artifacts");
 			
 			this.renderStormFog = this.createValue(true, "renderStormFog", false, "Specifies if the fog beneath storm clouds should appear or not. Disabling can improve performance");
 			
 			this.levelOfDetail = this.createEnumValue(LevelOfDetailOptions.HIGH, "levelOfDetail", false, "Specifies the quality of the level of detail");
+			
+			this.frustumCulling = this.createValue(true, "frustumCulling", false, "Culls cloud chunks not visible to the player. Disable if facing noticeable artifacts with high cloud mesh generate times");
 			
 			builder.pop();
 		}

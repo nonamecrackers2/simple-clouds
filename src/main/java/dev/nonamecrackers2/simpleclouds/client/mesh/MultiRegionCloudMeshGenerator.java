@@ -38,6 +38,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private CloudInfo[] cloudTypes;
 	private @Nullable ComputeShader cloudRegionShader;
 	private int cloudRegionTexture;
+	private boolean needsNoiseRefreshing;
 	
 	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval)
 	{
@@ -60,6 +61,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		if (cloudTypes.length > MAX_CLOUD_TYPES)
 			throw new IllegalArgumentException("Too many cloud types! The maximum allowed is " + MAX_CLOUD_TYPES);
 		this.cloudTypes = cloudTypes;
+		this.needsNoiseRefreshing = true;
 	}
 	
 	@Override
@@ -153,6 +155,9 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	@Override
 	public void init(ResourceManager manager)
 	{
+		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
+		this.chunkGenTasks.clear();
+		
 		this.createRegionTexture();
 		
 		if (this.cloudRegionShader != null)
@@ -194,12 +199,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.recalibrateForLods();
 			this.needsRegionTextureUpdated = false;
 		}
-		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
-	}
-	
-	@Override
-	protected void doMeshGenning(double camX, double camY, double camZ, float scale)
-	{
+		
 		if (this.cloudRegionShader != null && this.cloudRegionShader.isValid())
 		{
 			this.cloudRegionShader.forUniform("Scroll", loc -> {
@@ -212,52 +212,59 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 				float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * 32.0F);
 				GL20.glUniform2f(loc, camOffsetX, camOffsetZ);
 			});
-			this.cloudRegionShader.forUniform("TotalCloudTypes", loc -> {
-				GL20.glUniform1i(loc, this.getTotalCloudTypes());
-			});
+			if (this.needsNoiseRefreshing)
+			{
+				this.cloudRegionShader.forUniform("TotalCloudTypes", loc -> {
+					GL20.glUniform1i(loc, this.getTotalCloudTypes());
+				});
+			}
 			this.cloudRegionShader.dispatchAndWait(this.requiredRegionTexSize / 8, this.requiredRegionTexSize / 8, this.lodConfig.getLods().length + 1);
 		}
 		
-		this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b -> 
+		if (this.needsNoiseRefreshing)
 		{
-			int currentIndex = 0;
-			int previousLayerIndex = 0;
-			for (int i = 0; i < this.cloudTypes.length; i++)
+			this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b -> 
 			{
-				CloudInfo type = this.cloudTypes[i];
-				int layerCount = type.noiseConfig().layerCount();
-				b.putInt(currentIndex, previousLayerIndex);
-				currentIndex += 4;
-				b.putInt(currentIndex, previousLayerIndex + layerCount);
-				currentIndex += 4;
-				b.putFloat(currentIndex, type.storminess());
-				currentIndex += 4;
-				b.putFloat(currentIndex, type.stormStart());
-				currentIndex += 4;
-				b.putFloat(currentIndex, type.stormFadeDistance());
-				currentIndex += 4;
-				previousLayerIndex += layerCount;
-			}
-		});
-		
-		this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
-		{
-			int index = 0;
-			for (int i = 0; i < this.cloudTypes.length; i++)
-			{
-				NoiseSettings settings = this.cloudTypes[i].noiseConfig();
-				float[] packed = settings.packForShader();
-				for (int j = 0; j < packed.length && j < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; j++)
+				int currentIndex = 0;
+				int previousLayerIndex = 0;
+				for (int i = 0; i < this.cloudTypes.length; i++)
 				{
-					b.putFloat(index, packed[j]);
-					index += 4;
+					CloudInfo type = this.cloudTypes[i];
+					int layerCount = type.noiseConfig().layerCount();
+					b.putInt(currentIndex, previousLayerIndex);
+					currentIndex += 4;
+					b.putInt(currentIndex, previousLayerIndex + layerCount);
+					currentIndex += 4;
+					b.putFloat(currentIndex, type.storminess());
+					currentIndex += 4;
+					b.putFloat(currentIndex, type.stormStart());
+					currentIndex += 4;
+					b.putFloat(currentIndex, type.stormFadeDistance());
+					currentIndex += 4;
+					previousLayerIndex += layerCount;
 				}
-			}
-		});
+			});
+			
+			this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
+			{
+				int index = 0;
+				for (int i = 0; i < this.cloudTypes.length; i++)
+				{
+					NoiseSettings settings = this.cloudTypes[i].noiseConfig();
+					float[] packed = settings.packForShader();
+					for (int j = 0; j < packed.length && j < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; j++)
+					{
+						b.putFloat(index, packed[j]);
+						index += 4;
+					}
+				}
+			});
+		}
 		
-		super.doMeshGenning(camX, camY, camZ, scale);
+		this.needsNoiseRefreshing = false;
+		
+		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
 	}
-	
 	
 	public int getCloudRegionTextureId()
 	{

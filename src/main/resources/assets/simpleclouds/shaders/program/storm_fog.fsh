@@ -37,15 +37,6 @@ vec3 getRayDirection(vec2 screenUV)
 	return normalize(farResult - nearResult);
 }
 
-vec3 screenToWorldPos(vec2 coord, float depth)
-{
-	vec3 ndc = vec3(coord * 2.0 - 1.0, depth);
-  	vec4 view = InverseWorldProjMat * vec4(ndc, 1.0);
-  	view.xyz /= view.w;
-  	vec3 result = (InverseModelViewMat * view).xyz;
-  	return result;
-}
-
 vec4 shadowMapColorAt(vec3 pos)
 {
 	vec4 shadowMapPos = ShadowProjMat * ShadowModelViewMat * vec4(pos, 1.0);

@@ -12,6 +12,7 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
@@ -24,6 +25,8 @@ import nonamecrackers2.crackerslib.client.event.impl.ConfigMenuButtonEvent;
 import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;
 import nonamecrackers2.crackerslib.client.gui.ConfigHomeScreen;
 import nonamecrackers2.crackerslib.client.gui.title.TextTitle;
+import nonamecrackers2.crackerslib.common.config.preset.ConfigPreset;
+import nonamecrackers2.crackerslib.common.config.preset.RegisterConfigPresetsEvent;
 
 public class SimpleCloudsClientEvents
 {
@@ -53,6 +56,18 @@ public class SimpleCloudsClientEvents
 	public static void registerConfigMenuButton(ConfigMenuButtonEvent event)
 	{
 		event.defaultButtonWithSingleCharacter('S', 0xFFADF7FF);
+	}
+	
+	public static void registerClientPresets(RegisterConfigPresetsEvent event)
+	{
+		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.optimal_mesh"))
+				.setDescription(Component.translatable("simpleclouds.config.preset.optimal_mesh.description"))
+				.setPreset(SimpleCloudsConfig.CLIENT.cloudMeshGenerateTime, 16)
+				.setPreset(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded, true)
+				.setPreset(SimpleCloudsConfig.CLIENT.frustumCulling, false).build());
+		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.fast_culled_mesh"))
+				.setDescription(Component.translatable("simpleclouds.config.preset.fast_culled_mesh.description"))
+				.setPreset(SimpleCloudsConfig.CLIENT.cloudMeshGenerateTime, 4).build());
 	}
 	
 	@SubscribeEvent

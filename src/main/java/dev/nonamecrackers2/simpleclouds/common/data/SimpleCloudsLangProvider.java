@@ -37,6 +37,10 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 				splitted[i] = StringUtils.capitalize(splitted[i]);
 			this.add(key, StringUtils.join(splitted, " "));
 		}
+		this.add("simpleclouds.config.preset.optimal_mesh", "Optimal Mesh");
+		this.add("simpleclouds.config.preset.optimal_mesh.description", "A more complete cloud mesh that fairs better with storm fog. Removes the small delay for chunks to appear that can be seen when using frustum culling, however at the cost of more vertices. Clouds may appear to move with a slight stutter when moving fast.");
+		this.add("simpleclouds.config.preset.fast_culled_mesh", "Fast Culled Mesh");
+		this.add("simpleclouds.config.preset.fast_culled_mesh.description", "Heavily lowers the total vertex count by applying culling. Generates the cloud mesh much faster. A small delay for chunks to appear is present when turning fast.");
 		this.add("gui.simpleclouds.noise_settings.param.range", "Range: %s - %s");
 		this.add("gui.simpleclouds.cloud_previewer.button.previous_layer.title", "Previous layer");
 		this.add("gui.simpleclouds.cloud_previewer.button.next_layer.title", "Next layer");

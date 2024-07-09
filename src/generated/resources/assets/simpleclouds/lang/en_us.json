@@ -21,8 +21,10 @@
   "gui.simpleclouds.config.category.performance.title": "Performance",
   "gui.simpleclouds.config.cloudHeight.description": "Specifies the render Y offset for the clouds.\nRange: 0 ~ 1024",
   "gui.simpleclouds.config.cloudHeight.title": "Cloud Height",
-  "gui.simpleclouds.config.cloudMeshGenerateTime.description": "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts.\nRange: 1 ~ 12",
+  "gui.simpleclouds.config.cloudMeshGenerateTime.description": "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts.\nRange: 1 ~ 32",
   "gui.simpleclouds.config.cloudMeshGenerateTime.title": "Cloud Mesh Generate Time",
+  "gui.simpleclouds.config.frustumCulling.description": "Culls cloud chunks not visible to the player. Disable if facing noticeable artifacts with high cloud mesh generate times.",
+  "gui.simpleclouds.config.frustumCulling.title": "Frustum Culling",
   "gui.simpleclouds.config.levelOfDetail.description": "Specifies the quality of the level of detail.",
   "gui.simpleclouds.config.levelOfDetail.title": "Level Of Detail",
   "gui.simpleclouds.config.renderStormFog.description": "Specifies if the fog beneath storm clouds should appear or not. Disabling can improve performance.",
@@ -42,6 +44,10 @@
   "gui.simpleclouds.noise_settings.param.scale_z.name": "Scale Z",
   "gui.simpleclouds.noise_settings.param.value_offset.name": "Value Offset",
   "gui.simpleclouds.noise_settings.param.value_scale.name": "Value Scale",
+  "simpleclouds.config.preset.fast_culled_mesh": "Fast Culled Mesh",
+  "simpleclouds.config.preset.fast_culled_mesh.description": "Heavily lowers the total vertex count by applying culling. Generates the cloud mesh much faster. A small delay for chunks to appear is present when turning fast.",
+  "simpleclouds.config.preset.optimal_mesh": "Optimal Mesh",
+  "simpleclouds.config.preset.optimal_mesh.description": "A more complete cloud mesh that fairs better with storm fog. Removes the small delay for chunks to appear that can be seen when using frustum culling, however at the cost of more vertices. Clouds may appear to move with a slight stutter when moving fast.",
   "simpleclouds.key.categories.main": "Simple Clouds",
   "simpleclouds.key.openGenPreviewer": "Open Cloud Gen Previewer"
 }

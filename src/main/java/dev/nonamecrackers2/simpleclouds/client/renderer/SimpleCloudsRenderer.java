@@ -375,7 +375,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 //					this.generateMesh(camX, camY - 128.0D, camZ, this.cullFrustum);
 //			}
 			this.setupMeshGenerator();
-			this.meshGenerator.tick(camX, camY - (double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), camZ, (float)CLOUD_SCALE, this.cullFrustum);
+			this.meshGenerator.tick(camX, camY - (double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), camZ, (float)CLOUD_SCALE, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
 			this.mc.getProfiler().pop();
 			
 			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);

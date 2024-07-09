@@ -16,6 +16,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
+import org.lwjgl.opengl.GL43;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
@@ -244,6 +245,8 @@ public abstract class CloudMeshGenerator
 	{
 		if (this.vertexBufferId != -1 && this.indexBufferId != -1 && this.shader != null && this.shader.isValid())
 		{
+			GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
+			
 			MutableInt totalSides = new MutableInt();
 			this.shader.getShaderStorageBuffer("Counter").readData(b -> {
 				totalSides.setValue(b.getInt(0));
