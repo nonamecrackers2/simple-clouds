@@ -362,20 +362,14 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		stack.scale((float)CLOUD_SCALE, (float)CLOUD_SCALE, (float)CLOUD_SCALE);
 	}
 	
-	public void renderInWorld(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	public void renderInWorldPre(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
-		this.mc.getProfiler().push("simple_clouds");
+		this.mc.getProfiler().push("simple_clouds_pre");
 		if (this.meshGenerator.getArrayObjectId() != -1)
 		{
 			this.cullFrustum = new Frustum(stack.last().pose(), projMat);
 			
 			this.mc.getProfiler().push("mesh_generation");
-//			if (this.nextMeshRebuild > 0)
-//			{
-//				this.nextMeshRebuild--;
-//				if (this.nextMeshRebuild == 0)
-//					this.generateMesh(camX, camY - 128.0D, camZ, this.cullFrustum);
-//			}
 			this.setupMeshGenerator();
 			this.meshGenerator.tick(camX, camY - (double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), camZ, (float)CLOUD_SCALE, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
 			this.mc.getProfiler().pop();
@@ -391,7 +385,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.renderShadowMap(shadowMapStack, camX, camY, camZ);
 			this.mc.getProfiler().pop();
 			
-			if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
+			if (SimpleCloudsConfig.CLIENT.renderStormFog.get() && !CompatHelper.areShadersRunning())
 			{
 				this.mc.getProfiler().push("storm_fog");
 				this.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
@@ -407,8 +401,29 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				RenderSystem.defaultBlendFunc();
 				this.mc.getProfiler().pop();
 			}
-	        
+			
+			RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
+			
+			this.shadowMapStack = shadowMapStack;
+		}
+		this.mc.getProfiler().pop();
+	}
+	
+	public void renderInWorldPost(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	{
+		this.mc.getProfiler().push("simple_clouds_post");
+		if (this.meshGenerator.getArrayObjectId() != -1)
+		{
+			Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
+			float cloudR = (float)cloudCol.x;
+			float cloudG = (float)cloudCol.y;
+			float cloudB = (float)cloudCol.z;
+			
+			if (CompatHelper.areShadersRunning())
+				GlStateManager._depthMask(true);
+			this.mc.getMainRenderTarget().bindWrite(false);
 	        this.cloudTarget.clear(Minecraft.ON_OSX);
+	        this.cloudTarget.copyDepthFrom(this.mc.getMainRenderTarget());
 			
 			//NOTE: Running this clears the depth buffer of the main frame buffer. This should be okay since the game clears it right after the world is rendered
 			//for the player's hand anyways
@@ -425,8 +440,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			stack.popPose();
 			this.mc.getProfiler().pop();
 	
-			this.mc.getMainRenderTarget().copyDepthFrom(this.cloudTarget);
-			
 			this.mc.getProfiler().push("clouds_post");
 			this.doCloudPostProcessing(stack, partialTick, projMat);
 			this.mc.getMainRenderTarget().bindWrite(false);
@@ -439,8 +452,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.defaultBlendFunc();
 			
 	        RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
-	        
-	        this.shadowMapStack = shadowMapStack;
 		}
 		this.mc.getProfiler().pop();
 	}
@@ -638,7 +649,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public static boolean isEnabled()
 	{
-		return !CompatHelper.areShadersRunning();
+		return true;//!CompatHelper.areShadersRunning();
 	}
 	
 	//TODO: Make it so you can't call this multiple times
