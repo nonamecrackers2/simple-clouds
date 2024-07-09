@@ -72,7 +72,7 @@ layout(std430) readonly buffer LayerGroupings {
 layerGroupings;
 
 #if TYPE == 0
-layout(rg32f, binding = 0) uniform image3D regions;
+layout(rg32f) uniform image3D regions;
 #endif
 
 uniform int LodLevel;

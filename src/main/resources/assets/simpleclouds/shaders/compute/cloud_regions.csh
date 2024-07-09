@@ -12,7 +12,7 @@ layout(std430) restrict buffer LodScales {
 }
 lodScales;
 
-layout(rg32f, binding = 0) uniform image3D mainImage;
+layout(rg32f) uniform image3D mainImage;
 
 uniform vec2 Scroll;
 uniform float Scale = 10.0;
