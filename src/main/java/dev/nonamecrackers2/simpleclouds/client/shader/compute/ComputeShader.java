@@ -74,7 +74,7 @@ public class ComputeShader implements AutoCloseable
 	public static int getAvailableShaderStorageBinding()
 	{
 		int max = GL11.glGetInteger(GL43.GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS);
-		for (int i = 0; i < max; i++)
+		for (int i = max - 1; i > 0; i--)
 		{
 			if (!ALL_SHADER_STORAGE_BUFFERS.containsKey(i))
 				return i;
@@ -85,7 +85,7 @@ public class ComputeShader implements AutoCloseable
 	public static int getAvailableImageUnit()
 	{
 		int max = GL11.glGetInteger(GL43.GL_MAX_IMAGE_UNITS);
-		for (int i = 0; i < max; i++)
+		for (int i = max - 1; i > 0; i--)
 		{
 			if (!ALL_IMAGE_BINDINGS.contains(i))
 				return i;
@@ -100,9 +100,11 @@ public class ComputeShader implements AutoCloseable
 		return unit;
 	}
 	
+	@SuppressWarnings("deprecation")
 	public static void freeImageUnit(int unit)
 	{
-		ALL_IMAGE_BINDINGS.removeInt(unit);
+		//We want to remove the value "unit" from the list, not the value at index "unit"
+		ALL_IMAGE_BINDINGS.remove((Object)unit);
 	}
 	
 	@Override
