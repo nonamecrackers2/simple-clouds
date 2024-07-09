@@ -275,7 +275,7 @@ public class ComputeShader implements AutoCloseable
 		}
 		else
 		{
-			String path = "shaders/compute/" + loc.getPath() + ".csh";
+			String path = "shaders/compute/" + loc.getPath() + ".comp";
 			ResourceLocation finalLoc = new ResourceLocation(loc.getNamespace(), path);
 			Resource resource = provider.getResourceOrThrow(finalLoc);
 				
