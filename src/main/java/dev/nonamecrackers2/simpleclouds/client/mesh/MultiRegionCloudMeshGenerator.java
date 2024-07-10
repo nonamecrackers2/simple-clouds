@@ -165,9 +165,6 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	@Override
 	public void init(ResourceManager manager)
 	{
-		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
-		this.chunkGenTasks.clear();
-		
 		if (this.cloudRegionShader != null)
 		{
 			this.cloudRegionShader.close();

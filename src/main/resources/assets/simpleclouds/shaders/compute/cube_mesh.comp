@@ -47,16 +47,16 @@ const uint sideIndices[6] = {
 	0, 1, 2, 0, 2, 3
 };
 
-layout(std430) coherent buffer Counter {
+layout(std430) restrict buffer Counter {
 	uint counter;
 };
 
-layout(std430) restrict buffer SideDataBuffer {
+layout(std430) restrict writeonly buffer SideDataBuffer {
     Side data[];
 }
 sides;
 
-layout(std430) restrict buffer IndexBuffer {
+layout(std430) restrict writeonly buffer IndexBuffer {
 	uint data[];
 }
 indices;
@@ -141,6 +141,8 @@ bool isPosValid(float x, float y, float z, int nx, int nz)
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
     float fade = -5.0 * pow(info.g, 10.0);
+    //float len = distance(vec2(x, z), Origin.xz);
+	//float fade = -5.0 * (1.0 - min(max(len - 200.0, 0.0) / (500.0 - 200.0), 1.0));
 #elif TYPE == 1
 	LayerGroup group = layerGroupings.data[0];
 	float len = distance(vec2(x, z), Origin.xz);
@@ -228,6 +230,8 @@ void main()
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
     float fade = -5.0 * pow(info.g, 10.0);
+    //float len = distance(vec2(x, z), Origin.xz);
+	//float fade = -5.0 * (1.0 - min(max(len - 200.0, 0.0) / (400.0 - 200.0), 1.0));
 #elif TYPE == 1
 	LayerGroup group = layerGroupings.data[0];
 	float len = distance(vec2(x, z), Origin.xz);

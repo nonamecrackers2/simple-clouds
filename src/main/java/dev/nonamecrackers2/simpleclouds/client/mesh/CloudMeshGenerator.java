@@ -16,6 +16,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
+import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
 
 import com.google.common.collect.ImmutableList;
@@ -149,6 +150,9 @@ public abstract class CloudMeshGenerator
 	public void init(ResourceManager manager)
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
+		
+		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
+		this.chunkGenTasks.clear();
 		
 		if (this.arrayObjectId >= 0)
 		{
@@ -304,7 +308,7 @@ public abstract class CloudMeshGenerator
 		});
 		this.shader.forUniform("TestFacesFacingAway", loc -> {
 			GL20.glUniform1i(loc, this.testFacesFacingAway ? 1 : 0);
-		});	
+		});
 		
 		for (int i = 0; i < this.tasksPerTick; i++)
 		{
@@ -364,7 +368,7 @@ public abstract class CloudMeshGenerator
 	public void render(PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b)
 	{
 		RenderSystem.assertOnRenderThread();
-		if (this.arrayObjectId != -1)
+		if (this.arrayObjectId != -1 && this.totalIndices > 0)
 		{
 			BufferUploader.reset();
 			

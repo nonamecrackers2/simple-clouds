@@ -28,21 +28,21 @@ public class MixinLevelRenderer
 	public void simpleclouds$injectCustomCloudRenderingPost_renderLevel(PoseStack stack, float partialTick, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
 	{
 		if (SimpleCloudsRenderer.isEnabled())
-			SimpleCloudsRenderer.getInstance().renderInWorld(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+			SimpleCloudsRenderer.getInstance().renderAfterLevel(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
 	@Inject(method = "renderLevel", at = @At("HEAD")) // @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;blendFuncSeparate(Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;)V", ordinal = 0)
 	public void simpleclouds$injectCustomCloudRenderingPre_renderLevel(PoseStack stack, float partialTick, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
 	{
 		if (SimpleCloudsRenderer.isEnabled())
-			SimpleCloudsRenderer.getInstance().prepare(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+			SimpleCloudsRenderer.getInstance().renderBeforeLevel(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
 	@Inject(method = "renderSky", at = @At("TAIL")) // @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;blendFuncSeparate(Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;)V", ordinal = 0)
 	public void simpleclouds$injectCustomCloudRenderingPre_renderSky(PoseStack stack, Matrix4f projMat, float partialTick, Camera camera, boolean flag, Runnable fogSetup, CallbackInfo ci)
 	{
 		if (SimpleCloudsRenderer.isEnabled())
-			SimpleCloudsRenderer.getInstance().renderStormFog(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+			SimpleCloudsRenderer.getInstance().renderAfterSky(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
 	@Inject(method = "tick", at = @At("HEAD"))
