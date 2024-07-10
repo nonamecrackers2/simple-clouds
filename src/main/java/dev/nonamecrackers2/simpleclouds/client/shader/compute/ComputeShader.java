@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.IntConsumer;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
@@ -126,9 +126,8 @@ public class ComputeShader implements AutoCloseable
 		this.missingUniformErrors.clear();
 	}
 	
-	public void forUniform(String name, IntConsumer consumer)
+	public void forUniform(String name, BiConsumer<Integer, Integer> consumer)
 	{
-		ProgramManager.glUseProgram(this.id);
 		int loc = GlStateManager._glGetUniformLocation(this.id, name);
 		if (loc == -1 && !this.missingUniformErrors.contains(name))
 		{
@@ -137,9 +136,8 @@ public class ComputeShader implements AutoCloseable
 		}
 		else
 		{
-			consumer.accept(loc);
+			consumer.accept(this.id, loc);
 		}
-		ProgramManager.glUseProgram(0);
 	}
 	
 	/**

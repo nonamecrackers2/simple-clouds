@@ -352,8 +352,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			GL30.glBindVertexArray(0);
 			RenderSystem.enableCull();
 			
-			this.shadowMapStack = stack;
 		}
+		
+		this.shadowMapStack = stack;
 	}
 	
 	public static void translateClouds(PoseStack stack, double camX, double camY, double camZ)
@@ -369,12 +370,16 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			this.cullFrustum = new Frustum(stack.last().pose(), projMat);
 			
-			this.mc.getProfiler().push("mesh_generation");
-			this.setupMeshGenerator();
-			this.meshGenerator.tick(camX, camY - (double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), camZ, (float)CLOUD_SCALE, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
-			this.mc.getProfiler().pop();
+			if (SimpleCloudsConfig.CLIENT.generateMesh.get())
+			{
+				this.mc.getProfiler().push("mesh_generation");
+				this.setupMeshGenerator();
+				this.meshGenerator.tick(camX, camY - (double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), camZ, (float)CLOUD_SCALE, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
+				this.mc.getProfiler().pop();
+			}
 			
-			getRenderPipeline().prepare(this.mc, this, stack, projMat, partialTick, camX, camY, camZ);
+			if (SimpleCloudsConfig.CLIENT.renderClouds.get())
+				getRenderPipeline().prepare(this.mc, this, stack, projMat, partialTick, camX, camY, camZ);
 		}
 		this.mc.getProfiler().pop();
 	}
@@ -382,7 +387,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public void renderAfterSky(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds_after_sky");
-		if (this.meshGenerator.getArrayObjectId() != -1)
+		if (this.meshGenerator.getArrayObjectId() != -1 && SimpleCloudsConfig.CLIENT.renderClouds.get())
 			getRenderPipeline().afterSky(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ);
 		this.mc.getProfiler().pop();
 	}
@@ -390,7 +395,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public void renderAfterLevel(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds");
-		if (this.meshGenerator.getArrayObjectId() != -1)
+		if (this.meshGenerator.getArrayObjectId() != -1 && SimpleCloudsConfig.CLIENT.renderClouds.get())
 			getRenderPipeline().afterLevel(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ);
 		this.mc.getProfiler().pop();
 	}

@@ -3,7 +3,7 @@ package dev.nonamecrackers2.simpleclouds.client.mesh;
 import java.io.IOException;
 
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL41;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -55,11 +55,11 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 		super.setupShader();
 		this.shader.bindShaderStorageBuffer("LayerGroupings", GL15.GL_STATIC_DRAW).allocateBuffer(20);
 		this.shader.bindShaderStorageBuffer("NoiseLayers", GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
-		this.shader.forUniform("FadeStart", loc -> {
-			GL20.glUniform1f(loc, this.fadeStart);
+		this.shader.forUniform("FadeStart", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, this.fadeStart);
 		});
-		this.shader.forUniform("FadeEnd", loc -> {
-			GL20.glUniform1f(loc, this.fadeEnd);
+		this.shader.forUniform("FadeEnd", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, this.fadeEnd);
 		});
 	}
 	
@@ -73,7 +73,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 				float[] packed = this.type.noiseConfig().packForShader();
 				for (int i = 0; i < packed.length && i < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; i++)
 					b.putFloat(i * 4, packed[i]);
-			});
+			}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
 			this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b ->
 			{
 				b.putInt(0, 0);
@@ -81,7 +81,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 				b.putFloat(8, this.type.storminess());
 				b.putFloat(12, this.type.stormStart());
 				b.putFloat(16, this.type.stormFadeDistance());
-			});
+			}, 20);
 		}
 		
 		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);

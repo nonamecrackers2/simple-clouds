@@ -16,6 +16,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
+import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
 
@@ -142,7 +143,7 @@ public abstract class CloudMeshGenerator
 		buffer.allocateBuffer(4);
 		buffer.writeData(b -> {
 			b.putInt(0, 0);
-		});
+		}, 4);
 		this.shader.bindShaderStorageBuffer("SideDataBuffer", GL15.GL_DYNAMIC_DRAW).allocateBuffer(SIDE_BUFFER_SIZE); //Vertex data, arbitrary size
 		this.shader.bindShaderStorageBuffer("IndexBuffer", GL15.GL_DYNAMIC_DRAW).allocateBuffer(INDEX_BUFFER_SIZE); //Index data, arbitrary size
 	}
@@ -252,9 +253,10 @@ public abstract class CloudMeshGenerator
 			GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
 			
 			MutableInt totalSides = new MutableInt();
-			this.shader.getShaderStorageBuffer("Counter").readData(b -> {
+			this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {
 				totalSides.setValue(b.getInt(0));
-			});
+				b.putInt(0, 0);
+			}, 4);
 			this.totalSides = totalSides.getValue();
 			this.totalIndices = this.totalSides * 6;
 			
@@ -283,31 +285,31 @@ public abstract class CloudMeshGenerator
 	
 	protected void generateChunk(int lodLevel, int lodScale, int x, int y, int z, float offsetX, float offsetY, float offsetZ, float scale, float camOffsetX, float camOffsetZ, int noOcclusionDirectionIndex)
 	{
-		this.shader.forUniform("LodLevel", loc -> {
-			GL20.glUniform1i(loc, lodLevel);
+		this.shader.forUniform("LodLevel", (id, loc) -> {
+			GL41.glProgramUniform1i(id, loc, lodLevel);
 		});
-		this.shader.forUniform("RenderOffset", loc -> {
-			GL20.glUniform3f(loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
+		this.shader.forUniform("RenderOffset", (id, loc) -> {
+			GL41.glProgramUniform3f(id, loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
 		});
-		this.shader.forUniform("Scale", loc -> {
-			GL20.glUniform1f(loc, lodScale);
+		this.shader.forUniform("Scale", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, lodScale);
 		});
-		this.shader.forUniform("DoNotOccludeSide", loc -> {
-			GL20.glUniform1i(loc, noOcclusionDirectionIndex);
+		this.shader.forUniform("DoNotOccludeSide", (id, loc) -> {
+			GL41.glProgramUniform1i(id, loc, noOcclusionDirectionIndex);
 		});
 		this.shader.dispatch(WORK_SIZE, WORK_SIZE, WORK_SIZE, false);
 	}
 	
 	protected void doMeshGenning(double camX, double camY, double camZ, float scale)
 	{
-		this.shader.forUniform("Scroll", loc -> {
-			GL20.glUniform3f(loc, this.scrollX, this.scrollY, this.scrollZ);
+		this.shader.forUniform("Scroll", (id, loc) -> {
+			GL41.glProgramUniform3f(id, loc, this.scrollX, this.scrollY, this.scrollZ);
 		});
-		this.shader.forUniform("Origin", loc -> {
-			GL20.glUniform3f(loc, (float)camX / scale, (float)camY / scale, (float)camZ / scale);
+		this.shader.forUniform("Origin", (id, loc) -> {
+			GL41.glProgramUniform3f(id, loc, (float)camX / scale, (float)camY / scale, (float)camZ / scale);
 		});
-		this.shader.forUniform("TestFacesFacingAway", loc -> {
-			GL20.glUniform1i(loc, this.testFacesFacingAway ? 1 : 0);
+		this.shader.forUniform("TestFacesFacingAway", (id, loc) -> {
+			GL41.glProgramUniform1i(id, loc, this.testFacesFacingAway ? 1 : 0);
 		});
 		
 		for (int i = 0; i < this.tasksPerTick; i++)
@@ -327,9 +329,6 @@ public abstract class CloudMeshGenerator
 		
 		if (this.chunkGenTasks.isEmpty())
 		{
-			this.shader.getShaderStorageBuffer("Counter").writeData(b -> {
-				b.putInt(0, 0);
-			});
 			this.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
 			this.currentCamX = camX;
 			this.currentCamY = camY;

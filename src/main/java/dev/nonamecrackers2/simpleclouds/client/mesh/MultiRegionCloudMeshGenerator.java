@@ -10,8 +10,8 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
 
 import com.google.common.collect.ImmutableMap;
@@ -149,10 +149,10 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 				LevelOfDetail config =this.lodConfig.getLods()[i];
 				b.putFloat((i + 1) * 4, (float)config.chunkScale());
 			}
-		});
+		}, (this.lodConfig.getLods().length + 1) * 4);
 		
-		this.cloudRegionShader.forUniform("Scale", loc -> {
-			GL20.glUniform1f(loc, 2000.0F);//Mth.clamp(Mth.sin(this.test * 0.01F), 0.1F, 1.0F));
+		this.cloudRegionShader.forUniform("Scale", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, 2000.0F);//Mth.clamp(Mth.sin(this.test * 0.01F), 0.1F, 1.0F));
 		});
 	}
 	
@@ -191,8 +191,8 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	@Override
 	protected void generateChunk(int lodLevel, int lodScale, int x, int y, int z, float offsetX, float offsetY, float offsetZ, float scale, float camOffsetX, float camOffsetZ, int noOcclusionDirectionIndex)
 	{
-		this.shader.forUniform("RegionSampleOffset", loc -> {
-			GL20.glUniform2f(loc, x * 32.0F + (float)this.requiredRegionTexSize / 2.0F, z * 32.0F + (float)this.requiredRegionTexSize / 2.0F);
+		this.shader.forUniform("RegionSampleOffset", (id, loc) -> {
+			GL41.glProgramUniform2f(id, loc, x * 32.0F + (float)this.requiredRegionTexSize / 2.0F, z * 32.0F + (float)this.requiredRegionTexSize / 2.0F);
 		});
 		super.generateChunk(lodLevel, lodScale, x, y, z, offsetX, offsetY, offsetZ, scale, camOffsetX, camOffsetZ, noOcclusionDirectionIndex);
 	}
@@ -208,20 +208,20 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		
 		if (this.cloudRegionShader != null && this.cloudRegionShader.isValid())
 		{
-			this.cloudRegionShader.forUniform("Scroll", loc -> {
-				GL20.glUniform2f(loc, this.scrollX, this.scrollZ);
+			this.cloudRegionShader.forUniform("Scroll", (id, loc) -> {
+				GL41.glProgramUniform2f(id, loc, this.scrollX, this.scrollZ);
 			});
-			this.cloudRegionShader.forUniform("Offset", loc -> 
+			this.cloudRegionShader.forUniform("Offset", (id, loc) -> 
 			{
 				float chunkSizeUpscaled = 32.0F * scale;
 				float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * 32.0F);
 				float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * 32.0F);
-				GL20.glUniform2f(loc, camOffsetX, camOffsetZ);
+				GL41.glProgramUniform2f(id, loc, camOffsetX, camOffsetZ);
 			});
 			if (this.needsNoiseRefreshing)
 			{
-				this.cloudRegionShader.forUniform("TotalCloudTypes", loc -> {
-					GL20.glUniform1i(loc, this.getTotalCloudTypes());
+				this.cloudRegionShader.forUniform("TotalCloudTypes", (id, loc) -> {
+					GL41.glProgramUniform1i(id, loc, this.getTotalCloudTypes());
 				});
 			}
 			this.cloudRegionShader.dispatchAndWait(this.requiredRegionTexSize / 8, this.requiredRegionTexSize / 8, this.lodConfig.getLods().length + 1);
@@ -249,7 +249,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 					currentIndex += 4;
 					previousLayerIndex += layerCount;
 				}
-			});
+			}, 20 * this.cloudTypes.length);
 			
 			this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
 			{
@@ -264,7 +264,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 						index += 4;
 					}
 				}
-			});
+			}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * this.cloudTypes.length);
 		}
 		
 		this.needsNoiseRefreshing = false;

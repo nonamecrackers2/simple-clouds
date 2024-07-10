@@ -27,7 +27,9 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Boolean> renderStormFog;
 		public final ForgeConfigSpec.ConfigValue<LevelOfDetailOptions> levelOfDetail;
 		public final ForgeConfigSpec.ConfigValue<Boolean> frustumCulling;
-		public final ForgeConfigSpec.ConfigValue<Double> stormFogAngle; 
+		public final ForgeConfigSpec.ConfigValue<Double> stormFogAngle;
+		public final ForgeConfigSpec.ConfigValue<Boolean> renderClouds;
+		public final ForgeConfigSpec.ConfigValue<Boolean> generateMesh;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -52,6 +54,14 @@ public class SimpleCloudsConfig
 			this.levelOfDetail = this.createEnumValue(LevelOfDetailOptions.HIGH, "levelOfDetail", false, "Specifies the quality of the level of detail");
 			
 			this.frustumCulling = this.createValue(true, "frustumCulling", false, "Culls cloud chunks not visible to the player. Disable if facing noticeable artifacts with high cloud mesh generate times");
+			
+			builder.pop();
+			
+			builder.comment("Debug").push("debug");
+			
+			this.renderClouds = this.createValue(true, "renderClouds", false, "Toggles rendering of the clouds");
+			
+			this.generateMesh = this.createValue(true, "generateMesh", false, "Toggles the generation of the cloud mesh");
 			
 			builder.pop();
 		}
