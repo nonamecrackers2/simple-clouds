@@ -9,7 +9,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexSorting;
 
-import dev.nonamecrackers2.simpleclouds.client.framebuffer.BlitUtils;
+import dev.nonamecrackers2.simpleclouds.client.framebuffer.FrameBufferUtils;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.client.Minecraft;
@@ -39,7 +39,7 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 			renderer.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
 			renderer.getBlurTarget().clear(Minecraft.ON_OSX);
 			renderer.getBlurTarget().bindWrite(true);
-			BlitUtils.blitTargetPreservingAlpha(renderer.getStormFogTarget(), mc.getWindow().getWidth(), mc.getWindow().getHeight());
+			FrameBufferUtils.blitTargetPreservingAlpha(renderer.getStormFogTarget(), mc.getWindow().getWidth(), mc.getWindow().getHeight());
 			renderer.doBlurPostProcessing(partialTick);
 			mc.getMainRenderTarget().bindWrite(false);
 			RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
@@ -78,7 +78,7 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 			GlStateManager._depthMask(true);
 		mc.getMainRenderTarget().bindWrite(false);
         renderer.getCloudTarget().clear(Minecraft.ON_OSX);
-        renderer.getCloudTarget().copyDepthFrom(mc.getMainRenderTarget());
+        renderer.copyDepthFromMainToClouds();
 		
 		//NOTE: Running this clears the depth buffer of the main frame buffer. This should be okay since the game clears it right after the world is rendered
 		//for the player's hand anyways

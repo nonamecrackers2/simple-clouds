@@ -91,6 +91,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private float fogStart;
 	private float fogEnd;
 	private @Nullable PoseStack shadowMapStack;
+	private boolean failedToCopyDepthBuffer;
 	
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
@@ -113,6 +114,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public void onResourceManagerReload(ResourceManager manager)
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
+		
+		this.failedToCopyDepthBuffer = false;
 		
 		this.scrollDirection = new Vector3f(this.random.nextFloat() * 2.0F - 1.0F, this.random.nextFloat() * 2.0F - 1.0F, this.random.nextFloat() * 2.0F - 1.0F).normalize();
 		
@@ -604,6 +607,56 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public RenderTarget getCloudTarget()
 	{
 		return this.cloudTarget;
+	}
+	
+	public void copyDepthFromCloudsToMain()
+	{
+		this._copyDepthSafe(this.mc.getMainRenderTarget(), this.cloudTarget);
+	}
+	
+	public void copyDepthFromMainToClouds()
+	{
+		this._copyDepthSafe(this.cloudTarget, this.mc.getMainRenderTarget());
+	}
+	
+	private void _copyDepthSafe(RenderTarget to, RenderTarget from)
+	{
+		RenderSystem.assertOnRenderThread();
+		if (!this.failedToCopyDepthBuffer)
+		{
+			to.copyDepthFrom(from);
+			if (GlStateManager._getError() != GL11.GL_INVALID_OPERATION)
+				return;
+			boolean enabledStencil = false;
+			if (to.isStencilEnabled() && !from.isStencilEnabled())
+			{
+				from.enableStencil();
+				enabledStencil = true;
+			}
+			else if (from.isStencilEnabled() && !to.isStencilEnabled())
+			{
+				to.enableStencil();
+				enabledStencil = true;
+			}
+			if (enabledStencil)
+			{
+				to.copyDepthFrom(from);
+				if (GlStateManager._getError() == GL11.GL_INVALID_OPERATION)
+				{
+					LOGGER.error("Unable to copy depth between the main and clouds frame buffers, even after enabling stencil. Please note that the clouds may not render properly.");
+					this.failedToCopyDepthBuffer = true;
+				}
+				else
+				{
+					LOGGER.info("NOTE: Please ignore the above OpenGL error. Simple Clouds had to toggle stencil in order to copy the depth buffer between the main and clouds frame buffers.");
+				}
+			}
+			else
+			{
+				LOGGER.error("Unable to copy depth between the main and clouds frame buffers. Please note that the clouds may not render properly.");
+				this.failedToCopyDepthBuffer = true;
+			}
+		}
 	}
 	
 	public static boolean isEnabled()

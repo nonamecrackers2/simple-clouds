@@ -15,7 +15,7 @@ import com.mojang.blaze3d.vertex.VertexSorting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 
-public class BlitUtils
+public class FrameBufferUtils
 {
 	public static void blitTargetPreservingAlpha(RenderTarget target, int width, int height)
 	{

@@ -9,7 +9,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexSorting;
 
-import dev.nonamecrackers2.simpleclouds.client.framebuffer.BlitUtils;
+import dev.nonamecrackers2.simpleclouds.client.framebuffer.FrameBufferUtils;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.client.Minecraft;
@@ -43,7 +43,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 			renderer.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
 			renderer.getBlurTarget().clear(Minecraft.ON_OSX);
 			renderer.getBlurTarget().bindWrite(true);
-			BlitUtils.blitTargetPreservingAlpha(renderer.getStormFogTarget(), mc.getWindow().getWidth(), mc.getWindow().getHeight());
+			FrameBufferUtils.blitTargetPreservingAlpha(renderer.getStormFogTarget(), mc.getWindow().getWidth(), mc.getWindow().getHeight());
 			renderer.doBlurPostProcessing(partialTick);
 			mc.getMainRenderTarget().bindWrite(false);
 			RenderSystem.enableBlend();
@@ -65,7 +65,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 		stack.popPose();
 		mc.getProfiler().pop();
 		
-		mc.getMainRenderTarget().copyDepthFrom(renderer.getCloudTarget());
+		renderer.copyDepthFromCloudsToMain();
 
 		mc.getProfiler().push("clouds_post");
 		renderer.doCloudPostProcessing(stack, partialTick, projMat);
