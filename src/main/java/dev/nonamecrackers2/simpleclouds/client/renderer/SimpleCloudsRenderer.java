@@ -104,7 +104,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	private void setupMeshGenerator()
 	{
-		this.meshGenerator.setMeshGenInterval(SimpleCloudsConfig.CLIENT.cloudMeshGenerateTime.get());
+		this.meshGenerator.setMeshGenInterval(SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
 		this.meshGenerator.setTestFacesFacingAway(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded.get());
 		this.meshGenerator.setLodConfig(SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig());
 		this.meshGenerator.setScroll(this.scrollX, this.scrollY, this.scrollZ);
@@ -657,11 +657,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				this.failedToCopyDepthBuffer = true;
 			}
 		}
-	}
-	
-	public static boolean isEnabled()
-	{
-		return true;//!CompatHelper.areShadersRunning();
 	}
 	
 	public static CloudsRenderPipeline getRenderPipeline()

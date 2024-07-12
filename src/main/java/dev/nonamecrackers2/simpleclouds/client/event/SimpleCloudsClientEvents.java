@@ -64,12 +64,12 @@ public class SimpleCloudsClientEvents
 	{
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.optimal_mesh"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.optimal_mesh.description"))
-				.setPreset(SimpleCloudsConfig.CLIENT.cloudMeshGenerateTime, 16)
+				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 16)
 				.setPreset(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded, true)
 				.setPreset(SimpleCloudsConfig.CLIENT.frustumCulling, false).build());
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.fast_culled_mesh"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.fast_culled_mesh.description"))
-				.setPreset(SimpleCloudsConfig.CLIENT.cloudMeshGenerateTime, 4).build());
+				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 4).build());
 	}
 	
 	@SubscribeEvent
@@ -97,8 +97,11 @@ public class SimpleCloudsClientEvents
 			List<String> text = event.getRight();
 			text.add("");
 			text.add(ChatFormatting.GREEN + SimpleCloudsMod.MODID + ": " + SimpleCloudsMod.getModVersion());
-			text.add("Enabled: " + (SimpleCloudsRenderer.isEnabled() ? "True" : ChatFormatting.RED + "False"));
 			text.add("Triangles: " + SimpleCloudsRenderer.getInstance().getMeshGenerator().getTotalSides() * 2);
+			int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
+			text.add("Frames to generate mesh: " + SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
+			text.add("Effective framerate: " + mc.getFps() / frames);
+			text.add("Frustum culling: " + (SimpleCloudsConfig.CLIENT.frustumCulling.get() ? "ON" : "OFF"));
 		}
 	}
 }

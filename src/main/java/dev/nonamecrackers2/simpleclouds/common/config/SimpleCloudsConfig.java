@@ -22,7 +22,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Boolean> showCloudPreviewerInfoPopup;
 		public final ForgeConfigSpec.ConfigValue<Integer> cloudHeight;
 		public final ForgeConfigSpec.ConfigValue<Double> speedModifier;
-		public final ForgeConfigSpec.ConfigValue<Integer> cloudMeshGenerateTime;
+		public final ForgeConfigSpec.ConfigValue<Integer> framesToGenerateMesh;
 		public final ForgeConfigSpec.ConfigValue<Boolean> testSidesThatAreOccluded;
 		public final ForgeConfigSpec.ConfigValue<Boolean> renderStormFog;
 		public final ForgeConfigSpec.ConfigValue<LevelOfDetailOptions> levelOfDetail;
@@ -45,7 +45,7 @@ public class SimpleCloudsConfig
 			
 			builder.comment("Performance").push("performance");
 			
-			this.cloudMeshGenerateTime = this.createRangedIntValue(3, 1, 32, "cloudMeshGenerateTime", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts");
+			this.framesToGenerateMesh = this.createRangedIntValue(3, 1, 32, "framesToGenerateMesh", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts");
 			
 			this.testSidesThatAreOccluded = this.createValue(false, "testSidesThatAreOccluded", false, "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of some visual artifacts");
 			
