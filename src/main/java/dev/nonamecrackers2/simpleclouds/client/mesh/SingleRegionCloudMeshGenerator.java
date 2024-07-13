@@ -17,24 +17,36 @@ import net.minecraft.server.packs.resources.ResourceManager;
 public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private CloudInfo type;
-	private final float fadeStart;
-	private final float fadeEnd;
+	private float fadeStart;
+	private float fadeEnd;
 	private boolean needsNoiseRefreshing;
+	private boolean needsFadeRefreshing;
 	
 	public SingleRegionCloudMeshGenerator(CloudType type, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, float fadeStart, float fadeEnd)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
 		this.type = type;
-		if (fadeStart > fadeEnd)
+		this.setFadeDistance(fadeStart, fadeEnd);
+	}
+	
+	public SingleRegionCloudMeshGenerator setFadeDistance(float fadeStart, float fadeEnd)
+	{
+		float fs = fadeStart;
+		float fe = fadeEnd;
+		if (fs > fe)
 		{
-			this.fadeStart = fadeEnd * (float)this.getCloudAreaMaxRadius();
-			this.fadeEnd = fadeStart * (float)this.getCloudAreaMaxRadius();
+			fs = fadeEnd;
+			fe = fadeStart;
 		}
-		else
-		{
-			this.fadeStart = fadeStart * (float)this.getCloudAreaMaxRadius();
-			this.fadeEnd = fadeEnd * (float)this.getCloudAreaMaxRadius();
-		}
+		float newFs = fs * (float)this.getCloudAreaMaxRadius();
+		float newFe = fe * (float)this.getCloudAreaMaxRadius();
+		if (newFs != this.fadeStart)
+			this.needsFadeRefreshing = true;
+		this.fadeStart = newFs;
+		if (newFe != this.fadeEnd)
+			this.needsFadeRefreshing = true;
+		this.fadeEnd = newFe;
+		return this;
 	}
 	
 	public void setCloudType(CloudInfo type)
@@ -46,7 +58,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	@Override
 	protected ComputeShader createShader(ResourceManager manager) throws IOException
 	{
-		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, ImmutableMap.of("${TYPE}", "1"));
+		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, ImmutableMap.of("${TYPE}", "1", "${FADE_NEAR_ORIGIN}", "0"));
 	}
 	
 	@Override
@@ -82,6 +94,18 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 				b.putFloat(12, this.type.stormStart());
 				b.putFloat(16, this.type.stormFadeDistance());
 			}, 20);
+			this.needsNoiseRefreshing = false;
+		}
+		
+		if (this.needsFadeRefreshing)
+		{
+			this.shader.forUniform("FadeStart", (id, loc) -> {
+				GL41.glProgramUniform1f(id, loc, this.fadeStart);
+			});
+			this.shader.forUniform("FadeEnd", (id, loc) -> {
+				GL41.glProgramUniform1f(id, loc, this.fadeEnd);
+			});
+			this.needsFadeRefreshing = false;
 		}
 		
 		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);

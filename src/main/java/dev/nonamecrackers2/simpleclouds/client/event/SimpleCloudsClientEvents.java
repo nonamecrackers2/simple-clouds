@@ -2,17 +2,22 @@ package dev.nonamecrackers2.simpleclouds.client.event;
 
 import java.util.List;
 
+import com.google.common.base.Joiner;
+
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
+import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsDebugOverlayRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
@@ -21,14 +26,17 @@ import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import nonamecrackers2.crackerslib.client.event.impl.AddConfigEntryToMenuEvent;
 import nonamecrackers2.crackerslib.client.event.impl.ConfigMenuButtonEvent;
 import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;
 import nonamecrackers2.crackerslib.client.gui.ConfigHomeScreen;
+import nonamecrackers2.crackerslib.client.gui.Popup;
 import nonamecrackers2.crackerslib.client.gui.title.TextTitle;
 import nonamecrackers2.crackerslib.common.command.ConfigCommandBuilder;
 import nonamecrackers2.crackerslib.common.config.preset.ConfigPreset;
 import nonamecrackers2.crackerslib.common.config.preset.RegisterConfigPresetsEvent;
+import nonamecrackers2.crackerslib.common.event.impl.OnConfigOptionSaved;
 
 public class SimpleCloudsClientEvents
 {
@@ -70,6 +78,39 @@ public class SimpleCloudsClientEvents
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.fast_culled_mesh"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.fast_culled_mesh.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 4).build());
+	}
+	
+	@SubscribeEvent
+	public static void onSingleModeCloudTypeChanged(OnConfigOptionSaved<String> event)
+	{
+		if (event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.singleModeCloudType))
+		{
+			String type = event.getNewValue();
+			ResourceLocation loc = ResourceLocation.tryParse(type);
+			var types = CloudTypeDataManager.INSTANCE.getCloudTypes();
+			if (loc == null || !types.containsKey(loc))
+			{
+				Component valid = Component.literal(Joiner.on(", ").join(types.keySet().stream().map(ResourceLocation::toString).iterator())).withStyle(ChatFormatting.YELLOW);
+				Popup.createInfoPopup(null, 300, Component.translatable("gui.simpleclouds.unknown_cloud_type.info", loc == null ? type : loc.toString(), valid));
+				event.overrideValue(SimpleCloudsConfig.CLIENT.singleModeCloudType.getDefault());
+			}
+			else
+			{
+				if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof SingleRegionCloudMeshGenerator generator)
+					generator.setCloudType(types.get(loc));
+			}
+		}
+	}
+	
+	@SubscribeEvent
+	public static void onCloudModeChanged(OnConfigOptionSaved<CloudMode> event)
+	{
+		if (event.didValueChange() && event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudMode))
+		{
+			Popup.createYesNoPopup(null, () -> {
+				Minecraft.getInstance().reloadResourcePacks();
+			}, 300, Component.translatable("gui.simpleclouds.requires_reload.info"));
+		}
 	}
 	
 	@SubscribeEvent

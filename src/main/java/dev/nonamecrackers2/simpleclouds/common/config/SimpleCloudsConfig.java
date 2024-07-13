@@ -2,6 +2,7 @@ package dev.nonamecrackers2.simpleclouds.common.config;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import net.minecraftforge.common.ForgeConfigSpec;
 import nonamecrackers2.crackerslib.common.config.ConfigHelper;
 
@@ -30,10 +31,16 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Double> stormFogAngle;
 		public final ForgeConfigSpec.ConfigValue<Boolean> renderClouds;
 		public final ForgeConfigSpec.ConfigValue<Boolean> generateMesh;
+		public final ForgeConfigSpec.ConfigValue<CloudMode> cloudMode;
+		public final ForgeConfigSpec.ConfigValue<String> singleModeCloudType;
+		public final ForgeConfigSpec.ConfigValue<Integer> singleModeFadeStartPercentage;
+		public final ForgeConfigSpec.ConfigValue<Integer> singleModeFadeEndPercentage;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
 			super(builder, SimpleCloudsMod.MODID);
+			
+			this.cloudMode = this.createEnumValue(CloudMode.DEFAULT, "cloudMode", false, "Specifies how the clouds should behave. DEFAULT uses all cloud types with the default weather in Simple Clouds. SINGLE uses only a single cloud type and its associated weather. AMBIENT disables localized weather and carves clouds around the player, keeping them at a distance. Please note that while on a server without Simple Clouds installed, DEFAULT will not work and the mod will instead pick AMBIENT. If Simple Clouds is installed on a server, this option will be ignored and the client will instead use the option set by the server");
 			
 			this.showCloudPreviewerInfoPopup = this.createValue(true, "showCloudPreviewerInfoPopup", false, "Specifies if the info pop-up should appear when opening the cloud previewer menu");
 			
@@ -62,6 +69,16 @@ public class SimpleCloudsConfig
 			this.renderClouds = this.createValue(true, "renderClouds", false, "Toggles rendering of the clouds");
 			
 			this.generateMesh = this.createValue(true, "generateMesh", false, "Toggles the generation of the cloud mesh");
+			
+			builder.pop();
+			
+			builder.comment("Single Mode").push("single_mode");
+			
+			this.singleModeCloudType = this.createValue("simpleclouds:itty_bitty", "singleModeCloudType", false, "Specifies the cloud type that should be used when the SINGLE cloud mode is active");
+			
+			this.singleModeFadeStartPercentage = this.createRangedIntValue(80, 0, 100, "singleModeFadeStartPercentage", false, "Specifies the percentage of the cloud render distance that the clouds should begin to fade away, when using the single cloud type mode (e.x. 50 would start to make the clouds fade away at half of the cloud render distance)");
+			
+			this.singleModeFadeEndPercentage = this.createRangedIntValue(100, 0, 100, "singleModeFadeEndPercentage", false, "Specifies the percentage of the cloud render distance that the clouds will be fully faded away, when using the single cloud type mode (e.x. 50 would make the clouds completely disappear past half the cloud render distance)");
 			
 			builder.pop();
 		}

@@ -40,11 +40,30 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private int cloudRegionTexture = -1;
 	private int cloudRegionUnit = -1;
 	private boolean needsNoiseRefreshing;
+	private boolean fadeNearOrigin;
+	private float fadeStart;
+	private float fadeEnd;
 	
 	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
 		this.setCloudTypes(cloudTypes);
+	}
+
+	public MultiRegionCloudMeshGenerator setFadeNearOrigin(float fadeStart, float fadeEnd)
+	{
+		if (fadeStart > fadeEnd)
+		{
+			this.fadeStart = fadeEnd * (float)this.getCloudAreaMaxRadius();
+			this.fadeEnd = fadeStart * (float)this.getCloudAreaMaxRadius();
+		}
+		else
+		{
+			this.fadeStart = fadeStart * (float)this.getCloudAreaMaxRadius();
+			this.fadeEnd = fadeEnd * (float)this.getCloudAreaMaxRadius();
+		}
+		this.fadeNearOrigin = true;
+		return this;
 	}
 	
 	@Override
@@ -84,7 +103,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	@Override
 	protected ComputeShader createShader(ResourceManager manager) throws IOException
 	{
-		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, ImmutableMap.of("${TYPE}", "0"));
+		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, ImmutableMap.of("${TYPE}", "0", "${FADE_NEAR_ORIGIN}", this.fadeNearOrigin ? "1" : "0"));
 	}
 	
 	@Override
@@ -94,6 +113,12 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		this.shader.bindShaderStorageBuffer("NoiseLayers", GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * this.cloudTypes.length);
 		this.shader.bindShaderStorageBuffer("LayerGroupings", GL15.GL_STATIC_DRAW).allocateBuffer(20 * this.cloudTypes.length);
 		this.shader.setImageUnit("regions", this.cloudRegionUnit);
+		this.shader.forUniform("FadeStart", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, this.fadeStart);
+		});
+		this.shader.forUniform("FadeEnd", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, this.fadeEnd);
+		});
 	}
 	
 	private void createRegionTexture()

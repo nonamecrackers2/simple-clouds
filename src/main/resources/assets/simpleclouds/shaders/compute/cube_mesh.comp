@@ -1,6 +1,7 @@
 #version 430
 
 #define TYPE ${TYPE}    //0 for multi-region, 1 for single cloud type
+#define FADE_NEAR_ORIGIN ${FADE_NEAR_ORIGIN}    //0 to disable, 1 to enable
 
 #define LOCAL_SIZE vec3(${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z})
 layout(local_size_x = ${LOCAL_SIZE_X}, local_size_y = ${LOCAL_SIZE_Y}, local_size_z = ${LOCAL_SIZE_Z}) in;
@@ -94,6 +95,13 @@ uniform float FadeEnd;
 
 #endif
 
+#if FADE_NEAR_ORIGIN == 1
+
+uniform float FadeStart;
+uniform float FadeEnd;
+
+#endif
+
 //Faces:
 //-X = 0
 //+X = 1
@@ -141,8 +149,10 @@ bool isPosValid(float x, float y, float z, int nx, int nz)
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
     float fade = -5.0 * pow(info.g, 10.0);
-    //float len = distance(vec2(x, z), Origin.xz);
-	//float fade = -5.0 * (1.0 - min(max(len - 200.0, 0.0) / (500.0 - 200.0), 1.0));
+#if FADE_NEAR_ORIGIN == 1
+    float len = distance(vec2(x, z), Origin.xz);
+	fade = min(fade, -5.0 * (1.0 - min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0)));
+#endif
 #elif TYPE == 1
 	LayerGroup group = layerGroupings.data[0];
 	float len = distance(vec2(x, z), Origin.xz);
@@ -230,8 +240,10 @@ void main()
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
     float fade = -5.0 * pow(info.g, 10.0);
-    //float len = distance(vec2(x, z), Origin.xz);
-	//float fade = -5.0 * (1.0 - min(max(len - 200.0, 0.0) / (400.0 - 200.0), 1.0));
+#if FADE_NEAR_ORIGIN == 1
+    float len = distance(vec2(x, z), Origin.xz);
+	fade = min(fade, -5.0 * (1.0 - min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0)));
+#endif
 #elif TYPE == 1
 	LayerGroup group = layerGroupings.data[0];
 	float len = distance(vec2(x, z), Origin.xz);

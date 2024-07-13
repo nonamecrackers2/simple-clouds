@@ -55,5 +55,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.popup.export.exists", "A file with that name already exists. Would you like to override it?");
 		this.add("gui.simpleclouds.cloud_previewer.popup.exported.cloud_type", "Your cloud type has been exported to %s");
 		this.add("gui.simpleclouds.cloud_previewer.info", "Welcome to the cloud previewer!\n\nAdd, remove, and customize noise layers seen in the left of the screen to create custom cloud types. Use the load button in the bottom right to load existing cloud types to edit them, and use the export button to export your cloud types as JSON files.");
+		this.add("gui.simpleclouds.requires_reload.info", "A config option was modified that requires resources to be reloaded. Would you like to reload resources?");
+		this.add("gui.simpleclouds.unknown_cloud_type.info", "Unknown cloud type '%s'. Please pick a valid cloud type.\n\nValid cloud types are as follows:\n\n%s");
 	}
 }
