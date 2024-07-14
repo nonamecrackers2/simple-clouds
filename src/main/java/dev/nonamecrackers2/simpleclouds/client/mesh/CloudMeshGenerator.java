@@ -243,7 +243,6 @@ public abstract class CloudMeshGenerator
 			LOGGER.debug("Creating mesh compute shader...");
 			this.shader = this.createShader(manager);
 			this.setupShader();
-			//this.generateMesh(0.0D, 0.0D, 0.0D, 1.0F, null);
 		}
 		catch (IOException e)
 		{

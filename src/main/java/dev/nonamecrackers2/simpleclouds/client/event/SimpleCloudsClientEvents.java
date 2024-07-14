@@ -26,7 +26,6 @@ import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import nonamecrackers2.crackerslib.client.event.impl.AddConfigEntryToMenuEvent;
 import nonamecrackers2.crackerslib.client.event.impl.ConfigMenuButtonEvent;
 import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;

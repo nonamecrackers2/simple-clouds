@@ -1,8 +1,5 @@
 package dev.nonamecrackers2.simpleclouds.common.noise;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import net.minecraft.util.Mth;
 
