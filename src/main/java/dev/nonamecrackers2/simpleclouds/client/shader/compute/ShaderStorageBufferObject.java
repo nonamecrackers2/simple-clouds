@@ -104,4 +104,10 @@ public class ShaderStorageBufferObject
 		if (this.id == -1)
 			throw new IllegalStateException("Buffer is no longer valid!");
 	}
+	
+	@Override
+	public String toString()
+	{
+		return String.format("SSBO[binding=%s,id=%s,usage=%s]", this.binding, this.id, this.usage);
+	}
 }

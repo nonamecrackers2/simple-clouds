@@ -1,6 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -19,6 +20,7 @@ import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
+import org.lwjgl.system.MemoryUtil;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
@@ -64,6 +66,8 @@ public abstract class CloudMeshGenerator
 	protected int arrayObjectId = -1;
 	protected int vertexBufferId = -1;
 	protected int indexBufferId = -1;
+	private @Nullable ByteBuffer vertexBuffer;
+	private @Nullable ByteBuffer indexBuffer;
 	protected int totalIndices;
 	protected int totalSides;
 	protected boolean testFacesFacingAway;
@@ -109,6 +113,11 @@ public abstract class CloudMeshGenerator
 	
 	public void close()
 	{
+		RenderSystem.assertOnRenderThreadOrInit();
+		
+		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
+		this.chunkGenTasks.clear();
+		
 		if (this.shader != null)
 			this.shader.close();
 		this.shader = null;
@@ -148,29 +157,56 @@ public abstract class CloudMeshGenerator
 		this.shader.bindShaderStorageBuffer("IndexBuffer", GL15.GL_DYNAMIC_DRAW).allocateBuffer(INDEX_BUFFER_SIZE); //Index data, arbitrary size
 	}
 	
-	public void init(ResourceManager manager)
+	public final void init(ResourceManager manager)
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
 		
 		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
 		this.chunkGenTasks.clear();
 		
+		LOGGER.debug("Beginning mesh generator initialization");
+		
+		this.totalIndices = 0;
+		this.totalSides = 0;
+		
 		if (this.arrayObjectId >= 0)
 		{
+			LOGGER.debug("Freeing VBA");
 			RenderSystem.glDeleteVertexArrays(this.arrayObjectId);
 			this.arrayObjectId = -1;
 		}
 		
 		if (this.vertexBufferId >= 0)
 		{
+			LOGGER.debug("Freeing vertex buffer");
 			RenderSystem.glDeleteBuffers(this.vertexBufferId);
 			this.vertexBufferId = -1;
 		}
 		
+		if (this.vertexBuffer != null)
+		{
+			MemoryUtil.memFree(this.vertexBuffer);
+			this.vertexBuffer = null;
+		}
+		
 		if (this.indexBufferId >= 0)
 		{
+			LOGGER.debug("Freeing index buffer");
 			RenderSystem.glDeleteBuffers(this.indexBufferId);
 			this.indexBufferId = -1;
+		}
+		
+		if (this.indexBuffer != null)
+		{
+			MemoryUtil.memFree(this.vertexBuffer);
+			this.indexBuffer = null;
+		}
+		
+		if (this.shader != null)
+		{
+			LOGGER.debug("Freeing mesh compute shader");
+			this.shader.close();
+			this.shader = null;
 		}
 		
 		this.arrayObjectId = GL30.glGenVertexArrays();
@@ -180,7 +216,8 @@ public abstract class CloudMeshGenerator
 		GL30.glBindVertexArray(this.arrayObjectId);
 		
 		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
-		GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, MemoryTracker.create(SIDE_BUFFER_SIZE), GL15.GL_DYNAMIC_DRAW);
+		this.vertexBuffer = MemoryTracker.create(SIDE_BUFFER_SIZE);
+		GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_DYNAMIC_DRAW);
 		//Vertex position
 		GL20.glEnableVertexAttribArray(0);
 		GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 28, 0);
@@ -192,18 +229,18 @@ public abstract class CloudMeshGenerator
 		GL20.glVertexAttribPointer(2, 3, GL11.GL_FLOAT, true, 28, 16);
 		
 		GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
-		GlStateManager._glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, MemoryTracker.create(INDEX_BUFFER_SIZE), GL15.GL_DYNAMIC_DRAW);
+		this.indexBuffer = MemoryTracker.create(INDEX_BUFFER_SIZE);
+		GlStateManager._glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_DYNAMIC_DRAW);
 		
 		GL30.glBindVertexArray(0);
 		
-		if (this.shader != null)
-		{
-			this.shader.close();
-			this.shader = null;
-		}
+		LOGGER.debug("Created VBA with vertex buffer size {} and index buffer size {}", SIDE_BUFFER_SIZE, INDEX_BUFFER_SIZE);
+		
+		this.initExtra(manager);
 		
 		try
 		{
+			LOGGER.debug("Creating mesh compute shader...");
 			this.shader = this.createShader(manager);
 			this.setupShader();
 			//this.generateMesh(0.0D, 0.0D, 0.0D, 1.0F, null);
@@ -212,39 +249,13 @@ public abstract class CloudMeshGenerator
 		{
 			LOGGER.warn("Failed to load compute shader", e);
 		}
+		
+		ComputeShader.printDebug();
+		
+		LOGGER.debug("Finished initializing mesh generator");
 	}
 	
-//	protected void rebindBuffers()
-//	{
-//		if (this.arrayObjectId != -1)
-//		{
-//			MutableInt totalSides = new MutableInt();
-//			this.shader.getShaderStorageBuffer("Counter").readData(b -> {
-//				totalSides.setValue(b.getInt(0));
-//			});
-//			this.totalSides = totalSides.getValue();
-//			this.totalIndices = this.totalSides * 6;
-//			int vertexBufferId = this.shader.getShaderStorageBuffer("SideDataBuffer").getId();
-//			int indexBufferId = this.shader.getShaderStorageBuffer("IndexBuffer").getId();
-//			
-//			GL30.glBindVertexArray(this.arrayObjectId);
-//			
-//			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBufferId);
-//			//Vertex position
-//			GL20.glEnableVertexAttribArray(0);
-//			GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 28, 0);
-//			//Vertex color
-//			GL20.glEnableVertexAttribArray(1);
-//			GL20.glVertexAttribPointer(1, 1, GL11.GL_FLOAT, true, 28, 12);
-//			//Vertex normal
-//			GL20.glEnableVertexAttribArray(2);
-//			GL20.glVertexAttribPointer(2, 3, GL11.GL_FLOAT, true, 28, 16);
-//			
-//			GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, indexBufferId);
-//			
-//			GL30.glBindVertexArray(0);
-//		}
-//	}
+	protected void initExtra(ResourceManager manager) {}
 	
 	protected void copyDataOver()
 	{

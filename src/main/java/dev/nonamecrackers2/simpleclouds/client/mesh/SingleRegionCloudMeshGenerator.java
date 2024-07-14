@@ -25,7 +25,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	public SingleRegionCloudMeshGenerator(CloudType type, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, float fadeStart, float fadeEnd)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
-		this.type = type;
+		this.setCloudType(type);
 		this.setFadeDistance(fadeStart, fadeEnd);
 	}
 	
@@ -73,6 +73,44 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 		this.shader.forUniform("FadeEnd", (id, loc) -> {
 			GL41.glProgramUniform1f(id, loc, this.fadeEnd);
 		});
+		this.uploadNoiseData();
+		this.uploadFadeData();
+		this.needsNoiseRefreshing = false;
+		this.needsFadeRefreshing = false;
+	}
+	
+	private void uploadNoiseData()
+	{
+		if (this.shader == null || !this.shader.isValid())
+			return;
+		
+		this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
+		{
+			float[] packed = this.type.noiseConfig().packForShader();
+			for (int i = 0; i < packed.length && i < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; i++)
+				b.putFloat(i * 4, packed[i]);
+		}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
+		this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b ->
+		{
+			b.putInt(0, 0);
+			b.putInt(4, this.type.noiseConfig().layerCount());
+			b.putFloat(8, this.type.storminess());
+			b.putFloat(12, this.type.stormStart());
+			b.putFloat(16, this.type.stormFadeDistance());
+		}, 20);
+	}
+	
+	private void uploadFadeData()
+	{
+		if (this.shader == null || !this.shader.isValid())
+			return;
+		
+		this.shader.forUniform("FadeStart", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, this.fadeStart);
+		});
+		this.shader.forUniform("FadeEnd", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, this.fadeEnd);
+		});
 	}
 	
 	@Override
@@ -80,31 +118,13 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	{
 		if (this.needsNoiseRefreshing)
 		{
-			this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
-			{
-				float[] packed = this.type.noiseConfig().packForShader();
-				for (int i = 0; i < packed.length && i < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; i++)
-					b.putFloat(i * 4, packed[i]);
-			}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
-			this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b ->
-			{
-				b.putInt(0, 0);
-				b.putInt(4, this.type.noiseConfig().layerCount());
-				b.putFloat(8, this.type.storminess());
-				b.putFloat(12, this.type.stormStart());
-				b.putFloat(16, this.type.stormFadeDistance());
-			}, 20);
+			this.uploadNoiseData();
 			this.needsNoiseRefreshing = false;
 		}
 		
 		if (this.needsFadeRefreshing)
 		{
-			this.shader.forUniform("FadeStart", (id, loc) -> {
-				GL41.glProgramUniform1f(id, loc, this.fadeStart);
-			});
-			this.shader.forUniform("FadeEnd", (id, loc) -> {
-				GL41.glProgramUniform1f(id, loc, this.fadeEnd);
-			});
+			this.uploadFadeData();
 			this.needsFadeRefreshing = false;
 		}
 		

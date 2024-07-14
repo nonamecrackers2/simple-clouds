@@ -70,6 +70,12 @@ public class ComputeShader implements AutoCloseable
 		this.name = name;
 	}
 	
+	public static void printDebug()
+	{
+		LOGGER.debug("Binded SSBOs: {}", ALL_SHADER_STORAGE_BUFFERS);
+		LOGGER.debug("Binded image units: {}", ALL_IMAGE_BINDINGS);
+	}
+	
 	public static int getAvailableShaderStorageBinding()
 	{
 		int max = GL11.glGetInteger(GL43.GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS);
