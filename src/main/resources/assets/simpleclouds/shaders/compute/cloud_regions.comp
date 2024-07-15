@@ -7,7 +7,7 @@ layout(local_size_x = ${LOCAL_SIZE_X}, local_size_y = ${LOCAL_SIZE_Y}, local_siz
 
 //layout(rgba32f, binding = 0) uniform image2D mainImage;
 
-layout(std430) restrict buffer LodScales {
+layout(std430) restrict readonly buffer LodScales {
 	float data[];
 }
 lodScales;

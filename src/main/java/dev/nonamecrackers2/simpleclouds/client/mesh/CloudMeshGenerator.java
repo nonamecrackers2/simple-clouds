@@ -148,13 +148,13 @@ public abstract class CloudMeshGenerator
 	
 	protected void setupShader()
 	{
-		ShaderStorageBufferObject buffer = this.shader.bindShaderStorageBuffer("Counter", GL15.GL_DYNAMIC_DRAW);
+		ShaderStorageBufferObject buffer = this.shader.bindShaderStorageBuffer("Counter", GL15.GL_DYNAMIC_COPY);
 		buffer.allocateBuffer(4);
 		buffer.writeData(b -> {
 			b.putInt(0, 0);
 		}, 4);
-		this.shader.bindShaderStorageBuffer("SideDataBuffer", GL15.GL_DYNAMIC_DRAW).allocateBuffer(SIDE_BUFFER_SIZE); //Vertex data, arbitrary size
-		this.shader.bindShaderStorageBuffer("IndexBuffer", GL15.GL_DYNAMIC_DRAW).allocateBuffer(INDEX_BUFFER_SIZE); //Index data, arbitrary size
+		this.shader.bindShaderStorageBuffer("SideDataBuffer", GL15.GL_DYNAMIC_COPY).allocateBuffer(SIDE_BUFFER_SIZE); //Vertex data, arbitrary size
+		this.shader.bindShaderStorageBuffer("IndexBuffer", GL15.GL_DYNAMIC_COPY).allocateBuffer(INDEX_BUFFER_SIZE); //Index data, arbitrary size
 	}
 	
 	public final void init(ResourceManager manager)
@@ -345,9 +345,11 @@ public abstract class CloudMeshGenerator
 			this.currentCamZ = camZ;
 			this.currentScale = scale;
 		}
-
+		
 		if (!this.chunkGenTasks.isEmpty())
 			this.doMeshGenning(this.currentCamX, this.currentCamY, this.currentCamZ, this.currentScale);
+		
+		this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {}, 4);
 		
 		if (this.chunkGenTasks.isEmpty())
 		{
