@@ -36,7 +36,7 @@ public class MixinLevelRenderer
 		SimpleCloudsRenderer.getInstance().renderBeforeLevel(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
-	@Inject(method = "renderSky", at = @At("TAIL")) // @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;blendFuncSeparate(Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;)V", ordinal = 0)
+	@Inject(method = "renderSky", at = @At("RETURN")) // @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;blendFuncSeparate(Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;)V", ordinal = 0)
 	public void simpleclouds$injectCustomCloudRenderingPre_renderSky(PoseStack stack, Matrix4f projMat, float partialTick, Camera camera, boolean flag, Runnable fogSetup, CallbackInfo ci)
 	{
 		SimpleCloudsRenderer.getInstance().renderAfterSky(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
