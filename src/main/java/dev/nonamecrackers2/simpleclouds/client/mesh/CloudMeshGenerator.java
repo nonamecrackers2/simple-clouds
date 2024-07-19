@@ -339,6 +339,7 @@ public abstract class CloudMeshGenerator
 		
 		if (this.chunkGenTasks.isEmpty())
 		{
+			this.copyDataOver();
 			this.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
 			this.currentCamX = camX;
 			this.currentCamY = camY;
@@ -351,15 +352,7 @@ public abstract class CloudMeshGenerator
 		
 		this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {}, 4);
 		
-		if (this.chunkGenTasks.isEmpty())
-		{
-			this.copyDataOver();
-			return false;
-		}
-		else
-		{
-			return true;
-		}
+		return !this.chunkGenTasks.isEmpty();
 	}
 	
 	protected void populateChunkGenTasks(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)

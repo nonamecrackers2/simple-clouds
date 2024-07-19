@@ -2,9 +2,6 @@
 
 #define TYPE ${TYPE}    //0 for multi-region, 1 for single cloud type
 #define FADE_NEAR_ORIGIN ${FADE_NEAR_ORIGIN}    //0 to disable, 1 to enable
-#define STYLE ${STYLE}     //0 for default, 1 for shaded
-
-#define SHADE_DIRECTION normalize(vec3(0.5, 0.5, 0.5))
 
 #define LOCAL_SIZE vec3(${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z})
 layout(local_size_x = ${LOCAL_SIZE_X}, local_size_y = ${LOCAL_SIZE_Y}, local_size_z = ${LOCAL_SIZE_Z}) in;
@@ -206,6 +203,26 @@ void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corn
 		indices.data[lastIndex + i] = lastVertex + sideIndices[i];
 }
 
+void addSide(Side side)
+{
+	uint currentFace = atomicAdd(counter, 1u);
+	uint lastIndex = currentFace * 6;
+	uint lastVertex = currentFace * 4;
+	sides.data[currentFace] = side;
+	for (uint i = 0; i < sideIndices.length; i++)
+		indices.data[lastIndex + i] = lastVertex + sideIndices[i];
+}
+
+Side createSide(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal, float brightness)
+{
+	Side side;
+	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, brightness, normal.x, normal.y, normal.z);
+	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, brightness, normal.x, normal.y, normal.z);
+	side.c = Vertex(offset.x + corner3.x, offset.y + corner3.y, offset.z + corner3.z, brightness, normal.x, normal.y, normal.z);
+	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, brightness, normal.x, normal.y, normal.z);
+	return side;
+}
+
 void createCube(float x, float y, float z, float cubeRadius, float brightness, float fade, LayerGroup group)
 {
 	vec3 norm = normalize(vec3(x, y, z) - Origin);
@@ -253,20 +270,42 @@ void main()
 	float fade = -5.0 * min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0);
 #endif
 	float noise = getNoiseForLayerGroup(group, x, y, z) + fade;
-    if (noise > 0.0)
-    {
-    	float brightness = clamp(1.0 - group.Storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
-#if STYLE == 1
-	    float px = getNoiseForLayerGroup(group, x - 0.01, y, z) + fade;
-		float py = getNoiseForLayerGroup(group, x, y - 0.01, z) + fade;
-		float pz = getNoiseForLayerGroup(group, x, y, z - 0.01) + fade;
-		float dx = (px - noise) / -0.01;
-		float dy = (py - noise) / -0.01;
-		float dz = (pz - noise) / -0.01;
-		vec3 secant = normalize(vec3(dx, dy, dz));
-		float strength = dot(secant, SHADE_DIRECTION) * 0.5 + 0.5;
-		brightness = clamp(brightness - strength * 0.1, 1.0 - group.Storminess, 1.0);
-#endif
-    	createCube(x, y, z, Scale / 2.0, brightness, fade, group);
-    }
+	//float px = getNoiseForLayerGroup(group, x + 0.01, y, z) + fade;
+	//float py = getNoiseForLayerGroup(group, x, y + 0.01, z) + fade;
+	//float pz = getNoiseForLayerGroup(group, x, y, z + 0.01) + fade;
+	//float dx = (px - noise) / 0.01;
+	//float dy = (py - noise) / 0.01;
+	//float dz = (pz - noise) / 0.01;
+	//vec3 tangent = normalize(vec3(dx, dy, dz));
+	//float strength = (dot(tangent, vec3(0.0, -1.0, 0.0)) + 1.0 ) / 2.0;
+	float brightness = clamp(1.0 - group.Storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
+	//brightness *= 0.8;
+	//brightness += strength * 0.2;
+	float cubeRadius = Scale / 2.0;
+	vec3 norm = normalize(vec3(x, y, z) - Origin);
+	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
+	bool showNegY = (TestFacesFacingAway || dot(norm, vec3(0.0, -1.0, 0.0)) <= 0.0) && (!isPosValid(x, y - Scale, z, group, fade) || shouldNotOcclude(2));
+	bool showPosY = (TestFacesFacingAway || dot(norm, vec3(0.0, 1.0, 0.0)) <= 0.0) && (!isPosValid(x, y + Scale, z, group, fade) || shouldNotOcclude(3));
+	bool showNegX = (TestFacesFacingAway || dot(norm, vec3(-1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x - Scale, y, z, -1, 0) || shouldNotOcclude(0));
+	bool showPosX = (TestFacesFacingAway || dot(norm, vec3(1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x + Scale, y, z, 1, 0) || shouldNotOcclude(1));
+	bool showNegZ = (TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, -1.0)) <= 0.0) && (!isPosValid(x, y, z - Scale, 0, -1) || shouldNotOcclude(4));
+	bool showPosZ = (TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, 1.0)) <= 0.0) && (!isPosValid(x, y, z + Scale, 0, 1) || shouldNotOcclude(5));
+	Side negY = createSide(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, -1.0, 0.0), brightness);
+	Side posY = createSide(offset, vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(0.0, 1.0, 0.0), brightness);
+	Side negX = createSide(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-1.0, 0.0, 0.0), brightness);
+	Side posX = createSide(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(1.0, 0.0, 0.0), brightness);
+	Side negZ = createSide(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(0.0, 0.0, -1.0), brightness);
+	Side posZ = createSide(offset, vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, 0.0, 1.0), brightness);
+	if (showNegY && noise > 0.0)
+		addSide(negY);
+	if (showPosY && noise > 0.0)
+		addSide(posY);
+	if (showNegX && noise > 0.0)
+		addSide(negX);
+	if (showPosX && noise > 0.0)
+		addSide(posX);
+	if (showNegZ && noise > 0.0)
+		addSide(negZ);
+	if (showPosZ && noise > 0.0)
+		addSide(posZ);
 }

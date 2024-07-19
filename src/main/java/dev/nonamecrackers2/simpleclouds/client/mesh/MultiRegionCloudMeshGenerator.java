@@ -33,6 +33,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");
 	public static final int MAX_CLOUD_TYPES = 32;
 	private static final ResourceLocation CLOUD_REGIONS_GENERATOR = SimpleCloudsMod.id("cloud_regions");
+	private final CloudStyle style;
 	private int requiredRegionTexSize;
 	private boolean needsRegionTextureUpdated;
 	private CloudInfo[] cloudTypes;
@@ -44,10 +45,11 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private float fadeStart;
 	private float fadeEnd;
 	
-	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval)
+	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, CloudStyle style)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
 		this.setCloudTypes(cloudTypes);
+		this.style = style;
 	}
 
 	public MultiRegionCloudMeshGenerator setFadeNearOrigin(float fadeStart, float fadeEnd)
@@ -99,7 +101,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	@Override
 	protected ComputeShader createShader(ResourceManager manager) throws IOException
 	{
-		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, ImmutableMap.of("${TYPE}", "0", "${FADE_NEAR_ORIGIN}", this.fadeNearOrigin ? "1" : "0"));
+		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, ImmutableMap.of("${TYPE}", "0", "${FADE_NEAR_ORIGIN}", this.fadeNearOrigin ? "1" : "0", "${STYLE}", String.valueOf(this.style.getIndex())));
 	}
 	
 	@Override

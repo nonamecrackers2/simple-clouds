@@ -34,6 +34,7 @@ import com.mojang.math.Axis;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.CloudsRenderPipeline;
@@ -96,6 +97,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable PoseStack shadowMapStack;
 	private boolean failedToCopyDepthBuffer;
 	private @Nullable CloudMode cloudMode;
+	private @Nullable CloudStyle cloudStyle;
 	
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
@@ -139,8 +141,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		Instant started = Instant.now();
 		CloudMode mode = SimpleCloudsConfig.CLIENT.cloudMode.get();
-		LOGGER.info("Beginning mesh generator initialization for cloud mode {}", mode);
-		if (this.cloudMode != mode)
+		CloudStyle style = SimpleCloudsConfig.CLIENT.cloudStyle.get();
+		LOGGER.info("Beginning mesh generator initialization for cloud mode {} and cloud style {}", mode, style);
+		if (this.cloudMode != mode || this.cloudStyle != style)
 		{
 			if (this.meshGenerator != null)
 			{
@@ -149,7 +152,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			}
 			if (mode == CloudMode.DEFAULT || mode == CloudMode.AMBIENT)
 			{
-				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
+				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
 				var cloudTypes = CloudTypeDataManager.INSTANCE.getCloudTypes();
 				if (cloudTypes.size() > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
 					LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
@@ -163,7 +166,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			{
 				float fadeStart = (float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F;
 				float fadeEnd = (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F;
-				SingleRegionCloudMeshGenerator generator = new SingleRegionCloudMeshGenerator(FALLBACK, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd);
+				SingleRegionCloudMeshGenerator generator = new SingleRegionCloudMeshGenerator(FALLBACK, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd, style);
 				String rawId = SimpleCloudsConfig.CLIENT.singleModeCloudType.get();
 				ResourceLocation loc = ResourceLocation.tryParse(rawId);
 				if (loc != null)
@@ -179,6 +182,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				throw new IllegalArgumentException("Not sure how to handle cloud mode " + mode);
 			}
 			this.cloudMode = mode;
+			this.cloudStyle = style;
 		}
 		this.setupMeshGenerator();
 		this.meshGenerator.init(manager);

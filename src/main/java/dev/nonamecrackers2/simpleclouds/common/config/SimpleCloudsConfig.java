@@ -1,6 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.common.config;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import net.minecraftforge.common.ForgeConfigSpec;
@@ -35,12 +36,15 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<String> singleModeCloudType;
 		public final ForgeConfigSpec.ConfigValue<Integer> singleModeFadeStartPercentage;
 		public final ForgeConfigSpec.ConfigValue<Integer> singleModeFadeEndPercentage;
+		public final ForgeConfigSpec.ConfigValue<CloudStyle> cloudStyle;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
 			super(builder, SimpleCloudsMod.MODID);
 			
 			this.cloudMode = this.createEnumValue(CloudMode.DEFAULT, "cloudMode", false, "Specifies how the clouds should behave. DEFAULT uses all cloud types with the default weather in Simple Clouds. SINGLE uses only a single cloud type and its associated weather. AMBIENT disables localized weather and carves clouds around the player, keeping them at a distance. Please note that while on a server without Simple Clouds installed, DEFAULT will not work and the mod will instead pick AMBIENT. If Simple Clouds is installed on a server, this option will be ignored and the client will instead use the option set by the server");
+			
+			this.cloudStyle = this.createEnumValue(CloudStyle.DEFAULT, "cloudStyle", false, "Specifies the visual style of the cloud. DEFAULT is the default style. SHADED adds minimal shading to clouds, making them appear more defined");
 			
 			this.showCloudPreviewerInfoPopup = this.createValue(true, "showCloudPreviewerInfoPopup", false, "Specifies if the info pop-up should appear when opening the cloud previewer menu");
 			

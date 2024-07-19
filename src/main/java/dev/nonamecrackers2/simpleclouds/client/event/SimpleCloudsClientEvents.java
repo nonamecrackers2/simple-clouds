@@ -7,6 +7,7 @@ import com.google.common.base.Joiner;
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsDebugOverlayRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
@@ -15,6 +16,7 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -102,9 +104,9 @@ public class SimpleCloudsClientEvents
 	}
 	
 	@SubscribeEvent
-	public static void onCloudModeChanged(OnConfigOptionSaved<CloudMode> event)
+	public static void onConfigChanged(OnConfigOptionSaved<?> event)
 	{
-		if (event.didValueChange() && event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudMode))
+		if (event.didValueChange() && (event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudMode) || event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudStyle)))
 		{
 			Popup.createYesNoPopup(null, () -> {
 				Minecraft.getInstance().reloadResourcePacks();

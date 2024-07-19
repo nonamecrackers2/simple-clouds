@@ -16,17 +16,19 @@ import net.minecraft.server.packs.resources.ResourceManager;
 
 public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 {
+	private final CloudStyle style;
 	private CloudInfo type;
 	private float fadeStart;
 	private float fadeEnd;
 	private boolean needsNoiseRefreshing;
 	private boolean needsFadeRefreshing;
 	
-	public SingleRegionCloudMeshGenerator(CloudType type, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, float fadeStart, float fadeEnd)
+	public SingleRegionCloudMeshGenerator(CloudType type, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, float fadeStart, float fadeEnd, CloudStyle style)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
 		this.setCloudType(type);
 		this.setFadeDistance(fadeStart, fadeEnd);
+		this.style = style;
 	}
 	
 	public SingleRegionCloudMeshGenerator setFadeDistance(float fadeStart, float fadeEnd)
@@ -58,7 +60,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	@Override
 	protected ComputeShader createShader(ResourceManager manager) throws IOException
 	{
-		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, ImmutableMap.of("${TYPE}", "1", "${FADE_NEAR_ORIGIN}", "0"));
+		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, ImmutableMap.of("${TYPE}", "1", "${FADE_NEAR_ORIGIN}", "0", "${STYLE}", String.valueOf(this.style.getIndex())));
 	}
 	
 	@Override
