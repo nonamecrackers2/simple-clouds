@@ -2,21 +2,25 @@ package dev.nonamecrackers2.simpleclouds.client.event;
 
 import java.util.List;
 
+import org.joml.Math;
+import org.joml.Vector3f;
+
 import com.google.common.base.Joiner;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.client.command.ClientCloudCommandHelper;
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsDebugOverlayRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
+import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -61,7 +65,7 @@ public class SimpleCloudsClientEvents
 	{
 		event.builder(ConfigHomeScreen.builder(TextTitle.ofModDisplayName(SimpleCloudsMod.MODID))
 				.crackersDefault().build(SimpleCloudsConfigScreen::new)
-		).addSpec(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC).register();
+		).addSpec(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC).addSpec(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC).register();
 	}
 	
 	public static void registerConfigMenuButton(ConfigMenuButtonEvent event)
@@ -118,6 +122,7 @@ public class SimpleCloudsClientEvents
 	public static void registerClientCommands(RegisterClientCommandsEvent event)
 	{
 		ConfigCommandBuilder.builder(event.getDispatcher(), "simpleclouds").addSpec(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC).register();
+		ClientCloudCommandHelper.register(event.getDispatcher());
 	}
 	
 	@SubscribeEvent
@@ -127,6 +132,11 @@ public class SimpleCloudsClientEvents
 		{
 			if (event.isValue(SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup))
 				event.setCanceled(true);
+			if (ClientCloudManager.isAvailableServerSide())
+			{
+				if (event.isValue(SimpleCloudsConfig.CLIENT.cloudHeight) || event.isValue(SimpleCloudsConfig.CLIENT.speedModifier) || event.isValue(SimpleCloudsConfig.CLIENT.cloudMode) || event.isValue(SimpleCloudsConfig.CLIENT.singleModeCloudType) || event.isValue(SimpleCloudsConfig.CLIENT.cloudSeed) || event.isValue(SimpleCloudsConfig.CLIENT.useSpecificSeed))
+					event.setCanceled(true);
+			}
 		}
 	}
 	
@@ -136,14 +146,36 @@ public class SimpleCloudsClientEvents
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.options.renderDebug)
 		{
+			SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
 			List<String> text = event.getRight();
 			text.add("");
 			text.add(ChatFormatting.GREEN + SimpleCloudsMod.MODID + ": " + SimpleCloudsMod.getModVersion());
-			text.add("Triangles: " + SimpleCloudsRenderer.getInstance().getMeshGenerator().getTotalSides() * 2);
+			text.add("Triangles: " + renderer.getMeshGenerator().getTotalSides() * 2);
 			int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
 			text.add("Frames to generate mesh: " + SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
 			text.add("Effective framerate: " + mc.getFps() / frames);
 			text.add("Frustum culling: " + (SimpleCloudsConfig.CLIENT.frustumCulling.get() ? "ON" : "OFF"));
+			boolean flag = ClientCloudManager.isAvailableServerSide();
+			text.add("Is available server-side: " + (flag ? ChatFormatting.GREEN : ChatFormatting.RED) + flag);
+			CloudMode mode = renderer.getCurrentCloudMode();
+			text.add("Cloud mode: " + mode);
+			if (renderer.getMeshGenerator() instanceof SingleRegionCloudMeshGenerator meshGenerator)
+			{
+				text.add("Fade start: " + meshGenerator.getFadeStart() + "; Fade end: " + meshGenerator.getFadeEnd());
+				text.add("Cloud type: " + renderer.getCurrentSingleModeCloudType());
+			}
+			if (mc.level != null)
+			{
+				CloudManager manager = CloudManager.get(mc.level);
+				text.add("Scroll: x=" + round(manager.getScrollX()) + ", y=" + round(manager.getScrollY()) + ", z=" + round(manager.getScrollZ()) + "; Speed: " + round(manager.getSpeed()) + "; Height: " + manager.getCloudHeight());
+				Vector3f d = manager.getDirection();
+				text.add("Direction: x=" + round(d.x) + ", y=" + round(d.y) + ", z=" + round(d.z));
+			}
 		}
+	}
+	
+	private static float round(float val)
+	{
+		return (float)Math.round(val * 100.0F) / 100.0F;
 	}
 }

@@ -257,12 +257,12 @@ void main()
     {
     	float brightness = clamp(1.0 - group.Storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
 #if STYLE == 1
-	    float px = getNoiseForLayerGroup(group, x - 0.01, y, z) + fade;
-		float py = getNoiseForLayerGroup(group, x, y - 0.01, z) + fade;
-		float pz = getNoiseForLayerGroup(group, x, y, z - 0.01) + fade;
-		float dx = (px - noise) / -0.01;
-		float dy = (py - noise) / -0.01;
-		float dz = (pz - noise) / -0.01;
+	    float px = getNoiseForLayerGroup(group, x - 0.1, y, z) + fade;
+		float py = getNoiseForLayerGroup(group, x, y - 0.1, z) + fade;
+		float pz = getNoiseForLayerGroup(group, x, y, z - 0.1) + fade;
+		float dx = (px - noise) / -0.1;
+		float dy = (py - noise) / -0.1;
+		float dz = (pz - noise) / -0.1;
 		vec3 secant = normalize(vec3(dx, dy, dz));
 		float strength = dot(secant, SHADE_DIRECTION) * 0.5 + 0.5;
 		brightness = clamp(brightness - strength * 0.1, 1.0 - group.Storminess, 1.0);

@@ -39,11 +39,13 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.MultiRegionCloudMeshGenerato
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.CloudsRenderPipeline;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
+import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EffectInstance;
@@ -55,7 +57,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
 public class SimpleCloudsRenderer implements ResourceManagerReloadListener
@@ -73,7 +74,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private static @Nullable SimpleCloudsRenderer instance;
 	private final Minecraft mc;
 	private CloudMeshGenerator meshGenerator;
-	private final RandomSource random;
 	private Matrix4f shadowMapProjMat;
 	private @Nullable RenderTarget cloudTarget;
 	private @Nullable RenderTarget stormFogTarget;
@@ -83,10 +83,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 //	private @Nullable PostChain worldPostProcessing;
 	private @Nullable PostChain stormPostProcessing;
 	private @Nullable PostChain blurPostProcessing;
-	private float scrollX;
-	private float scrollY;
-	private float scrollZ;
-	private Vector3f scrollDirection = new Vector3f(1.0F, 0.0F, 0.0F);
 	private boolean previewToggled;
 	private Frustum cullFrustum;
 	private int shadowMapBufferId = -1;
@@ -98,19 +94,23 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private boolean failedToCopyDepthBuffer;
 	private @Nullable CloudMode cloudMode;
 	private @Nullable CloudStyle cloudStyle;
+	private @Nullable ResourceLocation singleModeCloudType;
 	
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
 		this.mc = mc;
-		this.random = RandomSource.create();
 	}
 	
-	private void setupMeshGenerator()
+	private void setupMeshGenerator(float partialTicks)
 	{
 		this.meshGenerator.setMeshGenInterval(SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
 		this.meshGenerator.setTestFacesFacingAway(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded.get());
 		this.meshGenerator.setLodConfig(SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig());
-		this.meshGenerator.setScroll(this.scrollX, this.scrollY, this.scrollZ);
+		if (this.mc.level != null)
+		{
+			CloudManager manager = CloudManager.get(this.mc.level);
+			this.meshGenerator.setScroll(manager.getScrollX(partialTicks), manager.getScrollY(partialTicks), manager.getScrollZ(partialTicks));
+		}
 	}
 	
 	@Override
@@ -119,8 +119,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		RenderSystem.assertOnRenderThreadOrInit();
 		
 		this.failedToCopyDepthBuffer = false;
-		
-		this.scrollDirection = new Vector3f(this.random.nextFloat() * 2.0F - 1.0F, this.random.nextFloat() * 2.0F - 1.0F, this.random.nextFloat() * 2.0F - 1.0F).normalize();
 		
 		if (this.cloudTarget != null)
 			this.cloudTarget.destroyBuffers();
@@ -140,7 +138,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.blurTarget.setFilterMode(GL11.GL_LINEAR);
 		
 		Instant started = Instant.now();
-		CloudMode mode = SimpleCloudsConfig.CLIENT.cloudMode.get();
+		CloudMode mode = getCloudMode();
 		CloudStyle style = SimpleCloudsConfig.CLIENT.cloudStyle.get();
 		LOGGER.info("Beginning mesh generator initialization for cloud mode {} and cloud style {}", mode, style);
 		if (this.cloudMode != mode || this.cloudStyle != style)
@@ -167,13 +165,15 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				float fadeStart = (float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F;
 				float fadeEnd = (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F;
 				SingleRegionCloudMeshGenerator generator = new SingleRegionCloudMeshGenerator(FALLBACK, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd, style);
-				String rawId = SimpleCloudsConfig.CLIENT.singleModeCloudType.get();
-				ResourceLocation loc = ResourceLocation.tryParse(rawId);
-				if (loc != null)
+				Pair<ResourceLocation, CloudType> type = getSingleModeCloudType();
+				if (type != null)
 				{
-					CloudType type = CloudTypeDataManager.INSTANCE.getCloudTypes().get(loc);
-					if (type != null)
-						generator.setCloudType(type);
+					generator.setCloudType(type.getRight());
+					this.singleModeCloudType = type.getLeft();
+				}
+				else
+				{
+					this.singleModeCloudType = null;
 				}
 				this.meshGenerator = generator;
 			}
@@ -184,7 +184,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.cloudMode = mode;
 			this.cloudStyle = style;
 		}
-		this.setupMeshGenerator();
+		this.setupMeshGenerator(0.0F);
 		this.meshGenerator.init(manager);
 		long duration = Duration.between(started, Instant.now()).toMillis();
 		LOGGER.info("Finished, took {} ms", duration);
@@ -252,6 +252,21 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		LOGGER.debug("Total LODs: {}", this.meshGenerator.getLodConfig().getLods().length + 1);
 		LOGGER.debug("Highest detail (primary) chunk span: {}", this.meshGenerator.getLodConfig().getPrimaryChunkSpan());
 		LOGGER.debug("Effective chunk span with LODs (total viewable area): {}", this.meshGenerator.getLodConfig().getEffectiveChunkSpan());
+	}
+	
+	public @Nullable CloudMode getCurrentCloudMode()
+	{
+		return this.cloudMode;
+	}
+	
+	public @Nullable CloudStyle getCurrentCloudStyle()
+	{
+		return this.cloudStyle;
+	}
+	
+	public @Nullable ResourceLocation getCurrentSingleModeCloudType()
+	{
+		return this.singleModeCloudType;
 	}
 	
 	private void destroyPostChains()
@@ -350,10 +365,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void tick()
 	{
-		float speed = 0.01F * SimpleCloudsConfig.CLIENT.speedModifier.get().floatValue();
-		this.scrollX += this.scrollDirection.x() * speed;
-		this.scrollY += this.scrollDirection.y() * speed;
-		this.scrollZ += this.scrollDirection.z() * speed;
 		float renderDistance = (float)this.meshGenerator.getCloudAreaMaxRadius() * (float)CLOUD_SCALE;
 		this.fogStart = renderDistance / 4.0F;
 		this.fogEnd = renderDistance;
@@ -380,15 +391,16 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			
 			int span = this.meshGenerator.getLodConfig().getEffectiveChunkSpan() * 32 * CLOUD_SCALE;
 			stack.translate(span / 2.0D, span / 2.0D, -5000.0D);
-			float yaw = (float)Mth.atan2((double)this.scrollDirection.x, (double)this.scrollDirection.z);
+			Vector3f direction = CloudManager.get(this.mc.level).getDirection();
+			float yaw = (float)Mth.atan2((double)direction.x, (double)direction.z);
 			stack.mulPose(Axis.XP.rotationDegrees(SimpleCloudsConfig.CLIENT.stormFogAngle.get().floatValue()));
 			stack.mulPose(Axis.YP.rotation(yaw));
 			float chunkSizeUpscaled = 32.0F * (float)CLOUD_SCALE;
 			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
 			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
-			stack.translate(-camOffsetX, -(double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), -camOffsetZ);
+			stack.translate(-camOffsetX, -(double)CloudManager.get(this.mc.level).getCloudHeight(), -camOffsetZ);
 			stack.pushPose();
-			translateClouds(stack, 0.0D, 0.0D, 0.0D);
+			this.translateClouds(stack, 0.0D, 0.0D, 0.0D);
 			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShadowMapShader);
 			prepareShader(RenderSystem.getShader(), stack.last().pose(), this.shadowMapProjMat);
 			RenderSystem.getShader().apply();
@@ -408,9 +420,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.shadowMapStack = stack;
 	}
 	
-	public static void translateClouds(PoseStack stack, double camX, double camY, double camZ)
+	public void translateClouds(PoseStack stack, double camX, double camY, double camZ)
 	{
-		stack.translate(-camX, -camY + (double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), -camZ);
+		stack.translate(-camX, -camY + (double)CloudManager.get(this.mc.level).getCloudHeight(), -camZ);
 		stack.scale((float)CLOUD_SCALE, (float)CLOUD_SCALE, (float)CLOUD_SCALE);
 	}
 	
@@ -426,8 +438,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				this.mc.getProfiler().push("mesh_generation");
 				if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator generator)
 					generator.setFadeDistance((float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F, (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F);
-				this.setupMeshGenerator();
-				this.meshGenerator.tick(camX, camY - (double)SimpleCloudsConfig.CLIENT.cloudHeight.get(), camZ, (float)CLOUD_SCALE, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
+				this.setupMeshGenerator(partialTick);
+				this.meshGenerator.tick(camX, camY - (double)CloudManager.get(this.mc.level).getCloudHeight(), camZ, (float)CLOUD_SCALE, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
 				this.mc.getProfiler().pop();
 			}
 			
@@ -712,6 +724,29 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public static CloudsRenderPipeline getRenderPipeline()
 	{
 		return CompatHelper.areShadersRunning() ? CloudsRenderPipeline.SHADER_SUPPORT : CloudsRenderPipeline.DEFAULT;
+	}
+	
+	public static CloudMode getCloudMode()
+	{
+		return ClientCloudManager.isAvailableServerSide() && SimpleCloudsConfig.SERVER_SPEC.isLoaded() ? SimpleCloudsConfig.SERVER.cloudMode.get() : SimpleCloudsConfig.CLIENT.cloudMode.get();
+	}
+	
+	public static String getSingleModeCloudTypeRaw()
+	{
+		return ClientCloudManager.isAvailableServerSide() && SimpleCloudsConfig.SERVER_SPEC.isLoaded() ? SimpleCloudsConfig.SERVER.singleModeCloudType.get() : SimpleCloudsConfig.CLIENT.singleModeCloudType.get();
+	}
+	
+	public static @Nullable Pair<ResourceLocation, CloudType> getSingleModeCloudType()
+	{
+		String rawId = getSingleModeCloudTypeRaw();
+		ResourceLocation loc = ResourceLocation.tryParse(rawId);
+		if (loc != null)
+		{
+			CloudType type = CloudTypeDataManager.INSTANCE.getCloudTypes().get(loc);
+			if (type != null)
+				return Pair.of(loc, type);
+		}
+		return null;
 	}
 	
 	//TODO: Make it so you can't call this multiple times

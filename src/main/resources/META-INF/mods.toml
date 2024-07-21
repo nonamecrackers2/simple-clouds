@@ -12,7 +12,7 @@ license="${mod_license}"
 	#logoFile="examplemod.png" #optional
 	#credits="" #optional
 	authors="${mod_authors}" #optional
-	#displayTest="MATCH_VERSION" # MATCH_VERSION is the default if nothing is specified (#optional)
+	#displayTest="NONE" # MATCH_VERSION is the default if nothing is specified (#optional)
 	description='''${mod_description}'''
 
 [[dependencies.${mod_id}]] #optional
@@ -29,5 +29,5 @@ license="${mod_license}"
     ordering="NONE"
     side="BOTH"
 
-#[features.${mod_id}]
-#openGLVersion="[4.3,)"
+[features.${mod_id}]
+openGLVersion="[4.3,)"

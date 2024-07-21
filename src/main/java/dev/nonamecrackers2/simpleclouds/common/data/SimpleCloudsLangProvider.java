@@ -21,6 +21,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 	protected void addTranslations()
 	{
 		ConfigLangGeneratorHelper.langForSpec(SimpleCloudsMod.MODID, SimpleCloudsConfig.CLIENT_SPEC, this, ConfigLangGeneratorHelper.Info.ONLY_RANGE);
+		ConfigLangGeneratorHelper.langForSpec(SimpleCloudsMod.MODID, SimpleCloudsConfig.SERVER_SPEC, this, ConfigLangGeneratorHelper.Info.ONLY_RANGE);
 		this.add("gui.simpleclouds.cloud_previewer.title", "Cloud Previewer");
 		this.add("gui.simpleclouds.cloud_previewer.button.title", "Cloud Previewer");
 		this.add("gui.simpleclouds.cloud_previewer.button.add_layer.title", "Add Layer");
@@ -57,5 +58,15 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.info", "Welcome to the cloud previewer!\n\nAdd, remove, and customize noise layers seen in the left of the screen to create custom cloud types. Use the load button in the bottom right to load existing cloud types to edit them, and use the export button to export your cloud types as JSON files.");
 		this.add("gui.simpleclouds.requires_reload.info", "A config option was modified that requires resources to be reloaded. Would you like to reload resources?");
 		this.add("gui.simpleclouds.unknown_cloud_type.info", "Unknown cloud type '%s'. Please pick a valid cloud type.\n\nValid cloud types are as follows:\n\n%s");
+		this.add("command.simpleclouds.scroll.get", "The current cloud scroll position is [x: %s, y: %s, z: %s]");
+		this.add("command.simpleclouds.speed.get", "The current cloud speed is %s");
+		this.add("command.simpleclouds.seed.get", "The current cloud seed is %s");
+		this.add("command.simpleclouds.reinitialize", "Clouds have been reset");
+		this.add("command.simpleclouds.direction.get", "Clouds are currently moving in direction [x: %s, y: %s, z: %s] (%s)");
+		this.add("command.simpleclouds.direction.set", "Successfully set cloud direction to [x: %s, y: %s, z: %s] (%s)");
+		this.add("command.simpleclouds.height.get", "Cloud height is set to %s");
+		this.add("command.simpleclouds.height.set", "Set cloud height to %s");
+		this.add("commands.simpleclouds.notClientSideOnly", "Client cloud commands can only be used when connected to servers that do not have Simple Clouds installed. If you're connected on singleplayer, or you are an operator on a dedicated server with Simple Clouds installed, please use '/simpleclouds clouds'");
+		
 	}
 }

@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableMap;
 
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -23,7 +22,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	private boolean needsNoiseRefreshing;
 	private boolean needsFadeRefreshing;
 	
-	public SingleRegionCloudMeshGenerator(CloudType type, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, float fadeStart, float fadeEnd, CloudStyle style)
+	public SingleRegionCloudMeshGenerator(CloudInfo type, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, float fadeStart, float fadeEnd, CloudStyle style)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
 		this.setCloudType(type);
@@ -49,6 +48,16 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.needsFadeRefreshing = true;
 		this.fadeEnd = newFe;
 		return this;
+	}
+	
+	public float getFadeStart()
+	{
+		return this.fadeStart;
+	}
+	
+	public float getFadeEnd()
+	{
+		return this.fadeEnd;
 	}
 	
 	public void setCloudType(CloudInfo type)

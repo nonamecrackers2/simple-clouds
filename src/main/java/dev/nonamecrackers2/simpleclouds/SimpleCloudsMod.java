@@ -6,15 +6,23 @@ import dev.nonamecrackers2.simpleclouds.client.event.SimpleCloudsClientEvents;
 import dev.nonamecrackers2.simpleclouds.client.keybind.SimpleCloudsKeybinds;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.event.CloudManagerEvents;
 import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsDataEvents;
+import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsEvents;
+import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.network.NetworkConstants;
 
 //TODO: Re-add open gl version check in mods.toml when building mod
 @Mod(SimpleCloudsMod.MODID)
@@ -27,14 +35,27 @@ public class SimpleCloudsMod
 	{
 		version = ModLoadingContext.get().getActiveContainer().getModInfo().getVersion();
 		IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-		modBus.addListener(SimpleCloudsClientEvents::registerReloadListeners);
 		modBus.addListener(this::clientInit);
+		modBus.addListener(this::commonInit);
+		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+			modBus.addListener(SimpleCloudsClientEvents::registerReloadListeners);
+			modBus.addListener(SimpleCloudsKeybinds::registerKeyMappings);
+			modBus.addListener(SimpleCloudsClientEvents::registerOverlays);
+			modBus.addListener(SimpleCloudsClientEvents::registerClientPresets);
+		});
 		modBus.addListener(SimpleCloudsDataEvents::gatherData);
-		modBus.addListener(SimpleCloudsKeybinds::registerKeyMappings);
-		modBus.addListener(SimpleCloudsClientEvents::registerOverlays);
-		modBus.addListener(SimpleCloudsClientEvents::registerClientPresets);
 		ModLoadingContext context = ModLoadingContext.get();
 		context.registerConfig(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC);
+		context.registerConfig(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC);
+		ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
+	}
+	
+	private void commonInit(FMLCommonSetupEvent event)
+	{
+		SimpleCloudsPacketHandlers.register();
+		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
+		forgeBus.register(CloudManagerEvents.class);
+		forgeBus.register(SimpleCloudsEvents.class);
 	}
 	
 	private void clientInit(FMLClientSetupEvent event)
