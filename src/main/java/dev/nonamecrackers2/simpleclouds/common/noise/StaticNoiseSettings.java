@@ -5,6 +5,8 @@ import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 public class StaticNoiseSettings extends AbstractNoiseSettings<StaticNoiseSettings>
@@ -20,16 +22,16 @@ public class StaticNoiseSettings extends AbstractNoiseSettings<StaticNoiseSettin
 				Codec.FLOAT.fieldOf("height_offset").forGetter(i -> i.getParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET)),
 				Codec.FLOAT.fieldOf("value_scale").forGetter(i -> i.getParam(AbstractNoiseSettings.Param.VALUE_SCALE))
 		).apply(instance, (height, valueOffset, scaleX, scaleY, scaleZ, fadeDistance, heightOffset, valueScale) -> {
-			var modifiable = new ModifiableNoiseSettings();
-			modifiable.setParam(AbstractNoiseSettings.Param.HEIGHT, height);
-			modifiable.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, valueOffset);
-			modifiable.setParam(AbstractNoiseSettings.Param.SCALE_X, scaleX);
-			modifiable.setParam(AbstractNoiseSettings.Param.SCALE_Y, scaleY);
-			modifiable.setParam(AbstractNoiseSettings.Param.SCALE_Z, scaleZ);
-			modifiable.setParam(AbstractNoiseSettings.Param.FADE_DISTANCE, fadeDistance);
-			modifiable.setParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET, heightOffset);
-			modifiable.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, valueScale);
-			return modifiable.toStatic();
+			ImmutableMap.Builder<AbstractNoiseSettings.Param, Float> builder = ImmutableMap.builder();
+			builder.put(AbstractNoiseSettings.Param.HEIGHT, height);
+			builder.put(AbstractNoiseSettings.Param.VALUE_OFFSET, valueOffset);
+			builder.put(AbstractNoiseSettings.Param.SCALE_X, scaleX);
+			builder.put(AbstractNoiseSettings.Param.SCALE_Y, scaleY);
+			builder.put(AbstractNoiseSettings.Param.SCALE_Z, scaleZ);
+			builder.put(AbstractNoiseSettings.Param.FADE_DISTANCE, fadeDistance);
+			builder.put(AbstractNoiseSettings.Param.HEIGHT_OFFSET, heightOffset);
+			builder.put(AbstractNoiseSettings.Param.VALUE_SCALE, valueScale);
+			return new StaticNoiseSettings(builder.build());
 		});
 	});
 	public static final StaticNoiseSettings DEFAULT = new StaticNoiseSettings();
@@ -41,6 +43,12 @@ public class StaticNoiseSettings extends AbstractNoiseSettings<StaticNoiseSettin
 		for (AbstractNoiseSettings.Param param : AbstractNoiseSettings.Param.values())
 			builder.put(param, settings.getParam(param));
 		this.values = builder.build();
+		this.packParameters();
+	}
+	
+	public StaticNoiseSettings(ImmutableMap<AbstractNoiseSettings.Param, Float> values)
+	{
+		this.values = values;
 		this.packParameters();
 	}
 	
@@ -63,5 +71,11 @@ public class StaticNoiseSettings extends AbstractNoiseSettings<StaticNoiseSettin
 	protected boolean setParamRaw(AbstractNoiseSettings.Param param, float values)
 	{
 		return false;
+	}
+	
+	@Override
+	public <T> DataResult<T> encode(DynamicOps<T> ops, T prefix)
+	{
+		return CODEC.encode(this, ops, prefix);
 	}
 }

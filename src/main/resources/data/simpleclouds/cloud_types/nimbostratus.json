@@ -1,0 +1,37 @@
+{
+  "noise_layers": [
+    {
+      "scale_z": 400.0,
+      "fade_distance": 16.0,
+      "height_offset": 0.0,
+      "value_scale": 1.0,
+      "height": 96.0,
+      "value_offset": 1.0,
+      "scale_x": 400.0,
+      "scale_y": 400.0
+    },
+    {
+      "scale_z": 400.0,
+      "fade_distance": 16.0,
+      "height_offset": 64.0,
+      "value_scale": 1.0,
+      "height": 64.0,
+      "value_offset": 2.0,
+      "scale_x": 400.0,
+      "scale_y": 400.0
+    },
+    {
+      "scale_z": 50.0,
+      "fade_distance": 10.0,
+      "height_offset": 0.0,
+      "value_scale": 0.3,
+      "height": 128.0,
+      "value_offset": -0.0,
+      "scale_x": 50.0,
+      "scale_y": 50.0
+    }
+  ],
+  "storminess": 0.6,
+  "storm_start": 16.0,
+  "storm_fade_distance": 128.0
+}

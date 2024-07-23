@@ -52,7 +52,7 @@ public class SimpleCloudsClientEvents
 	
 	public static void registerReloadListeners(RegisterClientReloadListenersEvent event)
 	{
-		event.registerReloadListener(CloudTypeDataManager.INSTANCE);
+		event.registerReloadListener(CloudTypeDataManager.SERVER);
 		SimpleCloudsRenderer.initialize();
 		event.registerReloadListener((ResourceManagerReloadListener)(manager -> {
 			ComputeShader.destroyCompiledShaders();
@@ -92,7 +92,7 @@ public class SimpleCloudsClientEvents
 		{
 			String type = event.getNewValue();
 			ResourceLocation loc = ResourceLocation.tryParse(type);
-			var types = CloudTypeDataManager.INSTANCE.getCloudTypes();
+			var types = CloudTypeDataManager.SERVER.getCloudTypes();
 			if (loc == null || !types.containsKey(loc))
 			{
 				Component valid = Component.literal(Joiner.on(", ").join(types.keySet().stream().map(ResourceLocation::toString).iterator())).withStyle(ChatFormatting.YELLOW);

@@ -31,36 +31,39 @@ public interface CloudInfo
 	default JsonObject toJson() throws JsonSyntaxException
 	{
 		JsonObject object = new JsonObject();
-		if (this.noiseConfig() instanceof AbstractNoiseSettings<?> settings)
-		{
-			StaticNoiseSettings toSerialize;
-			if (settings instanceof StaticNoiseSettings staticSettings)
-				toSerialize = staticSettings;
-			else if (settings instanceof ModifiableNoiseSettings modifiable)
-				toSerialize = modifiable.toStatic();
-			else
-				throw new IllegalStateException("Unable to encode noise config: unknown type");
-			object.add("noise_settings", StaticNoiseSettings.CODEC.encodeStart(JsonOps.INSTANCE, toSerialize).resultOrPartial(error -> {
-				throw new JsonSyntaxException(error);
-			}).orElseThrow());
-		}
-		else if (this.noiseConfig() instanceof AbstractLayeredNoise<?> layered)
-		{
-			StaticLayeredNoise toSerialize;
-			if (layered instanceof StaticLayeredNoise staticSettings)
-				toSerialize = staticSettings;
-			else if (layered instanceof ModifiableLayeredNoise modifiable)
-				toSerialize = modifiable.toStatic();
-			else
-				throw new IllegalStateException("Unable to encode noise config: unknown type");
-			object.add("noise_layers", StaticLayeredNoise.CODEC.encodeStart(JsonOps.INSTANCE, toSerialize).resultOrPartial(error -> {
-				throw new JsonSyntaxException(error);
-			}).orElseThrow());
-		}
-		else
-		{
-			throw new IllegalStateException("Unable to encode noise config: unknown type");
-		}
+		object.add("noise_settings", NoiseSettings.CODEC.encodeStart(JsonOps.INSTANCE, this.noiseConfig()).resultOrPartial(error -> {
+			throw new JsonSyntaxException(error);
+		}).orElseThrow());
+//		if (this.noiseConfig() instanceof AbstractNoiseSettings<?> settings)
+//		{
+//			StaticNoiseSettings toSerialize;
+//			if (settings instanceof StaticNoiseSettings staticSettings)
+//				toSerialize = staticSettings;
+//			else if (settings instanceof ModifiableNoiseSettings modifiable)
+//				toSerialize = modifiable.toStatic();
+//			else
+//				throw new IllegalStateException("Unable to encode noise config: unknown type");
+//			object.add("noise_settings", StaticNoiseSettings.CODEC.encodeStart(JsonOps.INSTANCE, toSerialize).resultOrPartial(error -> {
+//				throw new JsonSyntaxException(error);
+//			}).orElseThrow());
+//		}
+//		else if (this.noiseConfig() instanceof AbstractLayeredNoise<?> layered)
+//		{
+//			StaticLayeredNoise toSerialize;
+//			if (layered instanceof StaticLayeredNoise staticSettings)
+//				toSerialize = staticSettings;
+//			else if (layered instanceof ModifiableLayeredNoise modifiable)
+//				toSerialize = modifiable.toStatic();
+//			else
+//				throw new IllegalStateException("Unable to encode noise config: unknown type");
+//			object.add("noise_layers", StaticLayeredNoise.CODEC.encodeStart(JsonOps.INSTANCE, toSerialize).resultOrPartial(error -> {
+//				throw new JsonSyntaxException(error);
+//			}).orElseThrow());
+//		}
+//		else
+//		{
+//			throw new IllegalStateException("Unable to encode noise config: unknown type");
+//		}
 		object.addProperty("storminess", Mth.clamp(this.storminess(), 0.0F, CloudInfo.STORMINESS_MAX));
 		object.addProperty("storm_start", Mth.clamp(this.stormStart(), 0.0F, CloudInfo.STORM_START_MAX));
 		object.addProperty("storm_fade_distance", Mth.clamp(this.stormFadeDistance(), 0.0F, CloudInfo.STORM_FADE_DISTANCE_MAX));

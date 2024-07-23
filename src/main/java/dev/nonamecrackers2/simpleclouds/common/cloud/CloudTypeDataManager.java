@@ -22,7 +22,7 @@ public class CloudTypeDataManager extends SimpleJsonResourceReloadListener
 {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-	public static final CloudTypeDataManager INSTANCE = new CloudTypeDataManager();
+	public static final CloudTypeDataManager SERVER = new CloudTypeDataManager();
 	private Map<ResourceLocation, CloudType> cloudTypes = ImmutableMap.of();
 	
 	private CloudTypeDataManager()

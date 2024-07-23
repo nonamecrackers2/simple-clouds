@@ -204,7 +204,7 @@ public class CloudPreviewerScreen extends Screen3D
 	{
 		Popup.<CloudType>createOptionListPopup(this, list -> 
 		{
-			for (var entry : CloudTypeDataManager.INSTANCE.getCloudTypes().entrySet())
+			for (var entry : CloudTypeDataManager.SERVER.getCloudTypes().entrySet())
 			{
 				CloudType type = entry.getValue();
 				if (type.noiseConfig() instanceof AbstractNoiseSettings || type.noiseConfig() instanceof AbstractLayeredNoise)

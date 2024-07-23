@@ -3,6 +3,9 @@ package dev.nonamecrackers2.simpleclouds.common.noise;
 import java.util.Collection;
 
 import com.google.common.collect.Lists;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
 
 public class ModifiableLayeredNoise extends AbstractLayeredNoise<ModifiableNoiseSettings>
 {
@@ -21,6 +24,12 @@ public class ModifiableLayeredNoise extends AbstractLayeredNoise<ModifiableNoise
 		if (!this.noiseLayers.contains(layer))
 			this.noiseLayers.add(layer);
 		return this;
+	}
+	
+	@Override
+	public <T> DataResult<T> encode(DynamicOps<T> ops, T prefix)
+	{
+		return StaticLayeredNoise.CODEC.encode(this.toStatic(), ops, prefix);
 	}
 	
 	public boolean removeNoiseLayer(ModifiableNoiseSettings layer)

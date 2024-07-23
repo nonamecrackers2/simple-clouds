@@ -151,7 +151,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			if (mode == CloudMode.DEFAULT || mode == CloudMode.AMBIENT)
 			{
 				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
-				var cloudTypes = CloudTypeDataManager.INSTANCE.getCloudTypes();
+				var cloudTypes = CloudTypeDataManager.SERVER.getCloudTypes();
 				if (cloudTypes.size() > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
 					LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
 				else
@@ -742,7 +742,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		ResourceLocation loc = ResourceLocation.tryParse(rawId);
 		if (loc != null)
 		{
-			CloudType type = CloudTypeDataManager.INSTANCE.getCloudTypes().get(loc);
+			CloudType type = CloudTypeDataManager.SERVER.getCloudTypes().get(loc);
 			if (type != null)
 				return Pair.of(loc, type);
 		}
