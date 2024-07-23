@@ -2,7 +2,7 @@
 
 in vec3 Position;
 in float Darkness;
-in vec3 Normal;
+in uint Index;
 
 uniform mat4 ModelViewMat;
 uniform mat4 ProjMat;

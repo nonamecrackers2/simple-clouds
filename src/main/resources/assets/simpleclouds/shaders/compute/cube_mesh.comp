@@ -35,9 +35,7 @@ struct Vertex {
 	float y;
 	float z;
 	float brightness;
-	float nx;
-	float ny;
-	float nz;
+	uint index;
 };
 
 struct Side {
@@ -191,16 +189,16 @@ bool shouldNotOcclude(int index)
 	}
 }
 
-void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, vec3 normal, float brightness)
+void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, uint index, float brightness)
 {
 	uint currentFace = atomicAdd(counter, 1u);
 	uint lastIndex = currentFace * 6;
 	uint lastVertex = currentFace * 4;
 	Side side;
-	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, brightness, normal.x, normal.y, normal.z);
-	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, brightness, normal.x, normal.y, normal.z);
-	side.c = Vertex(offset.x + corner3.x, offset.y + corner3.y, offset.z + corner3.z, brightness, normal.x, normal.y, normal.z);
-	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, brightness, normal.x, normal.y, normal.z);
+	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, brightness, index);
+	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, brightness, index);
+	side.c = Vertex(offset.x + corner3.x, offset.y + corner3.y, offset.z + corner3.z, brightness, index);
+	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, brightness, index);
 	sides.data[currentFace] = side;
 	for (uint i = 0; i < sideIndices.length; i++)
 		indices.data[lastIndex + i] = lastVertex + sideIndices[i];
@@ -212,22 +210,22 @@ void createCube(float x, float y, float z, float cubeRadius, float brightness, f
 	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
 	//-Y
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, -1.0, 0.0)) <= 0.0) && (!isPosValid(x, y - Scale, z, group, fade) || shouldNotOcclude(2)))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, -1.0, 0.0), brightness);
+		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), 2, brightness);
 	//+Y
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 1.0, 0.0)) <= 0.0) && (!isPosValid(x, y + Scale, z, group, fade) || shouldNotOcclude(3)))
-		createFace(offset, vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(0.0, 1.0, 0.0), brightness);
+		createFace(offset, vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), 3, brightness);
 	//-X
 	if ((TestFacesFacingAway || dot(norm, vec3(-1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x - Scale, y, z, -1, 0) || shouldNotOcclude(0)))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-1.0, 0.0, 0.0), brightness);
+		createFace(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, -cubeRadius, -cubeRadius), 0, brightness);
 	//+X
 	if ((TestFacesFacingAway || dot(norm, vec3(1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x + Scale, y, z, 1, 0) || shouldNotOcclude(1)))
-		createFace(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(1.0, 0.0, 0.0), brightness);
+		createFace(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), 1, brightness);
 	//-Z
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, -1.0)) <= 0.0) && (!isPosValid(x, y, z - Scale, 0, -1) || shouldNotOcclude(4)))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(0.0, 0.0, -1.0), brightness);
+		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), 4, brightness);
 	//+Z
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, 1.0)) <= 0.0) && (!isPosValid(x, y, z + Scale, 0, 1) || shouldNotOcclude(5)))
-		createFace(offset, vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(0.0, 0.0, 1.0), brightness);
+		createFace(offset, vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), 5, brightness);
 }
 
 void main() 

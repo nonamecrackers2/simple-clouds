@@ -9,7 +9,7 @@
     "attributes": [
         "Position",
         "Darkness",
-        "Normal"
+        "Index"
     ],
     "samplers": [
     ],

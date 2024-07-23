@@ -50,8 +50,7 @@ public abstract class CloudMeshGenerator
 	public static final int WORK_SIZE = 4;
 	public static final int LOCAL_SIZE = 8;
 	public static final int SIDE_BUFFER_SIZE = 368435456;
-	public static final int ELEMENTS_PER_VERTEX = 7;
-	public static final int BYTES_PER_VERTEX = 4 * ELEMENTS_PER_VERTEX;
+	public static final int BYTES_PER_VERTEX = 20;
 	public static final int BYTES_PER_SIDE = BYTES_PER_VERTEX * 4;
 	public static final int INDEX_BUFFER_SIZE = 107108864;
 	protected final ResourceLocation meshShaderLoc;
@@ -220,13 +219,16 @@ public abstract class CloudMeshGenerator
 		GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_DYNAMIC_DRAW);
 		//Vertex position
 		GL20.glEnableVertexAttribArray(0);
-		GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 28, 0);
-		//Vertex color
+		GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 20, 0);
+		//Vertex brightness
 		GL20.glEnableVertexAttribArray(1);
-		GL20.glVertexAttribPointer(1, 1, GL11.GL_FLOAT, true, 28, 12);
+		GL20.glVertexAttribPointer(1, 1, GL11.GL_FLOAT, true, 20, 12);
 		//Vertex normal
+//		GL20.glEnableVertexAttribArray(2);
+//		GL20.glVertexAttribPointer(2, 3, GL11.GL_FLOAT, true, 28, 16);
+		//Vertex normal index
 		GL20.glEnableVertexAttribArray(2);
-		GL20.glVertexAttribPointer(2, 3, GL11.GL_FLOAT, true, 28, 16);
+		GL30.glVertexAttribIPointer(2, 1, GL11.GL_INT, 20, 16);
 		
 		GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
 		this.indexBuffer = MemoryTracker.create(INDEX_BUFFER_SIZE);
@@ -256,18 +258,13 @@ public abstract class CloudMeshGenerator
 	
 	protected void initExtra(ResourceManager manager) {}
 	
-	protected void copyDataOver()
+	protected void copyDataOver(int totalSides)
 	{
 		if (this.vertexBufferId != -1 && this.indexBufferId != -1 && this.shader != null && this.shader.isValid())
 		{
 			GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
 			
-			MutableInt totalSides = new MutableInt();
-			this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {
-				totalSides.setValue(b.getInt(0));
-				b.putInt(0, 0);
-			}, 4);
-			this.totalSides = totalSides.getValue();
+			this.totalSides = totalSides;
 			this.totalIndices = this.totalSides * 6;
 			
 			if (this.totalSides > 0)
@@ -339,7 +336,6 @@ public abstract class CloudMeshGenerator
 		
 		if (this.chunkGenTasks.isEmpty())
 		{
-			this.copyDataOver();
 			this.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
 			this.currentCamX = camX;
 			this.currentCamY = camY;
@@ -350,9 +346,21 @@ public abstract class CloudMeshGenerator
 		if (!this.chunkGenTasks.isEmpty())
 			this.doMeshGenning(this.currentCamX, this.currentCamY, this.currentCamZ, this.currentScale);
 		
-		this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {}, 4);
-		
-		return !this.chunkGenTasks.isEmpty();
+		if (this.chunkGenTasks.isEmpty())
+		{
+			MutableInt totalSides = new MutableInt();
+			this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {
+				totalSides.setValue(b.getInt(0));
+				b.putInt(0, 0);
+			}, 4);
+			this.copyDataOver(totalSides.getValue());
+			return false;
+		}
+		else
+		{
+			this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {}, 4);
+			return true;
+		}
 	}
 	
 	protected void populateChunkGenTasks(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)
