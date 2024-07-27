@@ -3,10 +3,13 @@ package dev.nonamecrackers2.simpleclouds.client.packet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
+import dev.nonamecrackers2.simpleclouds.client.mesh.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Minecraft;
@@ -54,7 +57,7 @@ public class SimpleCloudsClientPacketHandler
 			if (SimpleCloudsConfig.SERVER.cloudMode.get() != renderer.getCurrentCloudMode())
 			{
 				LOGGER.debug("Looks like the server cloud mode does not match with the client. Requesting a reload...");
-				renderer.onResourceManagerReload(mc.getResourceManager());
+				renderer.requestReload();
 			}
 		}
 		else
@@ -62,5 +65,18 @@ public class SimpleCloudsClientPacketHandler
 			LOGGER.warn("Server spec is not loaded");
 		}
 		LOGGER.debug("Received cloud manager info");
+	}
+	
+	public static void handleCloudTypesPacket(SendCloudTypesPacket packet)
+	{
+		LOGGER.debug("Received {} synced cloud types", packet.types.size());
+		ClientSideCloudTypeManager.getInstance().receiveSynced(packet.types, packet.indexed);
+		if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof MultiRegionCloudMeshGenerator meshGenerator)
+		{
+			if (packet.types.size() > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
+				LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
+			else
+				meshGenerator.setCloudTypes(packet.indexed);
+		}
 	}
 }

@@ -2,6 +2,7 @@ package dev.nonamecrackers2.simpleclouds.common.packet;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -16,5 +17,6 @@ public class SimpleCloudsPacketHandlers
 	{
 		PacketUtil.registerToClient(MAIN, UpdateCloudManagerPacket.class);
 		PacketUtil.registerToClient(MAIN, SendCloudManagerPacket.class);
+		PacketUtil.registerToClient(MAIN, SendCloudTypesPacket.class);
 	}
 }

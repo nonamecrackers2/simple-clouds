@@ -24,6 +24,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
+import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.gui.widget.LayerEditor;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
@@ -32,7 +33,6 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerat
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractLayeredNoise;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
@@ -52,6 +52,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
@@ -204,11 +205,16 @@ public class CloudPreviewerScreen extends Screen3D
 	{
 		Popup.<CloudType>createOptionListPopup(this, list -> 
 		{
-			for (var entry : CloudTypeDataManager.SERVER.getCloudTypes().entrySet())
+			for (var entry : ClientSideCloudTypeManager.getInstance().getCloudTypes().entrySet())
 			{
 				CloudType type = entry.getValue();
 				if (type.noiseConfig() instanceof AbstractNoiseSettings || type.noiseConfig() instanceof AbstractLayeredNoise)
-					list.addObject(Component.literal(entry.getKey().toString()), type);
+				{
+					MutableComponent name = Component.literal(entry.getKey().toString());
+					if (!ClientSideCloudTypeManager.getInstance().getClientSideDataManager().getCloudTypes().containsKey(entry.getKey()))
+						name.append(Component.literal(" (Server Side)").withStyle(ChatFormatting.DARK_GRAY));
+					list.addObject(name, type);
+				}
 			}
 		}, type -> 
 		{
@@ -228,7 +234,7 @@ public class CloudPreviewerScreen extends Screen3D
 			this.stormStartBox.setValue(String.valueOf(this.stormStart));
 			this.stormFadeDistance = type.stormFadeDistance();
 			this.stormFadeDistanceBox.setValue(String.valueOf(this.stormFadeDistance));
-		}, 200, 100, SELECT_A_CLOUD_TYPE);
+		}, 400, 100, SELECT_A_CLOUD_TYPE);
 	}
 	
 	private void attemptToExportCloudType()

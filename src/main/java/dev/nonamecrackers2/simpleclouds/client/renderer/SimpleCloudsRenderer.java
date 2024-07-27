@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
@@ -33,6 +34,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.MultiRegionCloudMeshGenerator;
@@ -42,7 +44,6 @@ import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
@@ -68,7 +69,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 //	private static final ResourceLocation WORLD_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/world_post.json");
 	private static final ResourceLocation STORM_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/storm_post.json");
 	private static final ResourceLocation BLUR_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/blur_post.json");
-	public static final CloudType FALLBACK = new CloudType(0.0F, 16.0F, 32.0F, StaticNoiseSettings.DEFAULT);
+	public static final CloudType FALLBACK = new CloudType(SimpleCloudsMod.id("fallback"), 0.0F, 16.0F, 32.0F, StaticNoiseSettings.DEFAULT);
 	public static final int CLOUD_SCALE = 8;
 	private static final int SHADOW_MAP_SIZE = 1024;
 	private static @Nullable SimpleCloudsRenderer instance;
@@ -95,6 +96,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable CloudMode cloudMode;
 	private @Nullable CloudStyle cloudStyle;
 	private @Nullable ResourceLocation singleModeCloudType;
+	private boolean needsReload;
 	
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
@@ -111,6 +113,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			CloudManager manager = CloudManager.get(this.mc.level);
 			this.meshGenerator.setScroll(manager.getScrollX(partialTicks), manager.getScrollY(partialTicks), manager.getScrollZ(partialTicks));
 		}
+	}
+	
+	public void requestReload()
+	{
+		this.needsReload = true;
 	}
 	
 	@Override
@@ -151,11 +158,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			if (mode == CloudMode.DEFAULT || mode == CloudMode.AMBIENT)
 			{
 				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
-				var cloudTypes = CloudTypeDataManager.SERVER.getCloudTypes();
-				if (cloudTypes.size() > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
-					LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
-				else
-					generator.setCloudTypes(cloudTypes.values().toArray(i -> new CloudType[i]));
 				if (mode == CloudMode.AMBIENT)
 					generator.setFadeNearOrigin(0.2F, 0.4F);
 				this.meshGenerator = generator;
@@ -164,18 +166,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			{
 				float fadeStart = (float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F;
 				float fadeEnd = (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F;
-				SingleRegionCloudMeshGenerator generator = new SingleRegionCloudMeshGenerator(FALLBACK, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd, style);
-				Pair<ResourceLocation, CloudType> type = getSingleModeCloudType();
-				if (type != null)
-				{
-					generator.setCloudType(type.getRight());
-					this.singleModeCloudType = type.getLeft();
-				}
-				else
-				{
-					this.singleModeCloudType = null;
-				}
-				this.meshGenerator = generator;
+				this.meshGenerator = new SingleRegionCloudMeshGenerator(FALLBACK, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd, style);
 			}
 			else
 			{
@@ -184,6 +175,29 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.cloudMode = mode;
 			this.cloudStyle = style;
 		}
+		
+		if (this.meshGenerator instanceof MultiRegionCloudMeshGenerator multiRegionGenerator)
+		{
+			CloudType[] cloudTypes = ClientSideCloudTypeManager.getInstance().getIndexed();
+			if (cloudTypes.length > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
+				LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
+			else
+				multiRegionGenerator.setCloudTypes(cloudTypes);			
+		}
+		else if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator singleRegionGenerator)
+		{
+			Pair<ResourceLocation, CloudType> type = getSingleModeCloudType();
+			if (type != null)
+			{
+				singleRegionGenerator.setCloudType(type.getRight());
+				this.singleModeCloudType = type.getLeft();
+			}
+			else
+			{
+				this.singleModeCloudType = null;
+			}
+		}
+		
 		this.setupMeshGenerator(0.0F);
 		this.meshGenerator.init(manager);
 		long duration = Duration.between(started, Instant.now()).toMillis();
@@ -365,6 +379,12 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void tick()
 	{
+		if (this.needsReload)
+		{
+			this.onResourceManagerReload(this.mc.getResourceManager());
+			this.needsReload = false;
+		}
+		
 		float renderDistance = (float)this.meshGenerator.getCloudAreaMaxRadius() * (float)CLOUD_SCALE;
 		this.fogStart = renderDistance / 4.0F;
 		this.fogEnd = renderDistance;
@@ -738,11 +758,22 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public static @Nullable Pair<ResourceLocation, CloudType> getSingleModeCloudType()
 	{
-		String rawId = getSingleModeCloudTypeRaw();
+		String rawId;
+		Function<ResourceLocation, CloudType> cloudTypeGetter;
+		if (ClientCloudManager.isAvailableServerSide() && SimpleCloudsConfig.SERVER_SPEC.isLoaded())
+		{
+			cloudTypeGetter = ClientSideCloudTypeManager.getInstance().getCloudTypes()::get;
+			rawId = SimpleCloudsConfig.SERVER.singleModeCloudType.get();
+		}
+		else
+		{
+			cloudTypeGetter = ClientSideCloudTypeManager.getInstance().getClientSideDataManager().getCloudTypes()::get;
+			rawId = SimpleCloudsConfig.CLIENT.singleModeCloudType.get();
+		}
 		ResourceLocation loc = ResourceLocation.tryParse(rawId);
 		if (loc != null)
 		{
-			CloudType type = CloudTypeDataManager.SERVER.getCloudTypes().get(loc);
+			CloudType type = cloudTypeGetter.apply(loc);
 			if (type != null)
 				return Pair.of(loc, type);
 		}

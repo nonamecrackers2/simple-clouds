@@ -7,9 +7,10 @@ import com.mojang.serialization.JsonOps;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 
-public record CloudType(float storminess, float stormStart, float stormFadeDistance, NoiseSettings noiseConfig) implements CloudInfo
+public record CloudType(ResourceLocation id, float storminess, float stormStart, float stormFadeDistance, NoiseSettings noiseConfig) implements CloudInfo
 {
 	private static float getOptionalRangedParam(JsonObject object, String name, float defaultValue, float min, float max) throws JsonSyntaxException
 	{
@@ -19,7 +20,7 @@ public record CloudType(float storminess, float stormStart, float stormFadeDista
 		return value;
 	}
 	
-	public static CloudType readFromJson(JsonObject object) throws JsonSyntaxException
+	public static CloudType readFromJson(ResourceLocation id, JsonObject object) throws JsonSyntaxException
 	{
 		JsonElement element = object.has("noise_settings") ? object.get("noise_settings") : object.get("noise_layers");
 		if (element == null)
@@ -35,6 +36,6 @@ public record CloudType(float storminess, float stormStart, float stormFadeDista
 		float stormStart = getOptionalRangedParam(object, "storm_start", 16.0F, 0.0F, CloudInfo.STORM_START_MAX);
 		float stormFadeDistance = getOptionalRangedParam(object, "storm_fade_distance", 32.0F, 0.0F, CloudInfo.STORM_FADE_DISTANCE_MAX);
 		
-		return new CloudType(storminess, stormStart, stormFadeDistance, settings);
+		return new CloudType(id, storminess, stormStart, stormFadeDistance, settings);
 	}
 }

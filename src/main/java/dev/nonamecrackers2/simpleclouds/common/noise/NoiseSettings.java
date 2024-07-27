@@ -25,7 +25,7 @@ public interface NoiseSettings
 				if (result.result().isPresent())
 					return result;
 			}
-			return DataResult.error(() -> "Could not decode noise settings");
+			return DataResult.error(() -> "Could not decode noise settings; unknown type");
 		}
 		
 		@Override

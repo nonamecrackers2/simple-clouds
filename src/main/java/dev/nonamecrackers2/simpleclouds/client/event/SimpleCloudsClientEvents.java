@@ -1,5 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.client.event;
 
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
 import java.util.List;
 
 import org.joml.Math;
@@ -8,16 +10,17 @@ import org.joml.Vector3f;
 import com.google.common.base.Joiner;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.command.ClientCloudCommandHelper;
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsDebugOverlayRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.ChatFormatting;
@@ -25,6 +28,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
@@ -52,7 +56,7 @@ public class SimpleCloudsClientEvents
 	
 	public static void registerReloadListeners(RegisterClientReloadListenersEvent event)
 	{
-		event.registerReloadListener(CloudTypeDataManager.SERVER);
+		event.registerReloadListener(ClientSideCloudTypeManager.getInstance().getClientSideDataManager());
 		SimpleCloudsRenderer.initialize();
 		event.registerReloadListener((ResourceManagerReloadListener)(manager -> {
 			ComputeShader.destroyCompiledShaders();
@@ -92,7 +96,7 @@ public class SimpleCloudsClientEvents
 		{
 			String type = event.getNewValue();
 			ResourceLocation loc = ResourceLocation.tryParse(type);
-			var types = CloudTypeDataManager.SERVER.getCloudTypes();
+			var types = ClientSideCloudTypeManager.getInstance().getCloudTypes();
 			if (loc == null || !types.containsKey(loc))
 			{
 				Component valid = Component.literal(Joiner.on(", ").join(types.keySet().stream().map(ResourceLocation::toString).iterator())).withStyle(ChatFormatting.YELLOW);
@@ -141,6 +145,12 @@ public class SimpleCloudsClientEvents
 	}
 	
 	@SubscribeEvent
+	public static void onClientDisconnect(ClientPlayerNetworkEvent.LoggingOut event)
+	{
+		ClientSideCloudTypeManager.getInstance().clearCloudTypes();
+	}
+	
+	@SubscribeEvent
 	public static void onRenderDebugOverlay(CustomizeGuiOverlayEvent.DebugText event)
 	{
 		Minecraft mc = Minecraft.getInstance();
@@ -150,7 +160,8 @@ public class SimpleCloudsClientEvents
 			List<String> text = event.getRight();
 			text.add("");
 			text.add(ChatFormatting.GREEN + SimpleCloudsMod.MODID + ": " + SimpleCloudsMod.getModVersion());
-			text.add("Triangles: " + renderer.getMeshGenerator().getTotalSides() * 2);
+			int totalSides = renderer.getMeshGenerator().getTotalSides();
+			text.add("Triangles: " + totalSides * 2 + "; Size: " + humanReadableByteCountSI(totalSides * CloudMeshGenerator.BYTES_PER_SIDE));
 			int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
 			text.add("Frames to generate mesh: " + SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
 			text.add("Effective framerate: " + mc.getFps() / frames);
@@ -164,6 +175,10 @@ public class SimpleCloudsClientEvents
 				text.add("Fade start: " + meshGenerator.getFadeStart() + "; Fade end: " + meshGenerator.getFadeEnd());
 				text.add("Cloud type: " + renderer.getCurrentSingleModeCloudType());
 			}
+			else
+			{
+				text.add("Cloud types: " + ClientSideCloudTypeManager.getInstance().getCloudTypes().size());
+			}
 			if (mc.level != null)
 			{
 				CloudManager manager = CloudManager.get(mc.level);
@@ -172,6 +187,20 @@ public class SimpleCloudsClientEvents
 				text.add("Direction: x=" + round(d.x) + ", y=" + round(d.y) + ", z=" + round(d.z));
 			}
 		}
+	}
+	
+	//https://stackoverflow.com/questions/3758606/how-can-i-convert-byte-size-into-a-human-readable-format-in-java#:~:text=public%20static%20String%20humanReadableByteCountSI,1000.0%2C%20ci.current())%3B%0A%7D
+	private static String humanReadableByteCountSI(long bytes)
+	{
+		if (-1000 < bytes && bytes < 1000)
+			return bytes + " B";
+		CharacterIterator ci = new StringCharacterIterator("kMGTPE");
+		while (bytes <= -999_950 || bytes >= 999_950)
+		{
+			bytes /= 1000;
+			ci.next();
+		}
+		return String.format("%.1f %cB", bytes / 1000.0, ci.current());
 	}
 	
 	private static float round(float val)
