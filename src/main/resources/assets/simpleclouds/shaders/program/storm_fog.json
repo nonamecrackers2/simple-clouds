@@ -24,7 +24,7 @@
         { "name": "ColorThreshold", "type": "float", "count": 3, "values": [ 0.7, 0.7, 0.7 ] },
         { "name": "VerticalFade", "type": "float", "count": 1, "values": [ 400.0 ] },
         { "name": "ColorMultiplier", "type": "float", "count": 3, "values": [ 0.6, 0.6, 0.8 ] },
-        { "name": "CutoffDistance", "type": "float", "count": 1, "values": [ 500.0 ] },
+        { "name": "CutoffDistance", "type": "float", "count": 1, "values": [ 1000.0 ] },
         { "name": "ColorModulator", "type": "float", "count": 4, "values": [ 1.0, 1.0, 1.0, 1.0 ] }
     ]
 }

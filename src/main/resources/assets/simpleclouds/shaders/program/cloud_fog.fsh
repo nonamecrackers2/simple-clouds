@@ -25,7 +25,7 @@ void main()
 {
 	vec4 col = texture(DiffuseSampler, texCoord);
 	vec3 pos = screenToWorldPos(texCoord, texture(DiffuseDepthSampler, texCoord).x * 2.0 - 1.0);
-	float depth = length(pos);
+	float depth = length(pos.xz);
 	
 	if (col.a > 0.0)
 	{

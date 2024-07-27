@@ -29,10 +29,10 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 		renderer.renderShadowMap(shadowMapStack, camX, camY, camZ);
 		mc.getProfiler().pop();
 		
-		Vec3 cloudCol = mc.level.getCloudColor(partialTick);
-		float cloudR = (float)cloudCol.x;
-		float cloudG = (float)cloudCol.y;
-		float cloudB = (float)cloudCol.z;
+		float[] cloudCol = renderer.getCloudColor(partialTick);
+		float cloudR = (float)cloudCol[0];
+		float cloudG = (float)cloudCol[1];
+		float cloudB = (float)cloudCol[2];
 	
 		if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
 		{
@@ -69,10 +69,10 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 	@Override
 	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
-		Vec3 cloudCol = mc.level.getCloudColor(partialTick);
-		float cloudR = (float)cloudCol.x;
-		float cloudG = (float)cloudCol.y;
-		float cloudB = (float)cloudCol.z;
+		float[] cloudCol = renderer.getCloudColor(partialTick);
+		float cloudR = (float)cloudCol[0];
+		float cloudG = (float)cloudCol[1];
+		float cloudB = (float)cloudCol[2];
 		
 		if (CompatHelper.areShadersRunning())
 			GlStateManager._depthMask(true);

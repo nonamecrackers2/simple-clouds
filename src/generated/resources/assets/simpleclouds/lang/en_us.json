@@ -27,6 +27,7 @@
   "gui.simpleclouds.cloud_previewer.storminess.title": "Storminess",
   "gui.simpleclouds.cloud_previewer.title": "Cloud Previewer",
   "gui.simpleclouds.cloud_previewer.warning.too_many_cubes": "Warning: Too many cubes",
+  "gui.simpleclouds.cloud_previewer.weather_type.title": "Weather Type",
   "gui.simpleclouds.config.category.debug.title": "Debug",
   "gui.simpleclouds.config.category.performance.title": "Performance",
   "gui.simpleclouds.config.category.seed.title": "Seed",

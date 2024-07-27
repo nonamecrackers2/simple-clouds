@@ -1,5 +1,5 @@
 {
-  "noise_layers": [
+  "noise_settings": [
     {
       "scale_z": 400.0,
       "fade_distance": 16.0,
@@ -31,6 +31,7 @@
       "scale_y": 50.0
     }
   ],
+  "weather_type": "thunderstorm",
   "storminess": 0.6,
   "storm_start": 16.0,
   "storm_fade_distance": 128.0

@@ -33,6 +33,7 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerat
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractLayeredNoise;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
@@ -59,6 +60,7 @@ import net.minecraft.util.Mth;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import nonamecrackers2.crackerslib.client.gui.Popup;
 import nonamecrackers2.crackerslib.client.gui.Screen3D;
+import nonamecrackers2.crackerslib.client.gui.widget.CyclableButton;
 
 public class CloudPreviewerScreen extends Screen3D
 {
@@ -67,6 +69,7 @@ public class CloudPreviewerScreen extends Screen3D
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final int PADDING = 10;
 	private static final Component WARNING_TOO_MANY_CUBES = Component.translatable("gui.simpleclouds.cloud_previewer.warning.too_many_cubes").withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withBold(true));;
+	private static final Component WEATHER_TYPE_TITLE = Component.translatable("gui.simpleclouds.cloud_previewer.weather_type.title");
 	private static final Component STORMINESS_TITLE = Component.translatable("gui.simpleclouds.cloud_previewer.storminess.title");
 	private static final Component STORM_START_TITLE = Component.translatable("gui.simpleclouds.cloud_previewer.storm_start.title");
 	private static final Component STORM_FADE_DISTANCE_TITLE = Component.translatable("gui.simpleclouds.cloud_previewer.storm_fade_distance.title");
@@ -82,11 +85,18 @@ public class CloudPreviewerScreen extends Screen3D
 	private final List<ModifiableNoiseSettings> layers;
 	private final List<LayerEditor> layerEditors = Lists.newArrayList();
 	private int currentLayer;
+	private WeatherType weatherType = WeatherType.NONE;
 	private float storminess = 0.0F;
 	private float stormStart = 16.0F;
 	private float stormFadeDistance = 32.0F;
 	private final CloudInfo cloudType = new CloudInfo()
 	{
+		@Override
+		public WeatherType weatherType() 
+		{
+			return CloudPreviewerScreen.this.weatherType;
+		}
+		
 		@Override
 		public float storminess()
 		{
@@ -119,6 +129,7 @@ public class CloudPreviewerScreen extends Screen3D
 	private final File directory;
 	private int toolbarHeight;
 	private boolean needsMeshRegen = true;
+	private CyclableButton<WeatherType> weatherTypeButton;
 	private EditBox storminessBox;
 	private EditBox stormStartBox;
 	private EditBox stormFadeDistanceBox;
@@ -228,6 +239,8 @@ public class CloudPreviewerScreen extends Screen3D
 				for (AbstractNoiseSettings<?> settings : layeredSettings.getNoiseLayers())
 					this.addLayer(new ModifiableNoiseSettings(settings));
 			}
+			this.weatherType = type.weatherType();
+			this.weatherTypeButton.setValue(this.weatherType);
 			this.storminess = type.storminess();
 			this.storminessBox.setValue(String.valueOf(this.storminess));
 			this.stormStart = type.stormStart();
@@ -358,6 +371,8 @@ public class CloudPreviewerScreen extends Screen3D
 		
 		GridLayout cloudTypeOptions = new GridLayout().rowSpacing(this.font.lineHeight + 5);
 		GridLayout.RowHelper cloudTypeOptionsRow = cloudTypeOptions.createRowHelper(1);
+		this.weatherTypeButton = cloudTypeOptionsRow.addChild(new CyclableButton<>(0, 0, 100, Lists.newArrayList(WeatherType.values()), this.weatherType));
+		this.weatherTypeButton.setResponder(type -> this.weatherType = type);
 		this.storminessBox = this.valueEditor(this.storminess, cloudTypeOptionsRow.addChild(new EditBox(this.font, 0, 0, 100, 20, CommonComponents.EMPTY)), f -> this.storminess = f, 0.0F, CloudInfo.STORMINESS_MAX);
 		this.stormStartBox = this.valueEditor(this.stormStart, cloudTypeOptionsRow.addChild(new EditBox(this.font, 0, 0, 100, 20, CommonComponents.EMPTY)), f -> this.stormStart = f, 0.0F, CloudInfo.STORM_START_MAX);
 		this.stormFadeDistanceBox = this.valueEditor(this.stormFadeDistance, cloudTypeOptionsRow.addChild(new EditBox(this.font, 0, 0, 100, 20, CommonComponents.EMPTY)), f -> this.stormFadeDistance = f, 0.0F, CloudInfo.STORM_FADE_DISTANCE_MAX);
@@ -394,6 +409,7 @@ public class CloudPreviewerScreen extends Screen3D
 		if (GENERATOR.getTotalSides() * CloudMeshGenerator.BYTES_PER_SIDE > CloudMeshGenerator.SIDE_BUFFER_SIZE)
 			stack.drawString(this.font, WARNING_TOO_MANY_CUBES, this.width - this.font.width(WARNING_TOO_MANY_CUBES) - 5, this.height - this.font.lineHeight - 5, 0xFFFFFFFF);
 		
+		stack.drawString(this.font, WEATHER_TYPE_TITLE, this.weatherTypeButton.getX(), this.weatherTypeButton.getY() - this.font.lineHeight - 2, 0xFFFFFFFF);
 		stack.drawString(this.font, STORMINESS_TITLE, this.storminessBox.getX(), this.storminessBox.getY() - this.font.lineHeight - 2, 0xFFFFFFFF);
 		stack.drawString(this.font, STORM_START_TITLE, this.stormStartBox.getX(), this.stormStartBox.getY() - this.font.lineHeight - 2, 0xFFFFFFFF);
 		stack.drawString(this.font, STORM_FADE_DISTANCE_TITLE, this.stormFadeDistanceBox.getX(), this.stormFadeDistanceBox.getY() - this.font.lineHeight - 2, 0xFFFFFFFF);

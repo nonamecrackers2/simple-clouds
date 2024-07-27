@@ -1,6 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import javax.annotation.Nullable;
@@ -10,11 +11,14 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL21;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
 
 import com.google.common.collect.ImmutableMap;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
@@ -44,12 +48,30 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private boolean fadeNearOrigin;
 	private float fadeStart;
 	private float fadeEnd;
+	private int cloudRegionPixelBufferId = -1;
+//	private @Nullable ByteBuffer cloudRegionPixelBuffer;
+	private long cloudRegionPixelFence = -1;
+	private int cloudRegionPixelBufferSize;
+	private @Nullable CloudInfo currentCloudTypeAtOrigin;
+	private float cloudTypeFadeAtOrigin;
 	
 	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, CloudStyle style)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
 		this.setCloudTypes(cloudTypes);
 		this.style = style;
+	}
+	
+	@Override
+	public CloudInfo getCloudTypeAtOrigin()
+	{
+		return this.currentCloudTypeAtOrigin;
+	}
+	
+	@Override
+	public float getCloudFadeAtOrigin()
+	{
+		return this.cloudTypeFadeAtOrigin;
 	}
 
 	public MultiRegionCloudMeshGenerator setFadeNearOrigin(float fadeStart, float fadeEnd)
@@ -141,6 +163,24 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			TextureUtil.releaseTextureId(this.cloudRegionTexture);
 			this.cloudRegionTexture = -1;
 		}
+		
+//		if (this.cloudRegionPixelFence != -1)
+//		{
+//			GL32.glDeleteSync(this.cloudRegionPixelFence);
+//			this.cloudRegionPixelFence = -1;
+//		}
+//		
+		if (this.cloudRegionPixelBufferId != -1)
+		{
+			GL15.glDeleteBuffers(this.cloudRegionPixelBufferId);
+			this.cloudRegionPixelBufferId = -1;
+		}
+//		
+//		if (this.cloudRegionPixelBuffer != null)
+//		{
+//			MemoryUtil.memFree(this.cloudRegionPixelBuffer);
+//			this.cloudRegionPixelBuffer = null;
+//		}
 	}
 	
 	private void createRegionTexture()
@@ -161,10 +201,17 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		GL11.glTexParameteri(GL12.GL_TEXTURE_3D, GL12.GL_TEXTURE_WRAP_R, GL12.GL_CLAMP_TO_EDGE);
 		GL11.glTexParameteri(GL12.GL_TEXTURE_3D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
 		GL11.glTexParameteri(GL12.GL_TEXTURE_3D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
-		GL42.glTexImage3D(GL12.GL_TEXTURE_3D, 0, GL30.GL_RG32F, this.requiredRegionTexSize, this.requiredRegionTexSize, this.lodConfig.getLods().length + 1, 0, GL30.GL_RG, GL11.GL_UNSIGNED_BYTE, (IntBuffer)null);
+		GL42.glTexImage3D(GL12.GL_TEXTURE_3D, 0, GL30.GL_RG32F, this.requiredRegionTexSize, this.requiredRegionTexSize, this.lodConfig.getLods().length + 1, 0, GL30.GL_RG, GL11.GL_FLOAT, (IntBuffer)null);
 		this.cloudRegionUnit = ComputeShader.getAndUseImageUnit();
 		GL42.glBindImageTexture(this.cloudRegionUnit, this.cloudRegionTexture, 0, true, 0, GL42.GL_READ_WRITE, GL30.GL_RG32F);
 		GL11.glBindTexture(GL12.GL_TEXTURE_3D, 0);
+		
+		//this.cloudRegionPixelBuffer = MemoryTracker.create(this.requiredRegionTexSize * this.requiredRegionTexSize * 4 * 4 * 2);
+		this.cloudRegionPixelBufferId = GlStateManager._glGenBuffers();
+		GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, this.cloudRegionPixelBufferId);
+		this.cloudRegionPixelBufferSize = this.requiredRegionTexSize * this.requiredRegionTexSize * (this.lodConfig.getLods().length + 1) * 4 * 2;
+		GL15.glBufferData(GL21.GL_PIXEL_PACK_BUFFER, this.cloudRegionPixelBufferSize, GL15.GL_STREAM_READ);
+		GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
 		
 		LOGGER.debug("Created cloud region texture {} with size {}x{}x{}", this.cloudRegionTexture, this.requiredRegionTexSize, this.requiredRegionTexSize, this.lodConfig.getLods().length + 1);
 	}
@@ -322,7 +369,70 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.cloudRegionShader.dispatchAndWait(this.requiredRegionTexSize / 8, this.requiredRegionTexSize / 8, this.lodConfig.getLods().length + 1);
 		}
 		
+//		GL11.glBindTexture(GL12.GL_TEXTURE_3D, this.cloudRegionTexture);
+//		float[] pixels = new float[this.requiredRegionTexSize * this.requiredRegionTexSize * 4 * 2];
+//		GL11.glGetTexImage(GL12.GL_TEXTURE_3D, 0, GL30.GL_RG, GL11.GL_FLOAT, pixels);
+//		GL11.glBindTexture(GL12.GL_TEXTURE_3D, 0);
+//		System.out.println(pixels[0]);
+//		System.out.println(pixels[1]);
+		
 		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
+	}
+	
+	@Override
+	public boolean tick(double camX, double camY, double camZ, float scale, Frustum frustum)
+	{
+		if (this.cloudRegionPixelBufferId != -1)
+		{
+			if (this.cloudRegionPixelFence == -1)
+			{
+				GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, this.cloudRegionPixelBufferId);
+				GL11.glBindTexture(GL12.GL_TEXTURE_3D, this.cloudRegionTexture);
+				GL11.glGetTexImage(GL12.GL_TEXTURE_3D, 0, GL30.GL_RG, GL11.GL_FLOAT, 0);
+				this.cloudRegionPixelFence = GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+				GL11.glBindTexture(GL12.GL_TEXTURE_3D, 0);
+				GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
+			}
+			
+			if (this.cloudRegionPixelFence != -1)
+			{
+				int status = GL32.glGetSynci(this.cloudRegionPixelFence, GL32.GL_SYNC_STATUS, null);
+				if (status == GL32.GL_SIGNALED)
+				{
+					GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, this.cloudRegionPixelBufferId);
+					int x = this.requiredRegionTexSize / 2;
+					int y = this.requiredRegionTexSize / 2;
+					int z = 3;
+					int index = (x + y * this.requiredRegionTexSize + z * this.requiredRegionTexSize * this.requiredRegionTexSize) * 4 * 2;
+					if (index >= 0 && index <= this.cloudRegionPixelBufferSize - 4)
+					{
+						ByteBuffer buffer = GL30.glMapBufferRange(GL21.GL_PIXEL_PACK_BUFFER, index, 8, GL30.GL_MAP_READ_BIT);
+						int cloudTypeIndex = Mth.floor(buffer.getFloat(0));
+						if (cloudTypeIndex >= 0 && cloudTypeIndex < this.cloudTypes.length)
+						{
+							this.currentCloudTypeAtOrigin = this.cloudTypes[cloudTypeIndex];
+							this.cloudTypeFadeAtOrigin = buffer.getFloat(4);
+						}
+						else
+						{
+							this.currentCloudTypeAtOrigin = null;
+							this.cloudTypeFadeAtOrigin = 0.0F;
+						}
+					}
+					else
+					{
+						this.currentCloudTypeAtOrigin = null;
+						this.cloudTypeFadeAtOrigin = 0.0F;
+					}
+					GL30.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
+					GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
+					GL32.glDeleteSync(this.cloudRegionPixelFence);
+					this.cloudRegionPixelFence = -1;
+				}
+			}
+		}
+		
+		return super.tick(camX, camY, camZ, scale, frustum);
 	}
 	
 	public int getCloudRegionTextureId()

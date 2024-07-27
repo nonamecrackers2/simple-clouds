@@ -46,6 +46,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.button.previous_layer.title", "Previous layer");
 		this.add("gui.simpleclouds.cloud_previewer.button.next_layer.title", "Next layer");
 		this.add("gui.simpleclouds.cloud_previewer.warning.too_many_cubes", "Warning: Too many cubes");
+		this.add("gui.simpleclouds.cloud_previewer.weather_type.title", "Weather Type");
 		this.add("gui.simpleclouds.cloud_previewer.storminess.title", "Storminess");
 		this.add("gui.simpleclouds.cloud_previewer.storm_start.title", "Storm Start Level");
 		this.add("gui.simpleclouds.cloud_previewer.storm_fade_distance.title", "Storm Fade Distance");

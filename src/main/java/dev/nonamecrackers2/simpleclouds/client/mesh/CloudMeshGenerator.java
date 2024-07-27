@@ -35,6 +35,7 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -74,6 +75,7 @@ public abstract class CloudMeshGenerator
 	private double currentCamY;
 	private double currentCamZ;
 	private float currentScale;
+	private float cullDistance;
 	
 	public CloudMeshGenerator(ResourceLocation meshShaderLoc, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval)
 	{
@@ -81,6 +83,10 @@ public abstract class CloudMeshGenerator
 		this.setLodConfig(lodConfig);
 		this.setMeshGenInterval(meshGenInterval);
 	}
+	
+	public abstract @Nullable CloudInfo getCloudTypeAtOrigin();
+	
+	public abstract float getCloudFadeAtOrigin();
 	
 	public void setLodConfig(CloudMeshGenerator.LevelOfDetailConfig config)
 	{
@@ -108,6 +114,18 @@ public abstract class CloudMeshGenerator
 	public int getCloudAreaMaxRadius()
 	{
 		return this.lodConfig.getEffectiveChunkSpan() * WORK_SIZE * LOCAL_SIZE / 2;
+	}
+	
+	public void setCullDistance(float dist)
+	{
+		if (dist <= 0.0F)
+			throw new IllegalArgumentException("Cull distance must be greater than zero");
+		this.cullDistance = dist;
+	}
+	
+	public void disableCullDistance()
+	{
+		this.cullDistance = 0.0F;
 	}
 	
 	public void close()
@@ -574,10 +592,17 @@ public abstract class CloudMeshGenerator
 			float offsetX = (float)this.x * chunkSizeLod;
 			float offsetY = (float)this.y * chunkSizeLod;
 			float offsetZ = (float)this.z * chunkSizeLod;
-			if (frustum == null || frustum.isVisible(new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSizeLod, offsetY+ chunkSizeLod, offsetZ + chunkSizeLod).inflate(0.0D, 500.0D, 0.0D).move(globalOffsetX, 0.0F, globalOffsetZ).move(-camX, -camY, -camZ)))
+			AABB box = new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSizeLod, offsetY+ chunkSizeLod, offsetZ + chunkSizeLod).inflate(0.0D, 500.0D, 0.0D).move(globalOffsetX, 0.0F, globalOffsetZ).move(-camX, -camY, -camZ);
+			if (frustum == null || frustum.isVisible(box))
 			{
-				generator.chunkGenTasks.add(() -> generator.generateChunk(this.lodLevel, this.lodScale, this.x, this.y, this.z, offsetX, offsetY, offsetZ, scale, globalOffsetX, globalOffsetZ, this.noOcclusionDirectionIndex));
-				return true;
+				double nearestCornerX = Math.max(Math.max(box.minX, -box.maxX), 0.0D);
+				double nearestCornerZ = Math.max(Math.max(box.minZ, -box.maxZ), 0.0D);
+				double dist =  Math.sqrt(nearestCornerX * nearestCornerX + nearestCornerZ * nearestCornerZ);
+				if (generator.cullDistance <= 0.0F || dist < generator.cullDistance)
+				{
+					generator.chunkGenTasks.add(() -> generator.generateChunk(this.lodLevel, this.lodScale, this.x, this.y, this.z, offsetX, offsetY, offsetZ, scale, globalOffsetX, globalOffsetZ, this.noOcclusionDirectionIndex));
+					return true;
+				}
 			}
 			return false;
 		}

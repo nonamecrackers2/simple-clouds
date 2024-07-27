@@ -1,5 +1,5 @@
 {
-  "noise_layers": [
+  "noise_settings": [
     {
       "scale_z": 100.0,
       "fade_distance": 10.0,
@@ -21,7 +21,8 @@
       "scale_y": 10.0
     }
   ],
-  "storminess": 0.2,
+  "weather_type": "rain",
+  "storminess": 0.6,
   "storm_start": 0.0,
   "storm_fade_distance": 32.0
 }

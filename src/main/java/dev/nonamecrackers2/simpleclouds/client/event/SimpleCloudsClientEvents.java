@@ -20,7 +20,9 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsDebugOverlay
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.ChatFormatting;
@@ -186,6 +188,12 @@ public class SimpleCloudsClientEvents
 				Vector3f d = manager.getDirection();
 				text.add("Direction: x=" + round(d.x) + ", y=" + round(d.y) + ", z=" + round(d.z));
 			}
+			CloudInfo info = renderer.getMeshGenerator().getCloudTypeAtOrigin();
+			if (info instanceof CloudType type)
+				text.add(type.id().toString());
+			else
+				text.add("UNKNOWN");
+			text.add("Storminess: " + round(renderer.getWorldEffectsManager().getStorminessAtCamera()));
 		}
 	}
 	
