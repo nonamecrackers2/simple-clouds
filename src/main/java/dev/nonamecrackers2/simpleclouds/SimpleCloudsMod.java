@@ -4,6 +4,7 @@ import org.apache.maven.artifact.versioning.ArtifactVersion;
 
 import dev.nonamecrackers2.simpleclouds.client.event.SimpleCloudsClientEvents;
 import dev.nonamecrackers2.simpleclouds.client.keybind.SimpleCloudsKeybinds;
+import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.event.CloudManagerEvents;
@@ -35,6 +36,7 @@ public class SimpleCloudsMod
 	{
 		version = ModLoadingContext.get().getActiveContainer().getModInfo().getVersion();
 		IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
 		modBus.addListener(this::clientInit);
 		modBus.addListener(this::commonInit);
 		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
@@ -42,6 +44,7 @@ public class SimpleCloudsMod
 			modBus.addListener(SimpleCloudsKeybinds::registerKeyMappings);
 			modBus.addListener(SimpleCloudsClientEvents::registerOverlays);
 			modBus.addListener(SimpleCloudsClientEvents::registerClientPresets);
+			forgeBus.register(WorldEffects.class);
 		});
 		modBus.addListener(SimpleCloudsDataEvents::gatherData);
 		ModLoadingContext context = ModLoadingContext.get();

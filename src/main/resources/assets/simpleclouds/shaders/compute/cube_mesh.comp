@@ -253,7 +253,8 @@ void main()
 	float noise = getNoiseForLayerGroup(group, x, y, z) + fade;
     if (noise > 0.0)
     {
-    	float brightness = clamp(1.0 - group.Storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
+    	float storminess = clamp(group.Storminess + fade * 0.1, 0.0, 1.0);
+    	float brightness = clamp(1.0 - storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
 #if STYLE == 1
 	    float px = getNoiseForLayerGroup(group, x - 0.1, y, z) + fade;
 		float py = getNoiseForLayerGroup(group, x, y - 0.1, z) + fade;

@@ -59,7 +59,7 @@ vec2 cloudRegionIndexWithBoundaryFade(vec2 pos)
 		for (float x = -1.0; x <= 1.0; x++) 
 		{
 			vec2 neighbor = vec2(x, y);
-            vec2 point = vec2(random_vec2(indexUv + neighbor) * Spread);
+            vec2 point = vec2(hash12(indexUv + neighbor) * Spread);
 			vec2 coord = neighbor + point - fractUv;
 			float dist = length(coord);
 			if (dist < minimumDist) 
@@ -76,13 +76,13 @@ vec2 cloudRegionIndexWithBoundaryFade(vec2 pos)
 		for (float x = -1.0; x <= 1.0; x++) 
 		{
 			vec2 neighbor = vec2(x, y);
-            vec2 point = vec2(random_vec2(indexUv + neighbor) * Spread);
+            vec2 point = vec2(hash12(indexUv + neighbor) * Spread);
 			vec2 coord = neighbor + point - fractUv;
 			if (length(closestCoord - coord) > 0.0)
                 minimumDist = min(minimumDist, dot(0.5 * (closestCoord + coord), normalize(coord - closestCoord)));
 		}
 	}
-	return vec2(floor(random_vec2(closestPoint) * float(TotalCloudTypes)), 1.0 - min(minimumDist * 3.0, 1.0));
+	return vec2(floor(hash12(closestPoint) * float(TotalCloudTypes)), 1.0 - min(minimumDist * 3.0, 1.0));
 }
 
 // https://gist.github.com/983/e170a24ae8eba2cd174f

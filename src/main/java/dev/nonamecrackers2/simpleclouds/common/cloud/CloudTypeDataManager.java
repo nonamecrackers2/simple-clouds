@@ -82,7 +82,10 @@ public class CloudTypeDataManager extends SimpleJsonResourceReloadListener
 		CloudType[] indexed = new CloudType[this.cloudTypes.size()];
 		int index = 0;
 		for (var type : this.cloudTypes.values())
+		{
 			indexed[index] = type;
+			index++;
+		}
 		this.indexedCloudTypes = indexed;
 		
 		if (directory != null)
@@ -95,7 +98,10 @@ public class CloudTypeDataManager extends SimpleJsonResourceReloadListener
 			
 			try (FileReader reader = new FileReader(file))
 			{
-				JsonArray array = GsonHelper.convertToJsonArray(GSON.fromJson(reader, JsonElement.class), "root");
+				JsonElement element = GSON.fromJson(reader, JsonElement.class);
+				if (element == null)
+					throw new JsonSyntaxException(new NullPointerException("ROOT was null"));
+				JsonArray array = GsonHelper.convertToJsonArray(element, "root");
 				int count = array.size();
 				if (count != this.cloudTypes.size())
 				{

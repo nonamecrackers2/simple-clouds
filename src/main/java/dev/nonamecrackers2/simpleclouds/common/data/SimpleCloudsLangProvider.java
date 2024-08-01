@@ -29,6 +29,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.button.toggle_preview.title", "Toggle Preview");
 		this.add("gui.simpleclouds.cloud_previewer.current_layer", "Current Layer: %s");
 		this.add("simpleclouds.key.openGenPreviewer", "Open Cloud Gen Previewer");
+		this.add("simpleclouds.key.openDebug", "Open Debug Screen");
 		this.add("simpleclouds.key.categories.main", ModList.get().getModContainerById(SimpleCloudsMod.MODID).get().getModInfo().getDisplayName());
 		for (AbstractNoiseSettings.Param parameter : AbstractNoiseSettings.Param.values())
 		{
@@ -68,6 +69,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("command.simpleclouds.height.get", "Cloud height is set to %s");
 		this.add("command.simpleclouds.height.set", "Set cloud height to %s");
 		this.add("commands.simpleclouds.notClientSideOnly", "Client cloud commands can only be used when connected to servers that do not have Simple Clouds installed. If you're connected on singleplayer, or you are an operator on a dedicated server with Simple Clouds installed, please use '/simpleclouds clouds'");
+		this.add("gui.simpleclouds.debug.title", "Simple Clouds Debug");
 		
 	}
 }

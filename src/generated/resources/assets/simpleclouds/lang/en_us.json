@@ -72,6 +72,7 @@
   "gui.simpleclouds.config.testSidesThatAreOccluded.title": "Test Sides That Are Occluded",
   "gui.simpleclouds.config.useSpecificSeed.description": "Specifies if the seed set by the 'Cloud Seed' option should be used or not.",
   "gui.simpleclouds.config.useSpecificSeed.title": "Use Specific Seed",
+  "gui.simpleclouds.debug.title": "Simple Clouds Debug",
   "gui.simpleclouds.noise_settings.param.fade_distance.name": "Fade Distance",
   "gui.simpleclouds.noise_settings.param.height.name": "Height",
   "gui.simpleclouds.noise_settings.param.height_offset.name": "Height Offset",
@@ -88,5 +89,6 @@
   "simpleclouds.config.preset.optimal_mesh": "Optimal Mesh",
   "simpleclouds.config.preset.optimal_mesh.description": "A more complete cloud mesh that fairs better with storm fog. Removes the small delay for chunks to appear that can be seen when using frustum culling, however at the cost of more vertices. Clouds may appear to move with a slight stutter when moving fast.",
   "simpleclouds.key.categories.main": "Simple Clouds",
+  "simpleclouds.key.openDebug": "Open Debug Screen",
   "simpleclouds.key.openGenPreviewer": "Open Cloud Gen Previewer"
 }

@@ -1,4 +1,4 @@
-package dev.nonamecrackers2.simpleclouds.client.mesh;
+package dev.nonamecrackers2.simpleclouds.client.mesh.multiregion;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,6 +23,9 @@ import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
+import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
@@ -31,6 +34,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
+import net.minecraft.util.VisibleForDebug;
 
 public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
@@ -438,6 +442,12 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	public int getCloudRegionTextureId()
 	{
 		return this.cloudRegionTexture;
+	}
+	
+	@VisibleForDebug
+	public int _getCloudRegionTextureSideLength()
+	{
+		return this.requiredRegionTexSize;
 	}
 	
 	public int getTotalCloudTypes()

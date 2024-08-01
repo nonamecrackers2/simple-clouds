@@ -39,8 +39,8 @@ import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
-import dev.nonamecrackers2.simpleclouds.client.mesh.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.CloudsRenderPipeline;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
@@ -527,7 +527,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public float[] getCloudColor(float partialTick)
 	{
 		Vec3 cloudCol = this.mc.level.getCloudColor(partialTick);
-		float factor = Mth.clamp(1.0F - this.worldEffectsManager.getStorminessSmoothed(partialTick) * 0.8F, 0.1F, 1.0F);
+		float factor = this.worldEffectsManager.getDarkenFactor(partialTick, 0.8F);
 		float r = (float)cloudCol.x * factor;
 		float g = (float)cloudCol.y * factor;
 		float b = (float)cloudCol.z * factor;
@@ -542,7 +542,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void renderBeforeLevel(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
-		float factor = this.worldEffectsManager.getSkyDarkenFactor(partialTick);
+		float factor = this.worldEffectsManager.getDarkenFactor(partialTick);
 		float renderDistance = (float)this.meshGenerator.getCloudAreaMaxRadius() * (float)CLOUD_SCALE * factor;
 		this.fogStart = renderDistance / 4.0F;
 		this.fogEnd = renderDistance;
@@ -683,7 +683,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				effect.safeGetUniform("FogStart").set(this.fogEnd / 2.0F);
 				effect.safeGetUniform("FogEnd").set(this.fogEnd);
 				effect.safeGetUniform("ColorModulator").set(r, g, b, 1.0F);
-				float factor = this.worldEffectsManager.getSkyDarkenFactor(partialTick);
+				float factor = this.worldEffectsManager.getDarkenFactor(partialTick);
 				effect.safeGetUniform("CutoffDistance").set(1000.0F * factor);
 			}
 			

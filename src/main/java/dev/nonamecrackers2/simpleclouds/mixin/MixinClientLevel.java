@@ -32,7 +32,7 @@ public class MixinClientLevel implements CloudManagerAccessor
 	@Inject(method = "getSkyDarken", at = @At("RETURN"), cancellable = true)
 	public void simpleclouds$modifySkyDarken_getSkyDarken(float partialTick, CallbackInfoReturnable<Float> ci)
 	{
-		ci.setReturnValue(ci.getReturnValue() * SimpleCloudsRenderer.getInstance().getWorldEffectsManager().getSkyDarkenFactor(partialTick));
+		ci.setReturnValue(ci.getReturnValue() * SimpleCloudsRenderer.getInstance().getWorldEffectsManager().getDarkenFactor(partialTick));
 	}
 	
 	@Override
