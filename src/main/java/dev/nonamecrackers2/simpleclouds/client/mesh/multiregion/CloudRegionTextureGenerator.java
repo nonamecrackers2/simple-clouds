@@ -39,7 +39,6 @@ public class CloudRegionTextureGenerator
 	private float scrollZ;
 	private float offsetX;
 	private float offsetZ;
-	private float cloudScale;
 	
 	public CloudRegionTextureGenerator(CloudMeshGenerator.LevelOfDetailConfig lodConfig, CloudInfo[] cloudTypes, int textureSize, float cloudRegionScale)
 	{
@@ -53,7 +52,10 @@ public class CloudRegionTextureGenerator
 		for (int i = 0; i < this.swapBuffers.length; i++)
 			this.swapBuffers[i] = new CloudRegionTextureGenerator.BufferState(this.textureSize, this.lodConfig.getLods().length + 1);
 		
-		this.thread = new Thread(this::asyncTick);
+		this.thread = new Thread(() -> {
+			while (true)
+				this.asyncTick();
+		});
 		this.thread.setName("Cloud Region Texture Generator Thread");
 		this.thread.setUncaughtExceptionHandler((t, e) -> this.threadException = e);
 	}
@@ -67,20 +69,38 @@ public class CloudRegionTextureGenerator
 		this.thread.start();
 	}
 	
+	public void update(float scrollX, float scrollZ, float offsetX, float offsetZ)
+	{
+		this.scrollX = scrollX;
+		this.scrollZ = scrollZ;
+		this.offsetX = offsetX;
+		this.offsetZ = offsetZ;
+	}
+	
+	public int getAvailableRegionTextureId()
+	{
+		return this.swapBuffers[this.availableBuffer].getTextureId();
+	}
+	
 	public void tick()
 	{
 		if (this.threadException != null)
 			throw new RuntimeException("An uncaught exception occured while generating a cloud region texture buffer", this.threadException);
 		
 		var buffer = this.swapBuffers[this.availableBuffer];
-		if (buffer.checkDirtyAndUnmark()) 
+		if (buffer.checkDirtyAndUnmark())
+		{
+			buffer.isUploading = true;
 			buffer.uploadToTexture();
+			buffer.update(this.scrollX, this.scrollZ, this.offsetX, this.offsetZ);
+			buffer.isUploading = false;
+		}
 	}
 	
 	private void asyncTick()
 	{
 		var buffer = this.swapBuffers[this.currentBuffer];
-		if (!buffer.isUploading())
+		if (buffer != null && !buffer.isUploading())
 		{
 			buffer.isGenerating = true;
 			this.generateTexture(buffer);
@@ -107,8 +127,8 @@ public class CloudRegionTextureGenerator
 					int index = (x + y * buffer.textureSize + z * buffer.textureSize * buffer.textureSize) * BYTES_PER_PIXEL;
 					Vector2d uv = new Vector2d((float)x, (float)y).sub((float)buffer.textureSize / 2.0F, (float)buffer.textureSize / 2.0F).mul(scale).add(this.scrollX, this.scrollZ).add(this.offsetX, this.offsetZ).div((double)this.cloudRegionScale);
 					var info = getCloudTypeIndexAt(uv, this.cloudTypes.length);
-					buffer.textureBuffer.putFloat(index, (float)info.getLeft());
-					buffer.textureBuffer.putFloat(index + 4, info.getRight().floatValue());
+					//buffer.textureBuffer.putFloat(index, (float)info.getLeft());
+					//buffer.textureBuffer.putFloat(index + 4, info.getRight().floatValue());
 				}
 			}
 		}
@@ -180,7 +200,7 @@ public class CloudRegionTextureGenerator
 		}
 		
 		try{
-			this.thread.join(5000L);
+			this.thread.join(5000L); //TODO: make the thread while loop detect when we want it to stop
 		} catch (InterruptedException e) {
 			LOGGER.error("Failed to close texture generator thread: ", e);
 		} finally {
@@ -197,6 +217,10 @@ public class CloudRegionTextureGenerator
 		private boolean isGenerating;
 		private boolean isDirty;
 		private boolean isUploading;
+		private float scrollX;
+		private float scrollZ;
+		private float offsetX;
+		private float offsetZ;
 		
 		private BufferState(int textureSize, int layers)
 		{
@@ -217,15 +241,21 @@ public class CloudRegionTextureGenerator
 			GL11.glBindTexture(GL12.GL_TEXTURE_3D, 0);
 		}
 		
+		private void update(float scrollX, float scrollZ, float offsetX, float offsetZ)
+		{
+			this.scrollX = scrollX;
+			this.scrollZ = scrollZ;
+			this.offsetX = offsetX;
+			this.offsetZ = offsetZ;
+		}
+		
 		private void uploadToTexture()
 		{
 			if (this.textureId == -1 || this.textureBuffer == null)
 				throw new IllegalStateException("This buffer is no longer valid!");
-			this.isUploading = true;
 			GL11.glBindTexture(GL12.GL_TEXTURE_3D, this.textureId);
 			GL12.glTexSubImage3D(GL12.GL_TEXTURE_3D, 0, 0, 0, 0, this.textureSize, this.textureSize, this.layers, GL30.GL_RG, GL11.GL_FLOAT, this.textureBuffer);
 			GL11.glBindTexture(GL12.GL_TEXTURE_3D, 0);
-			this.isUploading = false;
 		}
 
 		public boolean checkDirtyAndUnmark()
