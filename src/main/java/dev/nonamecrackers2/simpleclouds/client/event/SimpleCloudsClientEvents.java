@@ -176,7 +176,7 @@ public class SimpleCloudsClientEvents
 			if (renderer.getMeshGenerator() instanceof SingleRegionCloudMeshGenerator meshGenerator)
 			{
 				text.add("Fade start: " + meshGenerator.getFadeStart() + "; Fade end: " + meshGenerator.getFadeEnd());
-				text.add("Cloud type: " + renderer.getCurrentSingleModeCloudType());
+				text.add("Cloud type: " + meshGenerator.getCloudType());
 			}
 			else
 			{
@@ -189,12 +189,12 @@ public class SimpleCloudsClientEvents
 				Vector3f d = manager.getDirection();
 				text.add("Direction: x=" + round(d.x) + ", y=" + round(d.y) + ", z=" + round(d.z));
 			}
-			CloudInfo info = renderer.getMeshGenerator().getCloudTypeAtOrigin();
-			if (info instanceof CloudType type)
-				text.add(type.id().toString());
-			else
-				text.add("UNKNOWN");
-			text.add("Storminess: " + round(renderer.getWorldEffectsManager().getStorminessAtCamera()));
+//			CloudInfo info = renderer.getMeshGenerator().getCloudTypeAtOrigin();
+//			if (info instanceof CloudType type)
+//				text.add(type.id().toString());
+//			else
+//				text.add("UNKNOWN");
+//			text.add("Storminess: " + round(renderer.getWorldEffectsManager().getStorminessAtCamera()));
 		}
 	}
 	

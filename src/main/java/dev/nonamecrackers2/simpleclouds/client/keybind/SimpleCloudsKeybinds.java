@@ -19,8 +19,8 @@ public class SimpleCloudsKeybinds
 	public static void registerKeyMappings(RegisterKeyMappingsEvent event)
 	{
 		event.register(OPEN_GEN_PREVIEWER);
-		if (!FMLEnvironment.production)
-			event.register(OPEN_DEBUG);
+//		if (!FMLEnvironment.production)
+//			event.register(OPEN_DEBUG);
 	}
 	
 	@SubscribeEvent
@@ -29,10 +29,10 @@ public class SimpleCloudsKeybinds
 		Minecraft mc = Minecraft.getInstance();
 		while (OPEN_GEN_PREVIEWER.consumeClick())
 			mc.setScreen(new CloudPreviewerScreen(null));
-		if (!FMLEnvironment.production)
-		{
-			while (OPEN_DEBUG.consumeClick())
-				mc.setScreen(new SimpleCloudsDebugScreen());
-		}
+//		if (!FMLEnvironment.production)
+//		{
+//			while (OPEN_DEBUG.consumeClick())
+//				mc.setScreen(new SimpleCloudsDebugScreen());
+//		}
 	}
 }

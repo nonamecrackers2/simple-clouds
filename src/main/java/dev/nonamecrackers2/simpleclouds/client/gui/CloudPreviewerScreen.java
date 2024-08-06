@@ -33,7 +33,7 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerat
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
-import dev.nonamecrackers2.simpleclouds.common.cloud.WeatherType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractLayeredNoise;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
@@ -146,7 +146,8 @@ public class CloudPreviewerScreen extends Screen3D
 	
 	public static void destroyMeshGenerator()
 	{
-		generator.close();
+		if (generator != null)
+			generator.close();
 	}
 	
 	public CloudPreviewerScreen(Screen prev)

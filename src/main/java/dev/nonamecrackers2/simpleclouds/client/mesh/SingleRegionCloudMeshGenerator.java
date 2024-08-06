@@ -30,18 +30,6 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 		this.style = style;
 	}
 	
-	@Override
-	public CloudInfo getCloudTypeAtOrigin()
-	{
-		return this.type;
-	}
-	
-	@Override
-	public float getCloudFadeAtOrigin()
-	{
-		return 0.0F;
-	}
-	
 	public SingleRegionCloudMeshGenerator setFadeDistance(float fadeStart, float fadeEnd)
 	{
 		float fs = fadeStart;
@@ -60,6 +48,11 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.needsFadeRefreshing = true;
 		this.fadeEnd = newFe;
 		return this;
+	}
+	
+	public CloudInfo getCloudType()
+	{
+		return this.type;
 	}
 	
 	public float getFadeStart()

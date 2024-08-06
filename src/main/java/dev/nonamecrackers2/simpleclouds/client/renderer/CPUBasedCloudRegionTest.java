@@ -21,6 +21,7 @@ import com.mojang.blaze3d.platform.TextureUtil;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import net.minecraft.util.Mth;
 
+@Deprecated(forRemoval = true)
 public class CPUBasedCloudRegionTest
 {
 	private @Nullable ByteBuffer textureBuffer;

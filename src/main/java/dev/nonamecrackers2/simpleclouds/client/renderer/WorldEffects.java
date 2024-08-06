@@ -1,14 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.joml.Vector2d;
-import org.joml.Vector3d;
-
-import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
-import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.FogRenderer.FogMode;
@@ -34,10 +27,10 @@ public class WorldEffects
 	public void renderPost(float partialTick, double camX, double camY, double camZ, float scale)
 	{
 		CloudMeshGenerator generator = this.renderer.getMeshGenerator();
-		CloudInfo info = generator.getCloudTypeAtOrigin();
+		CloudInfo info = null;//generator.getCloudTypeAtOrigin();
 		if (info != null && info.weatherType().causesDarkening() && (float)camY < info.stormStart() * scale + 128.0F)
 		{
-			float factor = Mth.clamp((1.0F - generator.getCloudFadeAtOrigin()) * 3.0F, 0.0F, 1.0F);
+			float factor = Mth.clamp((1.0F - 0.0F) * 3.0F, 0.0F, 1.0F);
 			this.storminessAtCamera = info.storminess() * factor;
 		}
 		else

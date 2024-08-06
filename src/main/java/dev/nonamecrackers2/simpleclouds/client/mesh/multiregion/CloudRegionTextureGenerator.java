@@ -2,6 +2,8 @@ package dev.nonamecrackers2.simpleclouds.client.mesh.multiregion;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
@@ -18,13 +20,13 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL21;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
-import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL44;
 import org.lwjgl.system.MemoryUtil;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
@@ -52,6 +54,8 @@ public class CloudRegionTextureGenerator
 	
 	public CloudRegionTextureGenerator(CloudMeshGenerator.LevelOfDetailConfig lodConfig, CloudInfo[] cloudTypes, int textureSize, float cloudRegionScale)
 	{
+		RenderSystem.assertOnRenderThreadOrInit();
+		
 		if (cloudTypes.length > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
 			throw new IllegalArgumentException("Too many cloud types! The maximum allowed is " + MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
 		this.lodConfig = lodConfig;
@@ -91,6 +95,11 @@ public class CloudRegionTextureGenerator
 	public float getRegionScale()
 	{
 		return this.cloudRegionScale;
+	}
+	
+	public boolean isStarted()
+	{
+		return this.thread != null && this.thread.isAlive();
 	}
 	
 	public void start()
@@ -139,18 +148,14 @@ public class CloudRegionTextureGenerator
 	
 	public void tick()
 	{
+		RenderSystem.assertOnRenderThread();
+		
 		if (this.isClosing)
 			throw new IllegalStateException("This cloud region texture generator is no longer valid");
 		
 		if (this.threadException != null)
 			throw new RuntimeException("An uncaught exception occured while generating a cloud region texture buffer", this.threadException);
 
-//		for (var buffer : this.swapBuffers)
-//		{
-//			if (!buffer.isGenerating())
-//				buffer.update(this.scrollX, this.scrollZ, this.offsetX, this.offsetZ);
-//		}
-//		
 		var buffer = this.swapBuffers[this.currentlyUploadingIndex];
 		
 		if (buffer.needsUploading())
@@ -284,6 +289,8 @@ public class CloudRegionTextureGenerator
 	
 	public void close()
 	{
+		RenderSystem.assertOnRenderThreadOrInit();
+		
 		this.isClosing = true;
 		
 		try{
@@ -334,14 +341,14 @@ public class CloudRegionTextureGenerator
 			
 			this.uploadBufferId = GlStateManager._glGenBuffers();
 			GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, this.uploadBufferId);
-			GL44.glBufferStorage(GL21.GL_PIXEL_UNPACK_BUFFER, this.textureBuffer, GL30.GL_MAP_WRITE_BIT);
+			GL15.glBufferData(GL21.GL_PIXEL_UNPACK_BUFFER, this.textureBuffer, GL15.GL_STREAM_DRAW);
+//			GL44.glBufferStorage(GL21.GL_PIXEL_UNPACK_BUFFER, this.textureBuffer, GL30.GL_MAP_WRITE_BIT);
 			GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0);
 			
 			this.textureId = TextureUtil.generateTextureId();
 			GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, this.textureId);
 			GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
 			GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
-//			GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL12.GL_TEXTURE_WRAP_R, GL12.GL_CLAMP_TO_EDGE);
 			GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
 			GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
 			GL12.glTexImage3D(GL30.GL_TEXTURE_2D_ARRAY, 0, GL30.GL_RG32F, this.textureSize, this.textureSize, this.layers, 0, GL30.GL_RG, GL11.GL_FLOAT, (IntBuffer)null);
@@ -387,9 +394,9 @@ public class CloudRegionTextureGenerator
 			GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
 			GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
 			GL12.glTexSubImage3D(GL30.GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, this.textureSize, this.textureSize, this.layers, GL30.GL_RG, GL11.GL_FLOAT, 0L);
+			this.textureCopyFenceId = GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 			if (GlStateManager._getError() == GL11.GL_INVALID_OPERATION)
 				LOGGER.error("Something went wrong when trying to copy texture data over");
-			this.textureCopyFenceId = GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 			GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, 0);
 			GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0);
 			
@@ -445,11 +452,6 @@ public class CloudRegionTextureGenerator
 		public boolean isUploading()
 		{
 			return this.isUploading;
-		}
-		
-		public boolean canUseTexture()
-		{
-			return !this.isGenerating() && !this.isUploading();
 		}
 		
 		public int getTextureId()

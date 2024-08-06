@@ -19,6 +19,7 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloud
 import dev.nonamecrackers2.simpleclouds.client.renderer.CPUBasedCloudRegionTest;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.gui.GuiGraphics;
@@ -28,6 +29,7 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
 
+@SuppressWarnings("removal")
 public class SimpleCloudsDebugScreen extends Screen
 {
 	private static final CPUBasedCloudRegionTest CLOUD_REGION_TEST = new CPUBasedCloudRegionTest();
@@ -48,7 +50,7 @@ public class SimpleCloudsDebugScreen extends Screen
 			CloudType[] types = ClientSideCloudTypeManager.getInstance().getIndexed();
 			CloudManager manager = CloudManager.get(this.minecraft.level);
 			Vec3 cameraPos = this.minecraft.gameRenderer.getMainCamera().getPosition();
-			CLOUD_REGION_TEST.init(types, generator.getCloudRegionTextureGenerator().getTextureSize(), 8.0F, manager.getScrollX(), manager.getScrollZ(), cameraPos.x, cameraPos.z, SimpleCloudsRenderer.CLOUD_SCALE);
+			CLOUD_REGION_TEST.init(types, generator.getCloudRegionTextureGenerator().getTextureSize(), 8.0F, manager.getScrollX(), manager.getScrollZ(), cameraPos.x, cameraPos.z, CloudConstants.CLOUD_SCALE);
 		}
 	}
 	

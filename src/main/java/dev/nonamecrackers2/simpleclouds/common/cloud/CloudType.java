@@ -6,6 +6,7 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
