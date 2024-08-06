@@ -254,12 +254,6 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
 	}
 	
-	@Override
-	public boolean tick(double camX, double camY, double camZ, float scale, Frustum frustum)
-	{
-		return super.tick(camX, camY, camZ, scale, frustum);
-	}
-	
 	public int getCloudRegionTextureId()
 	{
 		if (this.regionTextureGenerator == null)
