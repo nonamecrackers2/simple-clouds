@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL15C;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -30,6 +31,7 @@ import com.google.common.collect.Sets;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.preprocessor.GlslPreprocessor;
 import com.mojang.blaze3d.shaders.ProgramManager;
+import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -134,7 +136,9 @@ public class ComputeShader implements AutoCloseable
 	
 	public void forUniform(String name, BiConsumer<Integer, Integer> consumer)
 	{
-		int loc = GlStateManager._glGetUniformLocation(this.id, name);
+		RenderSystem.assertOnGameThreadOrInit();
+		this.assertValid();
+		int loc = Uniform.glGetUniformLocation(this.id, name);
 		if (loc == -1 && !this.missingUniformErrors.contains(name))
 		{
 			LOGGER.warn("Could not find uniform with name '{}'", name);
@@ -144,6 +148,41 @@ public class ComputeShader implements AutoCloseable
 		{
 			consumer.accept(this.id, loc);
 		}
+	}
+	
+	private void setSampler(String name, Runnable binder, int id)
+	{
+		RenderSystem.assertOnGameThreadOrInit();
+		this.assertValid();
+		ProgramManager.glUseProgram(this.id);
+		int loc = Uniform.glGetUniformLocation(this.id, name);
+		if (loc == -1 && !this.missingUniformErrors.contains(name))
+		{
+			LOGGER.warn("Could not find sampler with name '{}'", name);
+			this.missingUniformErrors.add(name);
+		}
+		else
+		{
+			Uniform.uploadInteger(loc, id);
+			RenderSystem.activeTexture('\u84c0' + id);
+			binder.run();
+		}
+		ProgramManager.glUseProgram(0);
+	}
+	
+	public void setSampler2D(String name, int texture, int id)
+	{
+		this.setSampler(name, () -> RenderSystem.bindTexture(texture), id);
+	}
+	
+	public void setSampler3D(String name, int texture, int id)
+	{
+		this.setSampler(name, () -> GL11.glBindTexture(GL12.GL_TEXTURE_3D, texture), id);
+	}
+	
+	public void setSampler2DArray(String name, int texture, int id)
+	{
+		this.setSampler(name, () -> GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, texture), id);
 	}
 	
 	/**

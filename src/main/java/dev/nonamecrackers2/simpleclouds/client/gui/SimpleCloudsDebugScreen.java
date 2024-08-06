@@ -48,7 +48,7 @@ public class SimpleCloudsDebugScreen extends Screen
 			CloudType[] types = ClientSideCloudTypeManager.getInstance().getIndexed();
 			CloudManager manager = CloudManager.get(this.minecraft.level);
 			Vec3 cameraPos = this.minecraft.gameRenderer.getMainCamera().getPosition();
-			CLOUD_REGION_TEST.init(types, generator._getCloudRegionTextureSideLength(), 8.0F, manager.getScrollX(), manager.getScrollZ(), cameraPos.x, cameraPos.z, SimpleCloudsRenderer.CLOUD_SCALE);
+			CLOUD_REGION_TEST.init(types, generator.getCloudRegionTextureGenerator().getTextureSize(), 8.0F, manager.getScrollX(), manager.getScrollZ(), cameraPos.x, cameraPos.z, SimpleCloudsRenderer.CLOUD_SCALE);
 		}
 	}
 	

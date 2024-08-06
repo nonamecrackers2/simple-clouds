@@ -64,7 +64,7 @@ import nonamecrackers2.crackerslib.client.gui.widget.CyclableButton;
 
 public class CloudPreviewerScreen extends Screen3D
 {
-	private static final SingleRegionCloudMeshGenerator GENERATOR = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(SimpleCloudsRenderer.FALLBACK, LevelOfDetailOptions.HIGH.getConfig(), 3, 0.5F, 1.0F, CloudStyle.DEFAULT).setTestFacesFacingAway(true);
+	private static @Nullable SingleRegionCloudMeshGenerator generator;
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final int PADDING = 10;
@@ -137,19 +137,26 @@ public class CloudPreviewerScreen extends Screen3D
 	
 	public static void addCloudMeshListener(RegisterClientReloadListenersEvent event)
 	{
-		event.registerReloadListener((ResourceManagerReloadListener)(manager -> {
-			GENERATOR.init(manager);
+		event.registerReloadListener((ResourceManagerReloadListener)(manager ->
+		{
+			if (generator != null)
+				generator.init(manager);
 		}));
 	}
 	
 	public static void destroyMeshGenerator()
 	{
-		GENERATOR.close();
+		generator.close();
 	}
 	
 	public CloudPreviewerScreen(Screen prev)
 	{
 		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.25F, 5000.0F);
+		if (generator == null)
+		{
+			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(SimpleCloudsRenderer.FALLBACK, LevelOfDetailOptions.HIGH.getConfig(), 3, 0.5F, 1.0F, CloudStyle.DEFAULT).setTestFacesFacingAway(true);
+			generator.init(Minecraft.getInstance().getResourceManager());
+		}
 		this.prev = prev;
 		this.layers = Lists.newArrayList();
 		this.layers.add(new ModifiableNoiseSettings());
@@ -180,8 +187,8 @@ public class CloudPreviewerScreen extends Screen3D
 	
 	private void generateMesh()
 	{
-		GENERATOR.setCloudType(this.cloudType);
-		while (GENERATOR.tick(0.0D, 0.0D, 0.0D, 1.0F, null)) {}
+		generator.setCloudType(this.cloudType);
+		while (generator.tick(0.0D, 0.0D, 0.0D, 1.0F, null)) {}
 		this.needsMeshRegen = false;
 	}
 	
@@ -406,7 +413,7 @@ public class CloudPreviewerScreen extends Screen3D
 		super.render(stack, pMouseX, pMouseY, pPartialTick);
 		stack.drawString(this.font, Component.translatable("gui.simpleclouds.cloud_previewer.current_layer", Component.literal(this.layers.isEmpty() ? "NONE" : String.valueOf(this.currentLayer + 1)).withStyle(Style.EMPTY.withBold(true))), 10, 5, 0xFFFFFFFF);
 		
-		if (GENERATOR.getTotalSides() * CloudMeshGenerator.BYTES_PER_SIDE > CloudMeshGenerator.SIDE_BUFFER_SIZE)
+		if (generator.getTotalSides() * CloudMeshGenerator.BYTES_PER_SIDE > CloudMeshGenerator.SIDE_BUFFER_SIZE)
 			stack.drawString(this.font, WARNING_TOO_MANY_CUBES, this.width - this.font.width(WARNING_TOO_MANY_CUBES) - 5, this.height - this.font.lineHeight - 5, 0xFFFFFFFF);
 		
 		stack.drawString(this.font, WEATHER_TYPE_TITLE, this.weatherTypeButton.getX(), this.weatherTypeButton.getY() - this.font.lineHeight - 2, 0xFFFFFFFF);
@@ -420,9 +427,9 @@ public class CloudPreviewerScreen extends Screen3D
 	{
 		if (this.needsMeshRegen)
 			this.generateMesh();
-		GENERATOR.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F);
+		generator.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F);
 		
-		float radius = GENERATOR.getCloudAreaMaxRadius();
+		float radius = generator.getCloudAreaMaxRadius();
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder builder = tesselator.getBuilder();
 		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);

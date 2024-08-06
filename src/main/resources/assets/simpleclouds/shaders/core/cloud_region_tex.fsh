@@ -1,9 +1,10 @@
 #version 330
 
-uniform sampler3D TexRegionSampler;
+uniform sampler2DArray TexRegionSampler;
 uniform vec4 ColorModulator;
 uniform int LodLevel;
 uniform int TotalCloudTypes;
+uniform vec2 Align;
 
 in vec2 texCoord0;
 
@@ -19,7 +20,7 @@ vec3 hsv2rgb(vec3 c)
 
 void main() 
 {
-    vec3 info = texture(TexRegionSampler, vec3(texCoord0, float(LodLevel) / 4.0)).rgb;
+    vec3 info = texture(TexRegionSampler, vec3(texCoord0 + Align, float(LodLevel))).rgb;
     float id = info.r;
     vec3 col = hsv2rgb(vec3(id / float(TotalCloudTypes), 1.0, 1.0));
     fragColor = vec4(col * info.g, 1.0);

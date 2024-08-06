@@ -76,6 +76,7 @@ public abstract class CloudMeshGenerator
 	private double currentCamZ;
 	private float currentScale;
 	private float cullDistance;
+	private boolean lodConfigWasChanged;
 	
 	public CloudMeshGenerator(ResourceLocation meshShaderLoc, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval)
 	{
@@ -90,7 +91,11 @@ public abstract class CloudMeshGenerator
 	
 	public void setLodConfig(CloudMeshGenerator.LevelOfDetailConfig config)
 	{
-		this.lodConfig = Objects.requireNonNull(config);
+		if (config != this.lodConfig)
+		{
+			this.lodConfig = Objects.requireNonNull(config);
+			this.lodConfigWasChanged = true;
+		}
 	}
 	
 	public CloudMeshGenerator.LevelOfDetailConfig getLodConfig()
@@ -263,6 +268,8 @@ public abstract class CloudMeshGenerator
 			LOGGER.debug("Creating mesh compute shader...");
 			this.shader = this.createShader(manager);
 			this.setupShader();
+			this.onLodConfigChanged();
+			this.lodConfigWasChanged = false;
 		}
 		catch (IOException e)
 		{
@@ -354,6 +361,11 @@ public abstract class CloudMeshGenerator
 		
 		if (this.chunkGenTasks.isEmpty())
 		{
+			if (this.lodConfigWasChanged)
+			{
+				this.onLodConfigChanged();
+				this.lodConfigWasChanged = false;
+			}
 			this.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
 			this.currentCamX = camX;
 			this.currentCamY = camY;
@@ -379,6 +391,13 @@ public abstract class CloudMeshGenerator
 			this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {}, 4);
 			return true;
 		}
+	}
+	
+	protected void onLodConfigChanged()
+	{
+		this.shader.forUniform("TotalLodLevels", (id, loc) -> {
+			GL41.glProgramUniform1i(id, loc, this.lodConfig.getLods().length);
+		});
 	}
 	
 	protected void populateChunkGenTasks(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)

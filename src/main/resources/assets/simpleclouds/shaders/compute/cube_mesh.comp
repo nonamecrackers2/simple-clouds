@@ -74,10 +74,13 @@ layout(std430) readonly buffer LayerGroupings {
 layerGroupings;
 
 #if TYPE == 0
-layout(rg32f) uniform image3D regions;
+//layout(rg32f) uniform image3D regions;
+uniform sampler2DArray RegionsSampler;
+uniform int RegionsTexSize;
 #endif
 
 uniform int LodLevel;
+uniform int TotalLodLevels;
 uniform vec3 RenderOffset;
 uniform float Scale = 1.0;
 uniform vec3 Scroll;
@@ -145,8 +148,8 @@ bool isPosValid(float x, float y, float z, LayerGroup group, float fade)
 bool isPosValid(float x, float y, float z, int nx, int nz)
 {
 #if TYPE == 0
-	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xz + RegionSampleOffset) + ivec2(nx, nz);
-    vec4 info = imageLoad(regions, ivec3(texelCoord, LodLevel));
+	vec2 texelCoord = gl_GlobalInvocationID.xz + RegionSampleOffset + vec2(nx, nz);
+    vec4 info = texture(RegionsSampler, vec3(texelCoord / RegionsTexSize, float(LodLevel)));
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
     float fade = -5.0 * pow(info.g, 10.0);
@@ -236,8 +239,8 @@ void main()
     float z = id.z * Scale + RenderOffset.z;
     
 #if TYPE == 0
-	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xz + RegionSampleOffset);
-    vec4 info = imageLoad(regions, ivec3(texelCoord, LodLevel));
+	vec2 texelCoord = gl_GlobalInvocationID.xz + RegionSampleOffset;
+    vec4 info = texture(RegionsSampler, vec3(texelCoord / RegionsTexSize, float(LodLevel)));
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
     float fade = -5.0 * pow(info.g, 10.0);
