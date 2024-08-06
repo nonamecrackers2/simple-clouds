@@ -16,7 +16,6 @@ import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
@@ -137,9 +136,7 @@ public interface CloudCommandSource
 	
 	default int setDirectionWithPlayerFacing(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
-		CommandSourceStack source = context.getSource();
-		ServerPlayer player = source.getPlayerOrException();
-		return this.setDirection(context, player.getLookAngle().toVector3f());
+		return this.setDirection(context, this.getPlayer(context).getLookAngle().toVector3f());
 	}
 	
 	default int setDirectionSpecified(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
