@@ -18,12 +18,13 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsDebugOverlayRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
+import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -35,7 +36,6 @@ import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.config.ModConfig;
@@ -166,13 +166,17 @@ public class SimpleCloudsClientEvents
 			int totalSides = renderer.getMeshGenerator().getTotalSides();
 			text.add("Triangles: " + totalSides * 2 + "; Size: " + humanReadableByteCountSI(totalSides * CloudMeshGenerator.BYTES_PER_SIDE));
 			int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
-			text.add("Frames to generate mesh: " + SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
-			text.add("Effective framerate: " + mc.getFps() / frames);
+			text.add("Mesh gen frames: " + SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get() + "; Effective FPS: " + mc.getFps() / frames);
 			text.add("Frustum culling: " + (SimpleCloudsConfig.CLIENT.frustumCulling.get() ? "ON" : "OFF"));
 			boolean flag = ClientCloudManager.isAvailableServerSide();
-			text.add("Is available server-side: " + (flag ? ChatFormatting.GREEN : ChatFormatting.RED) + flag);
+			text.add("Server-side: " + (flag ? ChatFormatting.GREEN : ChatFormatting.RED) + flag);
 			CloudMode mode = renderer.getCurrentCloudMode();
 			text.add("Cloud mode: " + mode);
+			RegionType generator = renderer.getCurrentRegionGenerator();
+			if (generator != null)
+				text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(generator));
+			else
+				text.add("Region generator: NONE");
 			if (renderer.getMeshGenerator() instanceof SingleRegionCloudMeshGenerator meshGenerator)
 			{
 				text.add("Fade start: " + meshGenerator.getFadeStart() + "; Fade end: " + meshGenerator.getFadeEnd());
@@ -185,16 +189,17 @@ public class SimpleCloudsClientEvents
 			if (mc.level != null)
 			{
 				CloudManager manager = CloudManager.get(mc.level);
-				text.add("Scroll: x=" + round(manager.getScrollX()) + ", y=" + round(manager.getScrollY()) + ", z=" + round(manager.getScrollZ()) + "; Speed: " + round(manager.getSpeed()) + "; Height: " + manager.getCloudHeight());
+				text.add("Speed: " + round(manager.getSpeed()) + "; Height: " + manager.getCloudHeight());
+				text.add("Scroll XYZ: " + round(manager.getScrollX()) + " / " + round(manager.getScrollY()) + " / " + round(manager.getScrollZ()));
 				Vector3f d = manager.getDirection();
-				text.add("Direction: x=" + round(d.x) + ", y=" + round(d.y) + ", z=" + round(d.z));
+				text.add("Direction XYZ: " + round(d.x) + " / " + round(d.y) + " / " + round(d.z));
+				WorldEffects effects = renderer.getWorldEffectsManager();
+				if (effects.getCloudTypeAtCamera() != null)
+					text.add(effects.getCloudTypeAtCamera().id().toString());
+				else
+					text.add("UNKNOWN");
+				text.add("Storminess: " + round(effects.getStorminessAtCamera()));
 			}
-//			CloudInfo info = renderer.getMeshGenerator().getCloudTypeAtOrigin();
-//			if (info instanceof CloudType type)
-//				text.add(type.id().toString());
-//			else
-//				text.add("UNKNOWN");
-//			text.add("Storminess: " + round(renderer.getWorldEffectsManager().getStorminessAtCamera()));
 		}
 	}
 	

@@ -21,8 +21,32 @@ public class CloudManagerEvents
 		{
 			CloudManager manager = CloudManager.get(level);
 			manager.tick();
-			if (!level.isClientSide && (manager.getTickCount() % CloudManager.UPDATE_INTERVAL == 0 || manager.checkAndResetNeedsSync()))
-				SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new UpdateCloudManagerPacket(manager));
+			if (!level.isClientSide)
+			{
+				CloudManager.SyncType syncType = manager.getAndResetSync();
+				if (syncType != CloudManager.SyncType.NONE)
+				{
+					switch (syncType)
+					{
+					case BASE_PROPERTIES:
+					{
+						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new SendCloudManagerPacket(manager));
+						break;
+					}
+					case MOVEMENT:
+					{
+						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new UpdateCloudManagerPacket(manager));
+						break;
+					}
+					default:
+						throw new IllegalArgumentException("Unexpected value: " + syncType);
+					}
+				}
+				else if (manager.getTickCount() % CloudManager.UPDATE_INTERVAL == 0)
+				{
+					SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new UpdateCloudManagerPacket(manager));
+				}
+			}
 		}
 	}
 	

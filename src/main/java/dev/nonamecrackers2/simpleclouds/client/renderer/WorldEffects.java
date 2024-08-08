@@ -1,10 +1,15 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer;
 
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang3.tuple.Pair;
+
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.FogRenderer.FogMode;
+import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -12,8 +17,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 public class WorldEffects
 {
 	public static final float EFFECTS_STRENGTH_MULTIPLER = 1.2F;
+	private static final int RAINY_WATER_COLOR = 0xFF303030;
 	private final Minecraft mc;
 	private final SimpleCloudsRenderer renderer;
+	private @Nullable CloudType typeAtCamera;
 	private float storminessAtCamera;
 	private float storminessSmoothed;
 	private float storminessSmoothedO;
@@ -26,31 +33,18 @@ public class WorldEffects
 	
 	public void renderPost(float partialTick, double camX, double camY, double camZ, float scale)
 	{
-		CloudMeshGenerator generator = this.renderer.getMeshGenerator();
-		CloudInfo info = null;//generator.getCloudTypeAtOrigin();
-		if (info != null && info.weatherType().causesDarkening() && (float)camY < info.stormStart() * scale + 128.0F)
+		Pair<CloudType, Float> result = CloudManager.get(this.mc.level).getCloudTypeAtPosition((float)camX, (float)camZ);//generator.getCloudTypeAtOrigin();
+		CloudType type = result.getLeft();
+		this.typeAtCamera = type;
+		if (type.weatherType().causesDarkening() && (float)camY < type.stormStart() * scale + 128.0F)
 		{
-			float factor = Mth.clamp((1.0F - 0.0F) * 3.0F, 0.0F, 1.0F);
-			this.storminessAtCamera = info.storminess() * factor;
+			float factor = Mth.clamp((1.0F - result.getRight()) * 3.0F, 0.0F, 1.0F);
+			this.storminessAtCamera = type.storminess() * factor;
 		}
 		else
 		{
 			this.storminessAtCamera = 0.0F;
 		}
-		
-//		CloudManager manager = CloudManager.get(this.mc.level);
-//		float chunkSizeUpscaled = 32.0F * scale;
-//		float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * 32.0F);
-//		float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * 32.0F);
-//		var infoTest = CPUBasedCloudRegionTest.getCloudTypeAt(new Vector2d().add(manager.getScrollX(), manager.getScrollZ()).add(camOffsetX, camOffsetZ).div(2000.0F), ClientSideCloudTypeManager.getInstance().getIndexed());
-//		System.out.println("=====================");
-//		System.out.println("Predicted:");
-//		System.out.println("	" + ClientSideCloudTypeManager.getInstance().getIndexed()[infoTest.getLeft()]);
-//		System.out.println("	" + infoTest.getRight());
-//		float fade = generator.getCloudFadeAtOrigin();
-//		System.out.println("Actual:");
-//		System.out.println("	" + info);
-//		System.out.println("	" + fade);
 	}
 	
 	public float getStorminessAtCamera()
@@ -62,6 +56,11 @@ public class WorldEffects
 	{
 		this.storminessSmoothedO = this.storminessSmoothed;
 		this.storminessSmoothed += (this.storminessAtCamera - this.storminessSmoothed) / 25.0F;
+	}
+	
+	public @Nullable CloudType getCloudTypeAtCamera()
+	{
+		return this.typeAtCamera;
 	}
 	
 	public float getStorminessSmoothed(float partialTick)
@@ -77,6 +76,13 @@ public class WorldEffects
 	public float getDarkenFactor(float partialTick)
 	{
 		return this.getDarkenFactor(partialTick, EFFECTS_STRENGTH_MULTIPLER);
+	}
+	
+	//While this works, the water color only changes when the chunk is rebuilt. TODO: Will need some sort of shader to modify the water color
+	@Deprecated
+	public int modifyWaterColor(int color)
+	{
+		return FastColor.ARGB32.lerp(this.getDarkenFactor(0.0F), RAINY_WATER_COLOR, color);
 	}
 	
 	@SubscribeEvent

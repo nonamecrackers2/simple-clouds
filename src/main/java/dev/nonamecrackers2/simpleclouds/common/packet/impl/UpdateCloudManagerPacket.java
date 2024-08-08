@@ -3,11 +3,9 @@ package dev.nonamecrackers2.simpleclouds.common.packet.impl;
 import org.joml.Vector3f;
 
 import dev.nonamecrackers2.simpleclouds.client.packet.SimpleCloudsClientPacketHandler;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraftforge.network.NetworkEvent;
 import nonamecrackers2.crackerslib.common.packet.Packet;
 
@@ -18,10 +16,6 @@ public class UpdateCloudManagerPacket extends Packet
 	public float scrollX;
 	public float scrollY;
 	public float scrollZ;
-//	public CloudMode cloudMode;
-//	public float singleModeFadeStart;
-//	public float singleModeFadeEnd;
-//	public ResourceLocation singleModeCloudType;
 	public int cloudHeight;
 	
 	public UpdateCloudManagerPacket(CloudManager manager)

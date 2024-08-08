@@ -1,5 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.client.world;
 
+import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Minecraft;
@@ -12,6 +14,12 @@ public class ClientCloudManager extends CloudManager
 	public ClientCloudManager(Level level)
 	{
 		super(level);
+	}
+	
+	@Override
+	public CloudType[] getIndexedCloudTypes()
+	{
+		return ClientSideCloudTypeManager.getInstance().getIndexed();
 	}
 
 	@Override

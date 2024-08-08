@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -45,8 +46,10 @@ import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
 import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
@@ -97,6 +100,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private boolean failedToCopyDepthBuffer;
 	private @Nullable CloudMode cloudMode;
 	private @Nullable CloudStyle cloudStyle;
+	private @Nullable RegionType currentRegionGenerator;
 	private boolean needsReload;
 //	private int shadowMapPixelBufferId = -1;
 //	private @Nullable ByteBuffer shadowMapPixelBuffer;
@@ -162,7 +166,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			}
 			if (mode == CloudMode.DEFAULT || mode == CloudMode.AMBIENT)
 			{
-				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
+				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), RegionTypes.VORONOI_DIAGRAM.get(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
 				if (mode == CloudMode.AMBIENT)
 					generator.setFadeNearOrigin(0.2F, 0.4F);
 				this.meshGenerator = generator;
@@ -181,13 +185,17 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.cloudStyle = style;
 		}
 		
+		RegionType generator = this.fetchRegionGenerator();
+		this.currentRegionGenerator = generator;
+		
 		if (this.meshGenerator instanceof MultiRegionCloudMeshGenerator multiRegionGenerator)
 		{
 			CloudType[] cloudTypes = ClientSideCloudTypeManager.getInstance().getIndexed();
 			if (cloudTypes.length > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
 				LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
 			else
-				multiRegionGenerator.setCloudTypes(cloudTypes);			
+				multiRegionGenerator.setCloudTypes(cloudTypes);
+			multiRegionGenerator.setRegionGenerator(this.currentRegionGenerator);
 		}
 		else if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator singleRegionGenerator)
 		{
@@ -300,6 +308,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public @Nullable CloudStyle getCurrentCloudStyle()
 	{
 		return this.cloudStyle;
+	}
+	
+	public @Nullable RegionType getCurrentRegionGenerator()
+	{
+		return this.currentRegionGenerator;
 	}
 	
 	private void destroyPostChains()
@@ -777,6 +790,14 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		return this.worldEffectsManager;
 	}
+	
+	private RegionType fetchRegionGenerator()
+	{
+		if (this.mc.level == null)
+			return RegionTypes.VORONOI_DIAGRAM.get();
+		else
+			return CloudManager.get(this.mc.level).getRegionGenerator();
+	}
 //	
 //	public float[] getStormColorAtCoord(int x, int y)
 //	{
@@ -924,7 +945,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		return null;
 	}
 	
-	//TODO: Make it so you can't call this multiple times
 	public static void initialize()
 	{
 		RenderSystem.assertOnRenderThread();
@@ -937,6 +957,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public static SimpleCloudsRenderer getInstance()
 	{
 		return Objects.requireNonNull(instance, "Renderer not initialized!");
+	}
+	
+	public static Optional<SimpleCloudsRenderer> getOptionalInstance()
+	{
+		return Optional.ofNullable(instance);
 	}
 	
 	private static void checkFrameBufferStatus()

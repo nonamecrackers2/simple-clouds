@@ -19,6 +19,7 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.client.renderer.culling.Frustum;
@@ -32,18 +33,21 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private final CloudStyle style;
 	private int requiredRegionTexSize;
 	private CloudInfo[] cloudTypes;
+	private RegionType regionGenerator;
 	private @Nullable CloudRegionTextureGenerator regionTextureGenerator;
-	private boolean needsNoiseRefreshing;
+	private boolean cloudTypesModified;
+	private boolean regionGeneratorChanged;
 	private boolean fadeNearOrigin;
 	private float fadeStart;
 	private float fadeEnd;
 	private @Nullable float[] currentRegionAlignX;
 	private @Nullable float[] currentRegionAlignZ;
 	
-	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, CloudStyle style)
+	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, CloudMeshGenerator.LevelOfDetailConfig lodConfig, RegionType regionGenerator, int meshGenInterval, CloudStyle style)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
 		this.setCloudTypes(cloudTypes);
+		this.regionGenerator = regionGenerator;
 		this.style = style;
 	}
 
@@ -81,7 +85,21 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		if (!Arrays.equals(this.cloudTypes, cloudTypes))
 		{
 			this.cloudTypes = cloudTypes;
-			this.needsNoiseRefreshing = true;
+			this.cloudTypesModified = true;
+		}
+	}
+	
+	public RegionType getRegionGenerator()
+	{
+		return this.regionGenerator;
+	}
+	
+	public void setRegionGenerator(RegionType generator)
+	{
+		if (this.regionGenerator != generator)
+		{
+			this.regionGenerator = generator;
+			this.regionGeneratorChanged = true;
 		}
 	}
 	
@@ -115,7 +133,8 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			});
 		}
 		this.uploadNoiseData();
-		this.needsNoiseRefreshing = false;
+		this.cloudTypesModified = false;
+		this.regionGeneratorChanged = false;
 	}
 	
 	private void closeRegionGenerator()
@@ -138,9 +157,13 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		
 		this.closeRegionGenerator();
 		
-		this.regionTextureGenerator = new CloudRegionTextureGenerator(this.lodConfig, this.cloudTypes, this.requiredRegionTexSize, 2000.0F);
+		this.regionTextureGenerator = new CloudRegionTextureGenerator(this.lodConfig, this.cloudTypes, this.requiredRegionTexSize, CloudConstants.REGION_SCALE, this.regionGenerator);
 		if (this.shader != null)
 			this.updateCloudRegionTextureInfoOnMeshShader();
+		
+		int layers = this.lodConfig.getLods().length;
+		this.currentRegionAlignX = new float[layers + 1];
+		this.currentRegionAlignZ = new float[layers + 1];
 		
 		LOGGER.debug("Created cloud region texture generator with size {}x{}x{}", this.requiredRegionTexSize, this.requiredRegionTexSize, this.lodConfig.getLods().length + 1);
 	}
@@ -217,19 +240,22 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		super.onLodConfigChanged();
 		
 		this.setupOrReinitializeRegionGenerator();
-		
-		int layers = this.lodConfig.getLods().length;
-		this.currentRegionAlignX = new float[layers + 1];
-		this.currentRegionAlignZ = new float[layers + 1];
 	}
 	
 	@Override
 	protected void populateChunkGenTasks(double camX, double camY, double camZ, float scale, Frustum frustum)
 	{
-		if (this.needsNoiseRefreshing)
+		if (this.cloudTypesModified)
 		{
 			this.uploadNoiseData();
-			this.needsNoiseRefreshing = false;
+			this.setupOrReinitializeRegionGenerator();
+			this.cloudTypesModified = false;
+		}
+		
+		if (this.regionGeneratorChanged)
+		{
+			this.setupOrReinitializeRegionGenerator();
+			this.regionGeneratorChanged = false;
 		}
 
 		if (this.regionTextureGenerator != null)

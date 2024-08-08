@@ -4,11 +4,14 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector3f;
 
-import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
-import net.minecraft.resources.ResourceLocation;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
+import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
@@ -20,6 +23,7 @@ public class CloudManager
 	public static final int UPDATE_INTERVAL = 200;
 	public static final float RANDOM_SPREAD = 10000.0F;
 	private final Level level;
+	private RegionType regionGenerator = RegionTypes.VORONOI_DIAGRAM.get();
 	private long seed;
 	private float scrollXO;
 	private float scrollYO;
@@ -29,13 +33,9 @@ public class CloudManager
 	private float scrollZ;
 	private Vector3f direction = new Vector3f(1.0F, 0.0F, 0.0F);
 	private float speed = 1.0F;
-//	private CloudMode cloudMode = CloudMode.DEFAULT;
-//	private float singleModeFadeStart = 0.8F;
-//	private float singleModeFadeEnd = 1.0F;
-//	private ResourceLocation singleModeCloudType = SimpleCloudsMod.id("itty_bitty");
 	private int cloudHeight = 128;
 	private int tickCount;
-	private boolean requiresSync;
+	private CloudManager.SyncType syncType = CloudManager.SyncType.NONE;
 
 	public static CloudManager get(Level level)
 	{
@@ -45,6 +45,32 @@ public class CloudManager
 	public CloudManager(Level level)
 	{
 		this.level = level;
+	}
+	
+	public CloudType[] getIndexedCloudTypes()
+	{
+		return CloudTypeDataManager.getServerInstance().getIndexedCloudTypes();
+	}
+	
+	public Pair<CloudType, Float> getCloudTypeAtPosition(float x, float z)
+	{
+		CloudType[] types = this.getIndexedCloudTypes();
+		float posX = this.scrollX + x / (float)CloudConstants.CLOUD_SCALE;
+		float posZ = this.scrollZ + z / (float)CloudConstants.CLOUD_SCALE;
+		var result = this.getRegionGenerator().getCloudTypeIndexAt(posX, posZ, CloudConstants.REGION_SCALE, types.length);
+		if (result.index() < 0 || result.index() >= types.length)
+			throw new IndexOutOfBoundsException("Region type generator received an invalid index: " + result.index());
+		return Pair.of(types[result.index()], result.fade());
+	}
+	
+	public void setRegionGenerator(RegionType type)
+	{
+		this.regionGenerator = type;
+	}
+	
+	public RegionType getRegionGenerator()
+	{
+		return this.regionGenerator;
 	}
 
 	public void init(long seed)
@@ -56,46 +82,6 @@ public class CloudManager
 		this.scrollZ = (random.nextFloat() * 2.0F - 1.0F) * RANDOM_SPREAD;
 		this.speed = 1.0F;
 	}
-//	
-//	public void setCloudMode(CloudMode mode)
-//	{
-//		this.cloudMode = mode;
-//	}
-//	
-//	public CloudMode getCloudMode()
-//	{
-//		return this.cloudMode;
-//	}
-//	
-//	public void setSingleModeCloudType(ResourceLocation cloudType)
-//	{
-//		this.singleModeCloudType = cloudType;
-//	}
-//	
-//	public ResourceLocation getSingleModeCloudType()
-//	{
-//		return this.singleModeCloudType;
-//	}
-//	
-//	public float getSingleModeFadeStart()
-//	{
-//		return this.singleModeFadeStart;
-//	}
-//
-//	public void setSingleModeFadeStart(float singleModeFadeStart)
-//	{
-//		this.singleModeFadeStart = Mth.clamp(singleModeFadeStart, 0.0F, 1.0F);
-//	}
-//
-//	public float getSingleModeFadeEnd()
-//	{
-//		return this.singleModeFadeEnd;
-//	}
-//
-//	public void setSingleModeFadeEnd(float singleModeFadeEnd)
-//	{
-//		this.singleModeFadeEnd = Mth.clamp(singleModeFadeEnd, 0.0F, 1.0F);
-//	}
 	
 	public int getCloudHeight()
 	{
@@ -120,21 +106,22 @@ public class CloudManager
 		this.scrollZ -= this.getDirection().z() * speed;
 	}
 	
-	public void requiresSync()
+	public void setRequiresSync(CloudManager.SyncType syncType)
 	{
-		this.requiresSync = true;
+		this.syncType = syncType;
 	}
 	
-	public boolean checkAndResetNeedsSync()
+	public CloudManager.SyncType getAndResetSync()
 	{
-		if (this.requiresSync)
+		if (this.syncType != CloudManager.SyncType.NONE)
 		{
-			this.requiresSync = false;
-			return true;
+			CloudManager.SyncType syncType = this.syncType;
+			this.syncType = CloudManager.SyncType.NONE;
+			return syncType;
 		}
 		else
 		{
-			return false;
+			return CloudManager.SyncType.NONE;
 		}
 	}
 	
@@ -220,5 +207,12 @@ public class CloudManager
 	public float getScrollZ(float partialTicks)
 	{
 		return Mth.lerp(partialTicks, this.scrollZO, this.scrollZ);
+	}
+	
+	public static enum SyncType
+	{
+		BASE_PROPERTIES,
+		MOVEMENT,
+		NONE;
 	}
 }

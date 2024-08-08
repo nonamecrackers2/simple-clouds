@@ -55,7 +55,7 @@ public interface CloudCommandSource
 		manager.setScrollX((float)scroll.x);
 		manager.setScrollY((float)scroll.y);
 		manager.setScrollZ((float)scroll.z);
-		manager.requiresSync();
+		manager.setRequiresSync(CloudManager.SyncType.MOVEMENT);
 		return 0;
 	}
 	
@@ -72,7 +72,7 @@ public interface CloudCommandSource
 		CloudManager manager = this.getCloudManager(context);
 		float speed = FloatArgumentType.getFloat(context, "amount");
 		manager.setSpeed(speed);
-		manager.requiresSync();
+		manager.setRequiresSync(CloudManager.SyncType.MOVEMENT);
 		return 0;
 	}
 	
@@ -89,7 +89,7 @@ public interface CloudCommandSource
 		CommandSourceStack source = context.getSource();
 		CloudManager manager = this.getCloudManager(context);
 		manager.init(seedGetter.apply(manager));
-		manager.requiresSync();
+		manager.setRequiresSync(CloudManager.SyncType.BASE_PROPERTIES);
 		source.sendSuccess(() -> Component.translatable("command.simpleclouds.reinitialize"), true);
 		return 0;
 	}
@@ -126,7 +126,7 @@ public interface CloudCommandSource
 		CommandSourceStack source = context.getSource();
 		CloudManager manager = this.getCloudManager(context);
 		manager.setDirection(dir);
-		manager.requiresSync();
+		manager.setRequiresSync(CloudManager.SyncType.MOVEMENT);
 		float dx = (float)Math.round(dir.x * 100.0F) / 100.0F;
 		float dy = (float)Math.round(dir.y * 100.0F) / 100.0F;
 		float dz = (float)Math.round(dir.z * 100.0F) / 100.0F;
@@ -158,7 +158,7 @@ public interface CloudCommandSource
 		int height = IntegerArgumentType.getInteger(context, "height");
 		CloudManager manager = this.getCloudManager(context);
 		manager.setCloudHeight(height);
-		manager.requiresSync();
+		manager.setRequiresSync(CloudManager.SyncType.MOVEMENT);
 		source.sendSuccess(() -> Component.translatable("command.simpleclouds.height.set", height), true);
 		return height;
 	}

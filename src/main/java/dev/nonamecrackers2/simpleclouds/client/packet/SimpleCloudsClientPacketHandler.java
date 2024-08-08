@@ -33,13 +33,6 @@ public class SimpleCloudsClientPacketHandler
 		manager.setScrollZ(packet.scrollZ);
 		manager.setDirection(packet.direction);
 		manager.setSpeed(packet.speed);
-//		manager.setCloudMode(packet.cloudMode);
-//		manager.setSingleModeFadeStart(packet.singleModeFadeStart);
-//		manager.setSingleModeFadeEnd(packet.singleModeFadeEnd);
-//		if (CloudTypeDataManager.INSTANCE.getCloudTypes().containsKey(packet.singleModeCloudType))
-//			manager.setSingleModeCloudType(packet.singleModeCloudType);
-//		else
-//			LOGGER.warn("Client does not have cloud type with id '{}'", packet.singleModeCloudType);
 		manager.setCloudHeight(packet.cloudHeight);
 		if (manager instanceof ClientCloudManager clientManager)
 			clientManager.setReceivedSync();
@@ -51,12 +44,13 @@ public class SimpleCloudsClientPacketHandler
 		CloudManager manager = CloudManager.get(mc.level);
 		handleUpdateCloudManagerPacket(packet, manager);
 		manager.setSeed(packet.seed);
+		manager.setRegionGenerator(packet.type);
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
 		if (SimpleCloudsConfig.SERVER_SPEC.isLoaded())
 		{
-			if (SimpleCloudsConfig.SERVER.cloudMode.get() != renderer.getCurrentCloudMode())
+			if (SimpleCloudsConfig.SERVER.cloudMode.get() != renderer.getCurrentCloudMode() || packet.type != renderer.getCurrentRegionGenerator())
 			{
-				LOGGER.debug("Looks like the server cloud mode does not match with the client. Requesting a reload...");
+				LOGGER.debug("Looks like the server cloud mode or region generator does not match with the client. Requesting a reload...");
 				renderer.requestReload();
 			}
 		}
