@@ -34,6 +34,16 @@ public abstract class MixinServerLevel implements CloudManagerAccessor
 		this.getDataStorage().computeIfAbsent(tag -> CloudData.load(this.cloudManager, tag), () -> new CloudData(this.cloudManager), CloudData.ID);
 	}
 	
+	@Inject(method = "advanceWeatherCycle", at = @At("HEAD"), cancellable = true)
+	public void simpleclouds$disableWeatherCycle_advanceWeatherCycle(CallbackInfo ci)
+	{
+		this.resetWeatherCycle();
+		ci.cancel();
+	}
+	
+	@Shadow
+	protected abstract void resetWeatherCycle();
+	
 	@Override
 	public CloudManager getCloudManager()
 	{
