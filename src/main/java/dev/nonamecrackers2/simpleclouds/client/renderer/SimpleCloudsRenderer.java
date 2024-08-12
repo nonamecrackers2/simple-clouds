@@ -75,7 +75,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 //	private static final ResourceLocation WORLD_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/world_post.json");
 	private static final ResourceLocation STORM_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/storm_post.json");
 	private static final ResourceLocation BLUR_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/blur_post.json");
-	public static final CloudType FALLBACK = new CloudType(SimpleCloudsMod.id("fallback"), WeatherType.NONE, 0.0F, 16.0F, 32.0F, StaticNoiseSettings.DEFAULT);
 	public static final int SHADOW_MAP_SIZE = 1024;
 	private static @Nullable SimpleCloudsRenderer instance;
 	private final Minecraft mc;
@@ -166,7 +165,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			}
 			if (mode == CloudMode.DEFAULT || mode == CloudMode.AMBIENT)
 			{
-				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), RegionTypes.VORONOI_DIAGRAM.get(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
+				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { CloudConstants.FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), RegionTypes.VORONOI_DIAGRAM.get(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
 				if (mode == CloudMode.AMBIENT)
 					generator.setFadeNearOrigin(0.2F, 0.4F);
 				this.meshGenerator = generator;
@@ -175,7 +174,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			{
 				float fadeStart = (float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F;
 				float fadeEnd = (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F;
-				this.meshGenerator = new SingleRegionCloudMeshGenerator(FALLBACK, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd, style);
+				this.meshGenerator = new SingleRegionCloudMeshGenerator(CloudConstants.FALLBACK, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd, style);
 			}
 			else
 			{
@@ -203,7 +202,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			if (type != null)
 				singleRegionGenerator.setCloudType(type.getRight());
 			else
-				singleRegionGenerator.setCloudType(FALLBACK);
+				singleRegionGenerator.setCloudType(CloudConstants.FALLBACK);
 		}
 		
 		this.setupMeshGenerator(0.0F);

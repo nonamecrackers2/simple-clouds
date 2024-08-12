@@ -22,6 +22,7 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
@@ -180,7 +181,8 @@ public class SimpleCloudsClientEvents
 			if (renderer.getMeshGenerator() instanceof SingleRegionCloudMeshGenerator meshGenerator)
 			{
 				text.add("Fade start: " + meshGenerator.getFadeStart() + "; Fade end: " + meshGenerator.getFadeEnd());
-				text.add("Cloud type: " + meshGenerator.getCloudType());
+				if (meshGenerator.getCloudType() instanceof CloudType type)
+					text.add("Cloud type: " + type.id());
 			}
 			else
 			{

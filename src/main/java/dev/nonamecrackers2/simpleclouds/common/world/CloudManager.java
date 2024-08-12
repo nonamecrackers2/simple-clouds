@@ -3,15 +3,19 @@ package dev.nonamecrackers2.simpleclouds.common.world;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector3f;
 
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
+import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
@@ -52,15 +56,35 @@ public class CloudManager
 		return CloudTypeDataManager.getServerInstance().getIndexedCloudTypes();
 	}
 	
+	public @Nullable CloudType getCloudTypeForId(ResourceLocation id)
+	{
+		return CloudTypeDataManager.getServerInstance().getCloudTypes().get(id);
+	}
+	
 	public Pair<CloudType, Float> getCloudTypeAtPosition(float x, float z)
 	{
-		CloudType[] types = this.getIndexedCloudTypes();
-		float posX = this.scrollX + x / (float)CloudConstants.CLOUD_SCALE;
-		float posZ = this.scrollZ + z / (float)CloudConstants.CLOUD_SCALE;
-		var result = this.getRegionGenerator().getCloudTypeIndexAt(posX, posZ, CloudConstants.REGION_SCALE, types.length);
-		if (result.index() < 0 || result.index() >= types.length)
-			throw new IndexOutOfBoundsException("Region type generator received an invalid index: " + result.index());
-		return Pair.of(types[result.index()], result.fade());
+		if (SimpleCloudsConfig.SERVER.cloudMode.get() != CloudMode.SINGLE)
+		{
+			CloudType[] types = this.getIndexedCloudTypes();
+			float posX = this.scrollX + x / (float)CloudConstants.CLOUD_SCALE;
+			float posZ = this.scrollZ + z / (float)CloudConstants.CLOUD_SCALE;
+			var result = this.getRegionGenerator().getCloudTypeIndexAt(posX, posZ, CloudConstants.REGION_SCALE, types.length);
+			if (result.index() < 0 || result.index() >= types.length)
+				throw new IndexOutOfBoundsException("Region type generator received an invalid index: " + result.index());
+			return Pair.of(types[result.index()], result.fade());
+		}
+		else
+		{
+			String rawId = SimpleCloudsConfig.SERVER.singleModeCloudType.get();
+			ResourceLocation id = ResourceLocation.tryParse(rawId);
+			if (id != null)
+			{
+				CloudType type = this.getCloudTypeForId(id);
+				if (type != null)
+					return Pair.of(type, 0.0F);
+			}
+			return Pair.of(CloudConstants.FALLBACK, 0.0F);
+		}
 	}
 	
 	public void setRegionGenerator(RegionType type)

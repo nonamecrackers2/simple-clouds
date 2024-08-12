@@ -5,6 +5,7 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 
 public class ClientCloudManager extends CloudManager
@@ -20,6 +21,12 @@ public class ClientCloudManager extends CloudManager
 	public CloudType[] getIndexedCloudTypes()
 	{
 		return ClientSideCloudTypeManager.getInstance().getIndexed();
+	}
+	
+	@Override
+	public CloudType getCloudTypeForId(ResourceLocation id)
+	{
+		return ClientSideCloudTypeManager.getInstance().getCloudTypes().get(id);
 	}
 
 	@Override

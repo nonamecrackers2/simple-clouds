@@ -30,7 +30,7 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
-import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
@@ -155,7 +155,7 @@ public class CloudPreviewerScreen extends Screen3D
 		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.25F, 5000.0F);
 		if (generator == null)
 		{
-			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(SimpleCloudsRenderer.FALLBACK, LevelOfDetailOptions.HIGH.getConfig(), 3, 0.5F, 1.0F, CloudStyle.DEFAULT).setTestFacesFacingAway(true);
+			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(CloudConstants.FALLBACK, LevelOfDetailOptions.HIGH.getConfig(), 3, 0.5F, 1.0F, CloudStyle.DEFAULT).setTestFacesFacingAway(true);
 			generator.init(Minecraft.getInstance().getResourceManager());
 		}
 		this.prev = prev;
