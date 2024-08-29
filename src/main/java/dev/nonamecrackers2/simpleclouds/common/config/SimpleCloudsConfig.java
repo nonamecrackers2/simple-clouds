@@ -12,6 +12,8 @@ public class SimpleCloudsConfig
 {
 	public static final ClientConfig CLIENT;
 	public static final ForgeConfigSpec CLIENT_SPEC;
+	public static final CommonConfig COMMON;
+	public static final ForgeConfigSpec COMMON_SPEC;
 	public static final ServerConfig SERVER;
 	public static final ForgeConfigSpec SERVER_SPEC;
 	
@@ -20,6 +22,9 @@ public class SimpleCloudsConfig
 		var clientPair = new ForgeConfigSpec.Builder().configure(ClientConfig::new);
 		CLIENT = clientPair.getLeft();
 		CLIENT_SPEC = clientPair.getRight();
+		var commonPair = new ForgeConfigSpec.Builder().configure(CommonConfig::new);
+		COMMON = commonPair.getLeft();
+		COMMON_SPEC = commonPair.getRight();
 		var serverPair = new ForgeConfigSpec.Builder().configure(ServerConfig::new);
 		SERVER = serverPair.getLeft();
 		SERVER_SPEC = serverPair.getRight();
@@ -45,6 +50,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<CloudStyle> cloudStyle;
 		public final ForgeConfigSpec.ConfigValue<Long> cloudSeed;
 		public final ForgeConfigSpec.ConfigValue<Boolean> useSpecificSeed;
+		public final ForgeConfigSpec.ConfigValue<Boolean> renderTerrainFog;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -99,6 +105,35 @@ public class SimpleCloudsConfig
 			this.singleModeFadeStartPercentage = this.createRangedIntValue(80, 0, 100, "singleModeFadeStartPercentage", false, "Specifies the percentage of the cloud render distance that the clouds should begin to fade away, when using the single cloud type mode (e.x. 50 would start to make the clouds fade away at half of the cloud render distance)");
 			
 			this.singleModeFadeEndPercentage = this.createRangedIntValue(100, 0, 100, "singleModeFadeEndPercentage", false, "Specifies the percentage of the cloud render distance that the clouds will be fully faded away, when using the single cloud type mode (e.x. 50 would make the clouds completely disappear past half the cloud render distance)");
+			
+			builder.pop();
+			
+			builder.comment("Preference").push("preference");
+			
+			this.renderTerrainFog = this.createValue(false, "renderTerrainFog", false, "Specifies if terrain fog should be rendered or not. Enabling may cause the fog to appear out of place against the storm fog that appears under clouds.");
+			
+			builder.pop();
+		}
+	}
+	
+	public static class CommonConfig extends ConfigHelper
+	{
+		public final ForgeConfigSpec.ConfigValue<Integer> lightningSpawnIntervalMin;
+		public final ForgeConfigSpec.ConfigValue<Integer> lightningSpawnIntervalMax;
+		
+		public CommonConfig(ForgeConfigSpec.Builder builder)
+		{
+			super(builder, SimpleCloudsMod.MODID);
+			
+			builder.comment("Weather").push("weather");
+			
+			builder.comment("Lightning And Thunder").push("lightning_and_thunder");
+			
+			this.lightningSpawnIntervalMin = this.createRangedIntValue(10, 1, 72000, "lightningSpawnIntervalMinimum", false, "Specifies the shortest interval until the next lightning strike will spawn, in ticks");
+			
+			this.lightningSpawnIntervalMax = this.createRangedIntValue(160, 1, 72000, "lightningSpawnIntervalMaximum", false, "Specifies the longest interval until the next lightning strike will spawn, in ticks");
+			
+			builder.pop();
 			
 			builder.pop();
 		}

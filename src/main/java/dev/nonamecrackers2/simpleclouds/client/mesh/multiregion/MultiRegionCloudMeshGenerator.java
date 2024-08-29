@@ -17,7 +17,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
@@ -153,11 +153,11 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		int requiredRegionTexSize = this.lodConfig.getPrimaryChunkSpan();
 		for (CloudMeshGenerator.LevelOfDetail config : this.lodConfig.getLods())
 			requiredRegionTexSize += config.spread() * 2;
-		this.requiredRegionTexSize = requiredRegionTexSize * CloudConstants.CHUNK_SIZE;
+		this.requiredRegionTexSize = requiredRegionTexSize * SimpleCloudsConstants.CHUNK_SIZE;
 		
 		this.closeRegionGenerator();
 		
-		this.regionTextureGenerator = new CloudRegionTextureGenerator(this.lodConfig, this.cloudTypes, this.requiredRegionTexSize, CloudConstants.REGION_SCALE, this.regionGenerator);
+		this.regionTextureGenerator = new CloudRegionTextureGenerator(this.lodConfig, this.cloudTypes, this.requiredRegionTexSize, SimpleCloudsConstants.REGION_SCALE, this.regionGenerator);
 		if (this.shader != null)
 			this.updateCloudRegionTextureInfoOnMeshShader();
 		
@@ -183,7 +183,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		{
 			float alignX = this.currentRegionAlignX[lodLevel];
 			float alignZ = this.currentRegionAlignZ[lodLevel];
-			GL41.glProgramUniform2f(id, loc, x * (float)CloudConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F + alignX, z * (float)CloudConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F + alignZ);
+			GL41.glProgramUniform2f(id, loc, x * (float)SimpleCloudsConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F + alignX, z * (float)SimpleCloudsConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F + alignZ);
 		});
 		super.generateChunk(lodLevel, lodScale, x, y, z, offsetX, offsetY, offsetZ, scale, camOffsetX, camOffsetZ, noOcclusionDirectionIndex);
 	}
@@ -260,11 +260,11 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 
 		if (this.regionTextureGenerator != null)
 		{
-			if (!this.regionTextureGenerator.isStarted())
-				this.regionTextureGenerator.start();
-			float chunkSizeUpscaled = (float)CloudConstants.CHUNK_SIZE * scale;
-			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * (float)CloudConstants.CHUNK_SIZE);
-			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * (float)CloudConstants.CHUNK_SIZE);
+//			if (!this.regionTextureGenerator.isStarted())
+//				this.regionTextureGenerator.start();
+			float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * scale;
+			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * (float)SimpleCloudsConstants.CHUNK_SIZE);
+			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * (float)SimpleCloudsConstants.CHUNK_SIZE);
 			this.regionTextureGenerator.update(this.scrollX, this.scrollZ, camOffsetX, camOffsetZ);
 			this.regionTextureGenerator.tick();
 			if (this.shader != null)

@@ -11,6 +11,7 @@ import dev.nonamecrackers2.simpleclouds.common.event.CloudManagerEvents;
 import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsDataEvents;
 import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsEvents;
 import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
+import dev.nonamecrackers2.simpleclouds.common.init.SimpleCloudsSounds;
 import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
 import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -43,6 +44,7 @@ public class SimpleCloudsMod
 		modBus.addListener(this::commonInit);
 		modBus.addListener(SimpleCloudsRegistries::registerRegistries);
 		RegionTypes.register(modBus);
+		SimpleCloudsSounds.register(modBus);
 		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
 			modBus.addListener(SimpleCloudsClientEvents::registerReloadListeners);
 			modBus.addListener(SimpleCloudsKeybinds::registerKeyMappings);
@@ -53,6 +55,7 @@ public class SimpleCloudsMod
 		modBus.addListener(SimpleCloudsDataEvents::gatherData);
 		ModLoadingContext context = ModLoadingContext.get();
 		context.registerConfig(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC);
+		context.registerConfig(ModConfig.Type.COMMON, SimpleCloudsConfig.COMMON_SPEC);
 		context.registerConfig(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC);
 		ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
 	}

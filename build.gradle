@@ -143,8 +143,8 @@ dependencies {
     
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     
-    //runtimeOnly fg.deobf("curse.maven:embeddium-908741:5503379")
-    //runtimeOnly fg.deobf("curse.maven:oculus-581495:5299671")
+    runtimeOnly fg.deobf("curse.maven:embeddium-908741:5503379")
+    runtimeOnly fg.deobf("curse.maven:oculus-581495:5299671")
     //runtimeOnly fg.deobf("curse.maven:borderless-378979:4575494")
     //runtimeOnly fg.deobf("curse.maven:stellarview-865273:5373192")
     

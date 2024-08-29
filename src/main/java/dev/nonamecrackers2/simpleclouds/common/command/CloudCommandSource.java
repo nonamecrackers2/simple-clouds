@@ -11,17 +11,21 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
+import dev.nonamecrackers2.simpleclouds.common.world.ServerCloudManager;
+import dev.nonamecrackers2.simpleclouds.common.world.SyncType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
-public interface CloudCommandSource
+public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 {
-	public static final CloudCommandSource SERVER = new CloudCommandSource()
+	public static final CloudCommandSource<ServerLevel, ServerCloudManager> SERVER = new CloudCommandSource<>()
 	{
 		@Override
 		public Player getPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
@@ -30,66 +34,73 @@ public interface CloudCommandSource
 		}
 		
 		@Override
-		public CloudManager getCloudManager(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+		public ServerCloudManager getCloudManager(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 		{
-			return CloudManager.get(context.getSource().getLevel());
+			return (ServerCloudManager)CloudManager.get(context.getSource().getLevel());
+		}
+		
+		public void onValueUpdated(ServerCloudManager cloudManager, SyncType sync)
+		{
+			cloudManager.setRequiresSync(sync);
 		}
 	};
 	
-	CloudManager getCloudManager(CommandContext<CommandSourceStack> context)  throws CommandSyntaxException;
+	T getCloudManager(CommandContext<CommandSourceStack> context)  throws CommandSyntaxException;
 	
 	Player getPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException;
+	
+	void onValueUpdated(T cloudManager, SyncType sync);
 	
 	default int getScrollAmount(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
 		CommandSourceStack source = context.getSource();
-		CloudManager manager = this.getCloudManager(context);
+		T manager = this.getCloudManager(context);
 		source.sendSuccess(() -> Component.translatable("command.simpleclouds.scroll.get", manager.getScrollX(), manager.getScrollY(), manager.getScrollZ()), false);
 		return 0;
 	}
 	
 	default int setScrollAmount(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
-		CloudManager manager = this.getCloudManager(context);
+		T manager = this.getCloudManager(context);
 		Vec3 scroll = Vec3Argument.getVec3(context, "amount");
 		manager.setScrollX((float)scroll.x);
 		manager.setScrollY((float)scroll.y);
 		manager.setScrollZ((float)scroll.z);
-		manager.setRequiresSync(CloudManager.SyncType.MOVEMENT);
+		this.onValueUpdated(manager, SyncType.MOVEMENT);
 		return 0;
 	}
 	
 	default int getSpeed(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
 		CommandSourceStack source = context.getSource();
-		CloudManager manager = this.getCloudManager(context);
+		T manager = this.getCloudManager(context);
 		source.sendSuccess(() -> Component.translatable("command.simpleclouds.speed.get", manager.getSpeed()), false);
 		return 0;
 	}
 	
 	default int setSpeed(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
-		CloudManager manager = this.getCloudManager(context);
+		T manager = this.getCloudManager(context);
 		float speed = FloatArgumentType.getFloat(context, "amount");
 		manager.setSpeed(speed);
-		manager.setRequiresSync(CloudManager.SyncType.MOVEMENT);
+		this.onValueUpdated(manager, SyncType.MOVEMENT);
 		return 0;
 	}
 	
 	default int getSeed(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
 		CommandSourceStack source = context.getSource();
-		CloudManager manager = this.getCloudManager(context);
+		T manager = this.getCloudManager(context);
 		source.sendSuccess(() -> Component.translatable("command.simpleclouds.seed.get", ComponentUtils.copyOnClickText(String.valueOf(manager.getSeed()))), true);
 		return 0;
 	} 
 	
-	default int reinitialize(CommandContext<CommandSourceStack> context, Function<CloudManager, Long> seedGetter) throws CommandSyntaxException
+	default int reinitialize(CommandContext<CommandSourceStack> context, Function<T, Long> seedGetter) throws CommandSyntaxException
 	{
 		CommandSourceStack source = context.getSource();
-		CloudManager manager = this.getCloudManager(context);
+		T manager = this.getCloudManager(context);
 		manager.init(seedGetter.apply(manager));
-		manager.setRequiresSync(CloudManager.SyncType.BASE_PROPERTIES);
+		this.onValueUpdated(manager, SyncType.BASE_PROPERTIES);
 		source.sendSuccess(() -> Component.translatable("command.simpleclouds.reinitialize"), true);
 		return 0;
 	}
@@ -112,7 +123,7 @@ public interface CloudCommandSource
 	default int getDirection(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
 		CommandSourceStack source = context.getSource();
-		CloudManager manager = this.getCloudManager(context);
+		T manager = this.getCloudManager(context);
 		Vector3f dir = manager.getDirection();
 		float dx = (float)Math.round(dir.x * 100.0F) / 100.0F;
 		float dy = (float)Math.round(dir.y * 100.0F) / 100.0F;
@@ -124,9 +135,9 @@ public interface CloudCommandSource
 	default int setDirection(CommandContext<CommandSourceStack> context, Vector3f dir) throws CommandSyntaxException
 	{
 		CommandSourceStack source = context.getSource();
-		CloudManager manager = this.getCloudManager(context);
+		T manager = this.getCloudManager(context);
 		manager.setDirection(dir);
-		manager.setRequiresSync(CloudManager.SyncType.MOVEMENT);
+		this.onValueUpdated(manager, SyncType.MOVEMENT);
 		float dx = (float)Math.round(dir.x * 100.0F) / 100.0F;
 		float dy = (float)Math.round(dir.y * 100.0F) / 100.0F;
 		float dz = (float)Math.round(dir.z * 100.0F) / 100.0F;
@@ -156,9 +167,9 @@ public interface CloudCommandSource
 	{
 		CommandSourceStack source = context.getSource();
 		int height = IntegerArgumentType.getInteger(context, "height");
-		CloudManager manager = this.getCloudManager(context);
+		T manager = this.getCloudManager(context);
 		manager.setCloudHeight(height);
-		manager.setRequiresSync(CloudManager.SyncType.MOVEMENT);
+		this.onValueUpdated(manager, SyncType.MOVEMENT);
 		source.sendSuccess(() -> Component.translatable("command.simpleclouds.height.set", height), true);
 		return height;
 	}

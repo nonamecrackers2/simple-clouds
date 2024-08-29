@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL43;
@@ -28,6 +29,38 @@ public class ShaderStorageBufferObject
 		this.usage = usage;
 	}
 	
+	public static ShaderStorageBufferObject create(int usage)
+	{
+		RenderSystem.assertOnRenderThreadOrInit();
+		int binding = ComputeShader.getAvailableShaderStorageBinding();
+		int bufferId = GlStateManager._glGenBuffers();
+		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, binding, bufferId);
+		ShaderStorageBufferObject buffer = new ShaderStorageBufferObject(bufferId, binding, usage);
+		ComputeShader.ALL_SHADER_STORAGE_BUFFERS.put(binding, buffer);
+		return buffer;
+	}
+	
+	public void bindToProgram(String name, int programId)
+	{
+		this.bindToProgram(name, programId, true);
+	}
+	
+	public void optionalBindToProgram(String name, int programId)
+	{
+		this.bindToProgram(name, programId, false);
+	}
+	
+	private void bindToProgram(String name, int programId, boolean throwIfMissing)
+	{
+		RenderSystem.assertOnRenderThreadOrInit();
+		this.assertValid();
+		int index = GL43.glGetProgramResourceIndex(programId, GL43.GL_SHADER_STORAGE_BLOCK, name);
+		if (index == -1 && throwIfMissing)
+			throw new NullPointerException("Unknown block index with name '" + name + "'");
+		if (index != -1)
+			GL43.glShaderStorageBlockBinding(programId, index, this.binding);
+	}
+	
 	public void uploadData(ByteBuffer buffer)
 	{
 		RenderSystem.assertOnRenderThread();
@@ -43,7 +76,13 @@ public class ShaderStorageBufferObject
 		this.uploadData(MemoryTracker.create(bytes));
 	}
 	
-	public void close()
+	public void closeAndClearBinding()
+	{
+		ComputeShader.ALL_SHADER_STORAGE_BUFFERS.remove(this.binding);
+		this.close();
+	}
+	
+	protected void close()
 	{
 		RenderSystem.assertOnRenderThread();
 		if (this.id != -1)
@@ -63,6 +102,8 @@ public class ShaderStorageBufferObject
 	{
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
+		if (size <= 0)
+			throw new IllegalArgumentException("Invalid size, please use a size greater than 0");
 		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.id);
 		consumer.accept(GL30.glMapBufferRange(GL43.GL_SHADER_STORAGE_BUFFER, 0, size, access, this.buffer));
 		GlStateManager._glUnmapBuffer(GL43.GL_SHADER_STORAGE_BUFFER);

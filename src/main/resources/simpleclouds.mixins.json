@@ -5,7 +5,9 @@
 	"refmap": "simpleclouds.refmap.json",
 	"mixins": [
 		"MixinServerLevel",
-		"MixinServerMain"
+		"MixinServerMain",
+		"MixinWeatherCommand",
+		"MixinLevel"
 	],
 	"client": [
 		"MixinLevelRenderer",
@@ -13,7 +15,8 @@
 		"MixinGameRendererAccessor",
 		"MixinPostChain",
 		"MixinClientLevel",
-		"MixinWorldOpenFlows"
+		"MixinWorldOpenFlows",
+		"MixinLightTexture"
 	],
 	"minVersion": "0.8"
 }

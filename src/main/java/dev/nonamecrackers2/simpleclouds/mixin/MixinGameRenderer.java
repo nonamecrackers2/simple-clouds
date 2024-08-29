@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import net.minecraft.client.renderer.GameRenderer;
 
 @Mixin(GameRenderer.class)
@@ -17,7 +17,7 @@ public class MixinGameRenderer
 	@Inject(method = "getDepthFar", at = @At("HEAD"), cancellable = true)
 	public void simpleclouds$extendFarPlane_getDepthFar(CallbackInfoReturnable<Float> ci)
 	{
-		ci.setReturnValue((float)SimpleCloudsRenderer.getInstance().getMeshGenerator().getCloudAreaMaxRadius() * (float)CloudConstants.CLOUD_SCALE);
+		ci.setReturnValue((float)SimpleCloudsRenderer.getInstance().getMeshGenerator().getCloudAreaMaxRadius() * (float)SimpleCloudsConstants.CLOUD_SCALE);
 	}
 	
 	@Inject(method = "close", at = @At("TAIL"))

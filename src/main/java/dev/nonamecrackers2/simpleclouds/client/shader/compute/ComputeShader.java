@@ -49,7 +49,7 @@ public class ComputeShader implements AutoCloseable
 	protected static final Logger LOGGER = LogManager.getLogger("simpleclouds/ComputeShader");
 	private static final Pattern LOCAL_GROUP_REPLACER = Pattern.compile("\\$\\{.*?\\}");
 	private static final Map<String, ComputeShader.CompiledShader> COMPILED_PROGRAMS = Maps.newHashMap();
-	private static final Int2ObjectMap<ShaderStorageBufferObject> ALL_SHADER_STORAGE_BUFFERS = new Int2ObjectOpenHashMap<>();
+	protected static final Int2ObjectMap<ShaderStorageBufferObject> ALL_SHADER_STORAGE_BUFFERS = new Int2ObjectOpenHashMap<>();
 	private static final IntList ALL_IMAGE_BINDINGS = new IntArrayList();
 	private static int maxGroupX = -1;
 	private static int maxGroupY = -1;

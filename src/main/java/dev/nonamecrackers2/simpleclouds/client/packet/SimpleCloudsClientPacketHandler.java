@@ -2,6 +2,7 @@ package dev.nonamecrackers2.simpleclouds.client.packet;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joml.Vector3f;
 
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
@@ -10,6 +11,7 @@ import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Minecraft;
@@ -72,5 +74,10 @@ public class SimpleCloudsClientPacketHandler
 			else
 				meshGenerator.setCloudTypes(packet.indexed);
 		}
+	}
+	
+	public static void handleSpawnLightningPacket(SpawnLightningPacket packet)
+	{
+		SimpleCloudsRenderer.getInstance().getWorldEffectsManager().spawnLightning(packet.pos, packet.onlySound, packet.seed, packet.maxDepth, packet.branchCount, packet.maxBranchLength, packet.maxWidth, packet.minimumPitch, packet.maximumPitch);
 	}
 }

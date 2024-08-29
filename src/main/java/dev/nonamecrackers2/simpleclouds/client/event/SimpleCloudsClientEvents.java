@@ -29,14 +29,19 @@ import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.FogRenderer;
+import net.minecraft.client.renderer.FogRenderer.FogMode;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.world.level.material.FogType;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.config.ModConfig;
@@ -72,8 +77,11 @@ public class SimpleCloudsClientEvents
 	public static void registerConfigMenu(RegisterConfigScreensEvent event)
 	{
 		event.builder(ConfigHomeScreen.builder(TextTitle.ofModDisplayName(SimpleCloudsMod.MODID))
-				.crackersDefault().build(SimpleCloudsConfigScreen::new)
-		).addSpec(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC).addSpec(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC).register();
+						.crackersDefault()
+						.build(SimpleCloudsConfigScreen::new))
+				.addSpec(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC)
+				.addSpec(ModConfig.Type.COMMON, SimpleCloudsConfig.COMMON_SPEC)
+				.addSpec(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC).register();
 	}
 	
 	public static void registerConfigMenuButton(ConfigMenuButtonEvent event)
@@ -155,6 +163,16 @@ public class SimpleCloudsClientEvents
 	}
 	
 	@SubscribeEvent
+	public static void modifyFog(ViewportEvent.RenderFog event)
+	{
+//		float factor = SimpleCloudsRenderer.getInstance().getWorldEffectsManager().getDarkenFactor((float)event.getPartialTick(), 1.4F);
+//		event.setNearPlaneDistance(event.getNearPlaneDistance() * factor);
+//		event.setCanceled(true);
+		if (event.getMode() == FogMode.FOG_TERRAIN && Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera() == FogType.NONE)
+			FogRenderer.setupNoFog();
+	}
+	
+	@SubscribeEvent
 	public static void onRenderDebugOverlay(CustomizeGuiOverlayEvent.DebugText event)
 	{
 		Minecraft mc = Minecraft.getInstance();
@@ -190,7 +208,7 @@ public class SimpleCloudsClientEvents
 			}
 			if (mc.level != null)
 			{
-				CloudManager manager = CloudManager.get(mc.level);
+				CloudManager<ClientLevel> manager = CloudManager.get(mc.level);
 				text.add("Speed: " + round(manager.getSpeed()) + "; Height: " + manager.getCloudHeight());
 				text.add("Scroll XYZ: " + round(manager.getScrollX()) + " / " + round(manager.getScrollY()) + " / " + round(manager.getScrollZ()));
 				Vector3f d = manager.getDirection();

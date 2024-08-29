@@ -35,7 +35,7 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -398,7 +398,7 @@ public abstract class CloudMeshGenerator
 	protected void populateChunkGenTasks(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)
 	{
 		int chunkCount = 0;
-		float chunkSizeUpscaled = (float)CloudConstants.CHUNK_SIZE * scale;
+		float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * scale;
 		float globalOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
 		float globalOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
 		for (CloudMeshGenerator.PreparedChunk chunk : this.lodConfig.preparedChunks)
@@ -603,7 +603,7 @@ public abstract class CloudMeshGenerator
 		
 		boolean checkIfVisibleAndQueue(CloudMeshGenerator generator, double camX, double camY, double camZ, float scale, float globalOffsetX, float globalOffsetZ, @Nullable Frustum frustum)
 		{
-			float chunkSizeLod = (float)CloudConstants.CHUNK_SIZE * scale * this.lodScale;
+			float chunkSizeLod = (float)SimpleCloudsConstants.CHUNK_SIZE * scale * this.lodScale;
 			float offsetX = (float)this.x * chunkSizeLod;
 			float offsetY = (float)this.y * chunkSizeLod;
 			float offsetZ = (float)this.z * chunkSizeLod;

@@ -21,6 +21,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 	protected void addTranslations()
 	{
 		ConfigLangGeneratorHelper.langForSpec(SimpleCloudsMod.MODID, SimpleCloudsConfig.CLIENT_SPEC, this, ConfigLangGeneratorHelper.Info.ONLY_RANGE);
+		ConfigLangGeneratorHelper.langForSpec(SimpleCloudsMod.MODID, SimpleCloudsConfig.COMMON_SPEC, this, ConfigLangGeneratorHelper.Info.ONLY_RANGE);
 		ConfigLangGeneratorHelper.langForSpec(SimpleCloudsMod.MODID, SimpleCloudsConfig.SERVER_SPEC, this, ConfigLangGeneratorHelper.Info.ONLY_RANGE);
 		this.add("gui.simpleclouds.cloud_previewer.title", "Cloud Previewer");
 		this.add("gui.simpleclouds.cloud_previewer.button.title", "Cloud Previewer");
@@ -70,6 +71,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("command.simpleclouds.height.set", "Set cloud height to %s");
 		this.add("commands.simpleclouds.notClientSideOnly", "Client cloud commands can only be used when connected to servers that do not have Simple Clouds installed. If you're connected on singleplayer, or you are an operator on a dedicated server with Simple Clouds installed, please use '/simpleclouds clouds'");
 		this.add("gui.simpleclouds.debug.title", "Simple Clouds Debug");
-		
+		this.add("simpleclouds.subtitle.distant_thunder", "Distant Thunder Roars");
+		this.add("simpleclouds.subtitle.close_thunder", "Thunder Roars");
 	}
 }

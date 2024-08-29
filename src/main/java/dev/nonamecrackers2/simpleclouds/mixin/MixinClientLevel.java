@@ -10,22 +10,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManagerAccessor;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.Level;
 
 @Mixin(ClientLevel.class)
-public class MixinClientLevel implements CloudManagerAccessor
+public class MixinClientLevel implements CloudManagerAccessor<ClientLevel>
 {
 	@Unique
-	private CloudManager cloudManager;
+	private ClientCloudManager cloudManager;
 	
 	@Inject(method = "<init>", at = @At("TAIL"))
 	public void simpleclouds$createCloudManager_init(CallbackInfo ci)
 	{
-		this.cloudManager = new ClientCloudManager((Level)(Object)this);
+		this.cloudManager = new ClientCloudManager((ClientLevel)(Object)this);
 		this.cloudManager.init(SimpleCloudsConfig.CLIENT.useSpecificSeed.get() ? SimpleCloudsConfig.CLIENT.cloudSeed.get() : RandomSource.create().nextLong());
 	}
 	
@@ -36,7 +34,7 @@ public class MixinClientLevel implements CloudManagerAccessor
 	}
 	
 	@Override
-	public CloudManager getCloudManager()
+	public ClientCloudManager getCloudManager()
 	{
 		return this.cloudManager;
 	}

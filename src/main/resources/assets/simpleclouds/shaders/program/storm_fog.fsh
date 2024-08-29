@@ -1,7 +1,20 @@
-#version 330
+#version 430
+
+struct Lightning {
+	vec3 Position;
+	float Alpha;
+};
+
+layout(std430) readonly buffer LightningBolts {
+	Lightning data[];
+}
+lightning;
+
+uniform int TotalLightningBolts;
 
 uniform sampler2D ShadowMap;
 uniform sampler2D ShadowMapColor;
+//uniform sampler2D DiffuseDepthSampler;
 uniform mat4 InverseWorldProjMat;
 uniform mat4 InverseModelViewMat;
 uniform mat4 ShadowProjMat;
@@ -75,8 +88,33 @@ vec4 cylinderVerticalIntersect(in vec3 ro, in vec3 rd, float he, float ra)
 }
 //
 
+float getNearestLightningBoltColorModifier(vec3 position)
+{
+	for (int i = 0; i < TotalLightningBolts; i++)
+	{
+		Lightning bolt = lightning.data[i];
+		float dist = distance(bolt.Position.xz, position.xz);
+		if (dist < 2000.0)
+		{
+			float distMul = clamp((2000.0 - dist) / 1000.0, 0.0, 1.0);
+			return 1.0 + bolt.Alpha * distMul;
+		}
+	}
+	return 1.0;
+}
+
+vec3 screenToWorldPos(vec2 coord, float depth)
+{
+	vec3 ndc = vec3(coord * 2.0 - 1.0, depth);
+  	vec4 view = InverseWorldProjMat * vec4(ndc, 1.0);
+  	view.xyz /= view.w;
+  	vec3 result = (InverseModelViewMat * view).xyz;
+  	return result;
+}
+
 void main() 
 {
+	//float cloudDepth = length(screenToWorldPos(texCoord, texture(DiffuseDepthSampler, texCoord).x * 2.0 - 1.0));
 	vec3 ray = getRayDirection(texCoord);
 	vec4 intersect = cylinderVerticalIntersect(vec3(0.0), ray, 500.0, CutoffDistance);
 	vec3 rayStart = CameraPos + ray * -intersect.x;
@@ -87,13 +125,18 @@ void main()
     {
     	point += ray * STEP_SIZE;
     	depth = distance(point, CameraPos);
-    	vec4 col = shadowMapColorAt(point);	
+    	vec4 col = shadowMapColorAt(point);
+    	//if (cloudDepth < depth)
+    	//	break;
     	if (col.a > 0.0 && col.r <= ColorThreshold.r && col.g <= ColorThreshold.g && col.b <= ColorThreshold.b)
     	{
 			finalCol = vec4(col.rgb * ColorMultiplier * ColorModulator.rgb, clamp(1.0 + point.y / VerticalFade, 0.0, 1.0));
     		break;
     	}
     }
+    
+    float multiplier = getNearestLightningBoltColorModifier(point);
+	finalCol.rgb *= multiplier;
     
 #if FOG == 1  
     if (finalCol.a > 0.0)

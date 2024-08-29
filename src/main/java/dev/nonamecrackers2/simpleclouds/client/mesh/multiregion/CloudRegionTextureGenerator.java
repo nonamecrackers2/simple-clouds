@@ -2,6 +2,9 @@ package dev.nonamecrackers2.simpleclouds.client.mesh.multiregion;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nullable;
 
@@ -35,8 +38,9 @@ public class CloudRegionTextureGenerator
 	private final int textureSize;
 	private final float cloudRegionScale;
 	private final RegionType regionGenerator;
-	private @Nullable Thread thread;
-	private @Nullable Throwable threadException;
+//	private @Nullable Thread thread;
+//	private @Nullable Throwable threadException;
+	private @Nullable CompletableFuture<Optional<RuntimeException>> task; 
 	private int finishedBufferIndex; 
 	private int currentlyUploadingIndex;
 	private int generatingBufferIndex;
@@ -62,14 +66,14 @@ public class CloudRegionTextureGenerator
 		
 		for (int i = 0; i < this.swapBuffers.length; i++)
 			this.swapBuffers[i] = new CloudRegionTextureGenerator.BufferState(this.textureSize, this.lodConfig.getLods().length + 1);
-		
-		this.thread = new Thread(() ->
-		{
-			while (!this.isClosing)
-				this.asyncTick();
-		});
-		this.thread.setName("Cloud Region Texture Generator Thread");
-		this.thread.setUncaughtExceptionHandler((t, e) -> this.threadException = e);
+//		
+//		this.thread = new Thread(() ->
+//		{
+//			while (!this.isClosing)
+//				this.asyncTick();
+//		});
+//		this.thread.setName("Cloud Region Texture Generator Thread");
+//		this.thread.setUncaughtExceptionHandler((t, e) -> this.threadException = e);
 	}
 	
 	public CloudMeshGenerator.LevelOfDetailConfig getLodConfig()
@@ -91,20 +95,20 @@ public class CloudRegionTextureGenerator
 	{
 		return this.cloudRegionScale;
 	}
-	
-	public boolean isStarted()
-	{
-		return this.thread != null && this.thread.isAlive();
-	}
-	
-	public void start()
-	{
-		if (this.thread == null)
-			throw new IllegalStateException("This generator is no longer valid!");
-		if (this.thread.isAlive())
-			throw new IllegalStateException("This generator is already running!");
-		this.thread.start();
-	}
+//	
+//	public boolean isStarted()
+//	{
+//		return this.thread != null && this.thread.isAlive();
+//	}
+//	
+//	public void start()
+//	{
+//		if (this.thread == null)
+//			throw new IllegalStateException("This generator is no longer valid!");
+//		if (this.thread.isAlive())
+//			throw new IllegalStateException("This generator is already running!");
+//		this.thread.start();
+//	}
 	
 	public void update(float scrollX, float scrollZ, float offsetX, float offsetZ)
 	{
@@ -148,9 +152,52 @@ public class CloudRegionTextureGenerator
 		if (this.isClosing)
 			throw new IllegalStateException("This cloud region texture generator is no longer valid");
 		
-		if (this.threadException != null)
-			throw new RuntimeException("An uncaught exception occured while generating a cloud region texture buffer", this.threadException);
-
+		var generatingBuffer = this.swapBuffers[this.generatingBufferIndex];
+		if (this.task == null && generatingBuffer != null && !generatingBuffer.isUploading() && !generatingBuffer.needsUploading())
+		{
+			generatingBuffer.update(this.scrollX, this.scrollZ, this.offsetX, this.offsetZ);
+			if (doLogging)
+				LOGGER.debug("Generating texture buffer for {}", this.generatingBufferIndex);
+			generatingBuffer.isGenerating = true;
+			this.task = CompletableFuture.runAsync(() -> {
+				this.generateTexture(generatingBuffer);
+			}).handleAsync((v, t) -> {
+				if (t != null)
+					return Optional.of(new RuntimeException("Failed to generate region texture", t));
+				else
+					return Optional.empty();
+			});
+		}
+		
+		if (this.task != null && this.task.isDone())
+		{
+			try
+			{
+				this.task.get().ifPresent(throwable -> {
+					throw throwable;
+				});
+			}
+			catch (ExecutionException e)
+			{
+				LOGGER.error("An uncaught exception occurred: ", e);
+			}
+			catch (InterruptedException e)
+			{
+				LOGGER.error("Texture generation is not finished!", e);
+			}
+			generatingBuffer.isGenerating = false;
+			generatingBuffer.needsUploading = true;
+			if (doLogging)
+				LOGGER.debug("Finished generating for {}", this.generatingBufferIndex);
+			this.generatingBufferIndex++;
+			if (this.generatingBufferIndex >= this.swapBuffers.length)
+				this.generatingBufferIndex = 0;
+			this.task = null;
+		}
+		
+//		if (this.threadException != null)
+//			throw new RuntimeException("An uncaught exception occured while generating a cloud region texture buffer", this.threadException);
+//
 		var buffer = this.swapBuffers[this.currentlyUploadingIndex];
 		
 		if (buffer.needsUploading())
@@ -185,26 +232,6 @@ public class CloudRegionTextureGenerator
 			LOGGER.debug("--Frame--");
 	}
 	
-	private void asyncTick()
-	{
-		var buffer = this.swapBuffers[this.generatingBufferIndex];
-		if (buffer != null && !buffer.isUploading() && !buffer.needsUploading())
-		{
-			buffer.update(this.scrollX, this.scrollZ, this.offsetX, this.offsetZ);
-			if (doLogging)
-				LOGGER.debug("Generating texture buffer for {}", this.generatingBufferIndex);
-			buffer.isGenerating = true;
-			this.generateTexture(buffer);
-			buffer.isGenerating = false;
-			buffer.needsUploading = true;
-			if (doLogging)
-				LOGGER.debug("Finished generating for {}", this.generatingBufferIndex);
-			this.generatingBufferIndex++;
-			if (this.generatingBufferIndex >= this.swapBuffers.length)
-				this.generatingBufferIndex = 0;
-		}
-	}
-	
 	private void generateTexture(CloudRegionTextureGenerator.BufferState buffer)
 	{
 		for (int x = 0; x < buffer.textureSize; x++)
@@ -235,12 +262,18 @@ public class CloudRegionTextureGenerator
 		
 		this.isClosing = true;
 		
-		try{
-			this.thread.join(5000L);
-		} catch (InterruptedException e) {
-			LOGGER.error("Failed to close texture generator thread: ", e);
-		} finally {
-			this.thread = null;
+//		try{
+//			this.thread.join(5000L);
+//		} catch (InterruptedException e) {
+//			LOGGER.error("Failed to close texture generator thread: ", e);
+//		} finally {
+//			this.thread = null;
+//		}
+		
+		if (this.task != null)
+		{
+			this.task.cancel(false);
+			this.task = null;
 		}
 		
 		for (int i = 0; i < this.swapBuffers.length; i++)

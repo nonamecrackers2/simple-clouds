@@ -42,6 +42,12 @@ public class MixinLevelRenderer
 		SimpleCloudsRenderer.getInstance().renderAfterSky(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
+	@Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V"))
+	public void simpleclouds$injectCustomWeatherRendering_renderLevel(PoseStack stack, float partialTick, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
+	{
+		SimpleCloudsRenderer.getInstance().getWorldEffectsManager().renderWeather(partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+	}
+	
 	@Inject(method = "tick", at = @At("HEAD"))
 	public void simpleclouds$tickCloudRenderer_tick(CallbackInfo ci)
 	{

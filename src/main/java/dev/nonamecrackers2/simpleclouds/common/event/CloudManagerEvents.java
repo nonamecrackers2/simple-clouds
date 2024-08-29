@@ -4,6 +4,8 @@ import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
+import dev.nonamecrackers2.simpleclouds.common.world.ServerCloudManager;
+import dev.nonamecrackers2.simpleclouds.common.world.SyncType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.event.TickEvent;
@@ -19,12 +21,12 @@ public class CloudManagerEvents
 		Level level = event.level;
 		if (event.phase == TickEvent.Phase.START)
 		{
-			CloudManager manager = CloudManager.get(level);
+			CloudManager<?> manager = CloudManager.get(level);
 			manager.tick();
-			if (!level.isClientSide)
+			if (!level.isClientSide && manager instanceof ServerCloudManager serverManager)
 			{
-				CloudManager.SyncType syncType = manager.getAndResetSync();
-				if (syncType != CloudManager.SyncType.NONE)
+				SyncType syncType = serverManager.getAndResetSync();
+				if (syncType != SyncType.NONE)
 				{
 					switch (syncType)
 					{

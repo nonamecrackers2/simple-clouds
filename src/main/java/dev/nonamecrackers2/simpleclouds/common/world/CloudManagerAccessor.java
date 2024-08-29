@@ -2,7 +2,7 @@ package dev.nonamecrackers2.simpleclouds.common.world;
 
 import net.minecraft.world.level.Level;
 
-public interface CloudManagerAccessor
+public interface CloudManagerAccessor<T extends Level>
 {
-	CloudManager getCloudManager();
+	CloudManager<T> getCloudManager();
 }
