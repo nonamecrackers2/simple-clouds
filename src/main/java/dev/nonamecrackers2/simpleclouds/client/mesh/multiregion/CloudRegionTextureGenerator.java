@@ -64,9 +64,12 @@ public class CloudRegionTextureGenerator
 		this.cloudRegionScale = cloudRegionScale;
 		this.regionGenerator = regionGenerator;
 		
+		if (this.swapBuffers.length < 2)
+			throw new IllegalStateException("At least two swap buffers are needed!");
+		
 		for (int i = 0; i < this.swapBuffers.length; i++)
 			this.swapBuffers[i] = new CloudRegionTextureGenerator.BufferState(this.textureSize, this.lodConfig.getLods().length + 1);
-//		
+		
 //		this.thread = new Thread(() ->
 //		{
 //			while (!this.isClosing)
@@ -74,6 +77,17 @@ public class CloudRegionTextureGenerator
 //		});
 //		this.thread.setName("Cloud Region Texture Generator Thread");
 //		this.thread.setUncaughtExceptionHandler((t, e) -> this.threadException = e);
+	}
+	
+	public void doInitialGeneration()
+	{
+		CloudRegionTextureGenerator.BufferState buffer = this.swapBuffers[0];
+		this.generateTexture(buffer);
+		this.generatingBufferIndex = 1;
+		buffer.beginBufferUpload();
+		buffer.beginTextureCopy();
+		buffer.finalizeUpload();
+		this.currentlyUploadingIndex = 1;
 	}
 	
 	public CloudMeshGenerator.LevelOfDetailConfig getLodConfig()
@@ -272,7 +286,7 @@ public class CloudRegionTextureGenerator
 		
 		if (this.task != null)
 		{
-			this.task.cancel(false);
+			this.task.join();
 			this.task = null;
 		}
 		

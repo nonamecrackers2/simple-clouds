@@ -61,6 +61,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.info", "Welcome to the cloud previewer!\n\nAdd, remove, and customize noise layers seen in the left of the screen to create custom cloud types. Use the load button in the bottom right to load existing cloud types to edit them, and use the export button to export your cloud types as JSON files.");
 		this.add("gui.simpleclouds.requires_reload.info", "A config option was modified that requires resources to be reloaded. Would you like to reload resources?");
 		this.add("gui.simpleclouds.unknown_cloud_type.info", "Unknown cloud type '%s'. Please pick a valid cloud type.\n\nValid cloud types are as follows:\n\n%s");
+		this.add("gui.simpleclouds.reload_confirmation.server.info", "A config option was modified on the server that requires the cloud renderer to be reloaded. Please press 'Continue' to continue.");
 		this.add("command.simpleclouds.scroll.get", "The current cloud scroll position is [x: %s, y: %s, z: %s]");
 		this.add("command.simpleclouds.speed.get", "The current cloud speed is %s");
 		this.add("command.simpleclouds.seed.get", "The current cloud seed is %s");

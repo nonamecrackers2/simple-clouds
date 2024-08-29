@@ -2,9 +2,9 @@ package dev.nonamecrackers2.simpleclouds.client.packet;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.joml.Vector3f;
 
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
+import dev.nonamecrackers2.simpleclouds.client.config.SimpleCloudsClientConfigListeners;
 import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
@@ -13,8 +13,11 @@ import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacke
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.update.NotifyCloudModeUpdatedPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.update.NotifySingleModeCloudTypeUpdatedPacket;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 
 public class SimpleCloudsClientPacketHandler
 {
@@ -23,12 +26,12 @@ public class SimpleCloudsClientPacketHandler
 	public static void handleUpdateCloudManagerPacket(UpdateCloudManagerPacket packet)
 	{
 		Minecraft mc = Minecraft.getInstance();
-		CloudManager manager = CloudManager.get(mc.level);
+		CloudManager<ClientLevel> manager = CloudManager.get(mc.level);
 		handleUpdateCloudManagerPacket(packet, manager);
 		//LOGGER.debug("Updating client-side cloud manager");
 	}
 	
-	public static void handleUpdateCloudManagerPacket(UpdateCloudManagerPacket packet, CloudManager manager)
+	public static void handleUpdateCloudManagerPacket(UpdateCloudManagerPacket packet, CloudManager<ClientLevel> manager)
 	{
 		manager.setScrollX(packet.scrollX);
 		manager.setScrollY(packet.scrollY);
@@ -43,7 +46,7 @@ public class SimpleCloudsClientPacketHandler
 	public static void handleSendCloudManagerPacket(SendCloudManagerPacket packet)
 	{
 		Minecraft mc = Minecraft.getInstance();
-		CloudManager manager = CloudManager.get(mc.level);
+		CloudManager<ClientLevel> manager = CloudManager.get(mc.level);
 		handleUpdateCloudManagerPacket(packet, manager);
 		manager.setSeed(packet.seed);
 		manager.setRegionGenerator(packet.type);
@@ -79,5 +82,15 @@ public class SimpleCloudsClientPacketHandler
 	public static void handleSpawnLightningPacket(SpawnLightningPacket packet)
 	{
 		SimpleCloudsRenderer.getInstance().getWorldEffectsManager().spawnLightning(packet.pos, packet.onlySound, packet.seed, packet.maxDepth, packet.branchCount, packet.maxBranchLength, packet.maxWidth, packet.minimumPitch, packet.maximumPitch);
+	}
+	
+	public static void handleNotifyCloudModeUpdatedPacket(NotifyCloudModeUpdatedPacket packet)
+	{
+		SimpleCloudsClientConfigListeners.onCloudModeUpdated(packet.newMode);
+	}
+	
+	public static void handleNotifySingleModeCloudTypeUpdatedPacket(NotifySingleModeCloudTypeUpdatedPacket packet)
+	{
+		SimpleCloudsClientConfigListeners.onSingleModeCloudTypeUpdated(packet.newType);
 	}
 }

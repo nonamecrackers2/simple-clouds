@@ -5,6 +5,8 @@ import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacke
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.update.NotifyCloudModeUpdatedPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.update.NotifySingleModeCloudTypeUpdatedPacket;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import nonamecrackers2.crackerslib.common.packet.PacketUtil;
@@ -20,5 +22,8 @@ public class SimpleCloudsPacketHandlers
 		PacketUtil.registerToClient(MAIN, SendCloudManagerPacket.class);
 		PacketUtil.registerToClient(MAIN, SendCloudTypesPacket.class);
 		PacketUtil.registerToClient(MAIN, SpawnLightningPacket.class);
+		
+		PacketUtil.registerToClient(MAIN, NotifyCloudModeUpdatedPacket.class);
+		PacketUtil.registerToClient(MAIN, NotifySingleModeCloudTypeUpdatedPacket.class);
 	}
 }

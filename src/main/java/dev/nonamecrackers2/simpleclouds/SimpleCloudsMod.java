@@ -7,6 +7,7 @@ import dev.nonamecrackers2.simpleclouds.client.keybind.SimpleCloudsKeybinds;
 import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfigListeners;
 import dev.nonamecrackers2.simpleclouds.common.event.CloudManagerEvents;
 import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsDataEvents;
 import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsEvents;
@@ -66,6 +67,7 @@ public class SimpleCloudsMod
 		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
 		forgeBus.register(CloudManagerEvents.class);
 		forgeBus.register(SimpleCloudsEvents.class);
+		SimpleCloudsConfigListeners.registerListener();
 	}
 	
 	private void clientInit(FMLClientSetupEvent event)

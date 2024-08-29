@@ -91,6 +91,7 @@
   "gui.simpleclouds.noise_settings.param.scale_z.name": "Scale Z",
   "gui.simpleclouds.noise_settings.param.value_offset.name": "Value Offset",
   "gui.simpleclouds.noise_settings.param.value_scale.name": "Value Scale",
+  "gui.simpleclouds.reload_confirmation.server.info": "A config option was modified on the server that requires the cloud renderer to be reloaded. Please press 'Continue' to continue.",
   "gui.simpleclouds.requires_reload.info": "A config option was modified that requires resources to be reloaded. Would you like to reload resources?",
   "gui.simpleclouds.unknown_cloud_type.info": "Unknown cloud type '%s'. Please pick a valid cloud type.\n\nValid cloud types are as follows:\n\n%s",
   "simpleclouds.config.preset.fast_culled_mesh": "Fast Culled Mesh",
