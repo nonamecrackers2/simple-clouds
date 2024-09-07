@@ -74,7 +74,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 	
 	public Pair<CloudType, Float> getCloudTypeAtPosition(float x, float z)
 	{
-		if (SimpleCloudsConfig.SERVER.cloudMode.get() != CloudMode.SINGLE)
+		if (this.getCloudMode() != CloudMode.SINGLE)
 		{
 			CloudType[] types = this.getIndexedCloudTypes();
 			float posX = this.scrollX + x / (float)SimpleCloudsConstants.CLOUD_SCALE;
@@ -82,10 +82,6 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 			var result = this.getRegionGenerator().getCloudTypeIndexAt(posX, posZ, SimpleCloudsConstants.REGION_SCALE, types.length);
 			if (result.index() < 0 || result.index() >= types.length)
 				throw new IndexOutOfBoundsException("Region type generator sent an invalid index: " + result.index());
-//			float len = Vector2f.length(worldX, worldZ);
-//			float fadeStart = 0.0F;
-//			float fadeEnd = 100.0F;
-//			float fadeMod = 1.0F - Math.min(Math.max(len - fadeStart, 0.0F) / (fadeEnd - fadeStart), 1.0F);
 			return Pair.of(types[result.index()], result.fade());
 		}
 		else
