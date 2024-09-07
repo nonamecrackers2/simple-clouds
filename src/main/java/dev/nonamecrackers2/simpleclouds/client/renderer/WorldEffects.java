@@ -143,20 +143,6 @@ public class WorldEffects
 	
 	public void modifyLightMapTexture(float partialTick, int pixelX, int pixelY, Vector3f color)
 	{
-//		if (pixelX < 15)
-//		{
-//			CloudManager manager = CloudManager.get(this.mc.level);
-//			Camera camera = this.mc.gameRenderer.getMainCamera();
-//			float x = (float)camera.getPosition().x;
-//			float z = (float)camera.getPosition().z;
-//			float rainLevel = manager.getRainLevel(x, z);
-//			float factor = (float)pixelX / 15.0F;
-//			Vector3f mul = new Vector3f(1.0F);
-//			mul.lerp(new Vector3f(1.0F, 0.8F, 0.7F), factor * rainLevel);
-//			color.mul(mul);
-//		}
-//			color.mul(new Vector3f().lerp(new Vector3f(0.3F, 0.4F, 0.5F), factor));
-		//color.mul(0.2F);
 	}
 	
 	public float getStorminessAtCamera()
@@ -208,30 +194,4 @@ public class WorldEffects
 	{
 		return this.lightningBolts;
 	}
-	
-	//While this works, the water color only changes when the chunk is rebuilt. TODO: Will need some sort of shader to modify the water color
-//	@Deprecated
-//	public int modifyWaterColor(int color)
-//	{
-//		return FastColor.ARGB32.lerp(this.getDarkenFactor(0.0F), RAINY_WATER_COLOR, color);
-//	}
-	
-//	@SubscribeEvent
-//	public static void modifyFogColor(ViewportEvent.ComputeFogColor event)
-//	{
-//		float factor = SimpleCloudsRenderer.getInstance().getWorldEffectsManager().getDarkenFactor((float)event.getPartialTick(), 1.5F);
-//		event.setRed(event.getRed() * factor);
-//		event.setGreen(event.getGreen() * factor);
-//		event.setBlue(event.getBlue() * factor);
-//	}
-	
-//	@SubscribeEvent
-//	public static void modifyFog(ViewportEvent.RenderFog event)
-//	{
-//		float factor = SimpleCloudsRenderer.getInstance().getWorldEffectsManager().getDarkenFactor((float)event.getPartialTick(), 1.4F);
-//		event.setNearPlaneDistance(event.getNearPlaneDistance() * factor);
-//		event.setCanceled(true);
-//		if (event.getMode() == FogMode.FOG_TERRAIN)
-//			FogRenderer.setupNoFog();
-//	}
 }

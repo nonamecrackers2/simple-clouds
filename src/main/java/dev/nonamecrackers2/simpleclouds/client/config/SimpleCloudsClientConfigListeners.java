@@ -60,7 +60,7 @@ public class SimpleCloudsClientConfigListeners
 		}
 	}
 	
-	public static void onSingleModeCloudTypeUpdated(String type) //TODO: Test this
+	public static void onSingleModeCloudTypeUpdated(String type)
 	{
 		Minecraft.getInstance().execute(() -> 
 		{

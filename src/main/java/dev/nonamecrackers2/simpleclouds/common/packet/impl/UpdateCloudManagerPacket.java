@@ -17,7 +17,7 @@ public class UpdateCloudManagerPacket extends Packet
 	public float scrollZ;
 	public int cloudHeight;
 	
-	public UpdateCloudManagerPacket(CloudManager manager)
+	public UpdateCloudManagerPacket(CloudManager<?> manager)
 	{
 		super(true);
 		this.direction = manager.getDirection();
@@ -25,10 +25,6 @@ public class UpdateCloudManagerPacket extends Packet
 		this.scrollX = manager.getScrollX();
 		this.scrollY = manager.getScrollY();
 		this.scrollZ = manager.getScrollZ();
-//		this.cloudMode = manager.getCloudMode();
-//		this.singleModeFadeStart = manager.getSingleModeFadeStart();
-//		this.singleModeFadeEnd = manager.getSingleModeFadeEnd();
-//		this.singleModeCloudType = manager.getSingleModeCloudType();
 		this.cloudHeight = manager.getCloudHeight();
 	}
 	
@@ -45,10 +41,6 @@ public class UpdateCloudManagerPacket extends Packet
 		this.scrollX = buffer.readFloat();
 		this.scrollY = buffer.readFloat();
 		this.scrollZ = buffer.readFloat();
-//		this.cloudMode = buffer.readEnum(CloudMode.class);
-//		this.singleModeFadeStart = Mth.clamp(buffer.readFloat(), 0.0F, 1.0F);
-//		this.singleModeFadeEnd = Mth.clamp(buffer.readFloat(), 0.0F, 1.0F);
-//		this.singleModeCloudType = buffer.readResourceLocation();
 		this.cloudHeight = buffer.readVarInt();
 	}
 	
@@ -60,10 +52,6 @@ public class UpdateCloudManagerPacket extends Packet
 		buffer.writeFloat(this.scrollX);
 		buffer.writeFloat(this.scrollY);
 		buffer.writeFloat(this.scrollZ);
-//		buffer.writeEnum(this.cloudMode);
-//		buffer.writeFloat(this.singleModeFadeStart);
-//		buffer.writeFloat(this.singleModeFadeEnd);
-//		buffer.writeResourceLocation(this.singleModeCloudType);
 		buffer.writeVarInt(this.cloudHeight);
 	}
 	

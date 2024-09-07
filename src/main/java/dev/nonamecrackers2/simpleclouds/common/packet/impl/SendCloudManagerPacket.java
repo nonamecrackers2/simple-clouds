@@ -12,7 +12,7 @@ public class SendCloudManagerPacket extends UpdateCloudManagerPacket
 	public RegionType type;
 	public long seed;
 	
-	public SendCloudManagerPacket(CloudManager manager)
+	public SendCloudManagerPacket(CloudManager<?> manager)
 	{
 		super(manager);
 		this.type = manager.getRegionGenerator();

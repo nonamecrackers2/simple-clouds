@@ -9,7 +9,6 @@ import net.minecraftforge.registries.RegistryObject;
 
 public class SimpleCloudsSounds
 {
-	//TODO: Ensure these still work with the mod's client-side only support
 	private static final DeferredRegister<SoundEvent> SOUND_EVENTS = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, SimpleCloudsMod.MODID);
 	
 	public static final RegistryObject<SoundEvent> DISTANT_THUNDER = createSoundEvent("distant_thunder");

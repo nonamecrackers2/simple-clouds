@@ -143,7 +143,6 @@ public class SimpleCloudsConfig
 	
 	public static class ServerConfig extends ConfigHelper
 	{
-		//TODO: Sync these to the server using CloudManager instead of forges thing since its kind of stinky
 		public final ForgeConfigSpec.ConfigValue<CloudMode> cloudMode;
 		public final ForgeConfigSpec.ConfigValue<String> singleModeCloudType;
 		

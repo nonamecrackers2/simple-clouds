@@ -13,7 +13,6 @@ import net.minecraft.world.level.BlockAndTintGetter;
 @Deprecated
 public class MixinBiomeColors
 {
-	@SuppressWarnings("deprecation")
 	@Inject(method = "getAverageWaterColor", at = @At("RETURN"))
 	private static void simpleclouds$modifyWaterColor_getAverageWaterColor(BlockAndTintGetter level, BlockPos pos, CallbackInfoReturnable<Integer> ci)
 	{
