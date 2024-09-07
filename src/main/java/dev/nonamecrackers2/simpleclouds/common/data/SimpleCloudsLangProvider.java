@@ -60,7 +60,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.popup.exported.cloud_type", "Your cloud type has been exported to %s");
 		this.add("gui.simpleclouds.cloud_previewer.info", "Welcome to the cloud previewer!\n\nAdd, remove, and customize noise layers seen in the left of the screen to create custom cloud types. Use the load button in the bottom right to load existing cloud types to edit them, and use the export button to export your cloud types as JSON files.");
 		this.add("gui.simpleclouds.requires_reload.info", "A config option was modified that requires the cloud renderer to be reloaded. Would you like to reload the renderer to apply the changes?");
-		this.add("gui.simpleclouds.unknown_cloud_type.info", "Unknown cloud type '%s'. Please pick a valid cloud type.\n\nValid cloud types are as follows:\n\n%s");
+		this.add("gui.simpleclouds.unknown_or_invalid_client_side_cloud_type.info", "Unknown or invalid cloud type '%s'. Please pick a valid cloud type. \n\nValid cloud types are as follows:\n\n%s");
 		this.add("gui.simpleclouds.reload_confirmation.server.info", "A config option was modified on the server that requires the cloud renderer to be reloaded. Please press 'Continue' to continue.");
 		this.add("command.simpleclouds.scroll.get", "The current cloud scroll position is [x: %s, y: %s, z: %s]");
 		this.add("command.simpleclouds.speed.get", "The current cloud speed is %s");
@@ -71,6 +71,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("command.simpleclouds.height.get", "Cloud height is set to %s");
 		this.add("command.simpleclouds.height.set", "Set cloud height to %s");
 		this.add("commands.simpleclouds.notClientSideOnly", "Client cloud commands can only be used when connected to servers that do not have Simple Clouds installed. If you're connected on singleplayer, or you are an operator on a dedicated server with Simple Clouds installed, please use '/simpleclouds clouds'");
+		this.add("commands.simpleclouds.client.configReferal", "This option is overriden by the CLIENT config. Please refer to the CLIENT config to change this option.");
 		this.add("command.simpleclouds.weather.override", "Simple Clouds is overriding vanilla weather, and the /weather command is disabled. To use vanilla weather, please do either of the following:\n1. Set the cloud mode in the SERVER config to AMBIENT.\n2. Set the cloud mode in the SERVER config to SINGLE, and set the single mode cloud type to a cloud type that has no weather associated with it (e.x. simpleclouds:itty_bitty)");
 		this.add("gui.simpleclouds.debug.title", "Simple Clouds Debug");
 		this.add("simpleclouds.subtitle.distant_thunder", "Distant Thunder Roars");

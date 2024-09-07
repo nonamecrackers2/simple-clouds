@@ -16,7 +16,7 @@ import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 
 public class CloudCommands
 {
-	public static void register(CommandDispatcher<CommandSourceStack> dispatcher, String baseName, Predicate<CommandSourceStack> requirement, CloudCommandSource source)
+	public static void register(CommandDispatcher<CommandSourceStack> dispatcher, String baseName, Predicate<CommandSourceStack> requirement, CloudCommandSource<?, ?> source)
 	{
 		LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(SimpleCloudsMod.MODID).requires(requirement);
 		

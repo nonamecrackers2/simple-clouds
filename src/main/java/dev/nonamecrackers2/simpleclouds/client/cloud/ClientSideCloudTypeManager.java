@@ -2,11 +2,16 @@ package dev.nonamecrackers2.simpleclouds.client.cloud;
 
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableMap;
 
+import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
+import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import net.minecraft.resources.ResourceLocation;
 
 public class ClientSideCloudTypeManager implements CloudTypeSource
@@ -63,5 +68,10 @@ public class ClientSideCloudTypeManager implements CloudTypeSource
 	public static ClientSideCloudTypeManager getInstance()
 	{
 		return INSTANCE;
+	}
+	
+	public static boolean isValidClientSideSingleModeCloudType(@Nullable CloudType type)
+	{
+		return type != null && type.weatherType() == WeatherType.NONE;
 	}
 }

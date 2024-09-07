@@ -183,11 +183,6 @@ public class SimpleCloudsClientEvents
 			text.add("Server-side: " + (flag ? ChatFormatting.GREEN : ChatFormatting.RED) + flag);
 			CloudMode mode = renderer.getCloudMode();
 			text.add("Cloud mode: " + mode);
-			RegionType generator = renderer.getRegionGenerator();
-			if (generator != null)
-				text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(generator));
-			else
-				text.add("Region generator: NONE");
 			if (renderer.getMeshGenerator() instanceof SingleRegionCloudMeshGenerator meshGenerator)
 			{
 				text.add("Fade start: " + meshGenerator.getFadeStart() + "; Fade end: " + meshGenerator.getFadeEnd());
@@ -196,6 +191,11 @@ public class SimpleCloudsClientEvents
 			}
 			else
 			{
+				RegionType generator = renderer.getRegionGenerator();
+				if (generator != null)
+					text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(generator));
+				else
+					text.add("Region generator: NONE");
 				text.add("Cloud types: " + ClientSideCloudTypeManager.getInstance().getCloudTypes().size());
 			}
 			if (mc.level != null)

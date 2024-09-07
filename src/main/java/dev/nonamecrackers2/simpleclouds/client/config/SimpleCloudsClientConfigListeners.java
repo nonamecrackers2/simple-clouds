@@ -64,20 +64,22 @@ public class SimpleCloudsClientConfigListeners
 	{
 		Minecraft.getInstance().execute(() -> 
 		{
-			if (!ClientCloudManager.isAvailableServerSide())
+			if (ClientCloudManager.isAvailableServerSide())
+				return;
+			
+			ResourceLocation loc = ResourceLocation.tryParse(type);
+			var types = ClientSideCloudTypeManager.getInstance().getCloudTypes();
+			if (loc != null && types.containsKey(loc) && ClientSideCloudTypeManager.isValidClientSideSingleModeCloudType(types.get(loc)))
 			{
-				ResourceLocation loc = ResourceLocation.tryParse(type);
-				var types = ClientSideCloudTypeManager.getInstance().getCloudTypes();
-				if (loc == null || !types.containsKey(loc))
-				{
-					Component valid = Component.literal(Joiner.on(", ").join(types.keySet().stream().map(ResourceLocation::toString).iterator())).withStyle(ChatFormatting.YELLOW);
-					Popup.createInfoPopup(null, 300, Component.translatable("gui.simpleclouds.unknown_cloud_type.info", loc == null ? type : loc.toString(), valid));
-				}
-				else
-				{
-					if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof SingleRegionCloudMeshGenerator generator)
-						generator.setCloudType(types.get(loc));
-				}
+				if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof SingleRegionCloudMeshGenerator generator)
+					generator.setCloudType(types.get(loc));
+			}
+			else
+			{
+				Component valid = Component.literal(Joiner.on(", ").join(types.values().stream().filter(t -> {
+					return ClientSideCloudTypeManager.isValidClientSideSingleModeCloudType(t);
+				}).map(t -> t.id().toString()).iterator())).withStyle(ChatFormatting.YELLOW);
+				Popup.createInfoPopup(null, 300, Component.translatable("gui.simpleclouds.unknown_or_invalid_client_side_cloud_type.info", loc == null ? type : loc.toString(), valid));
 			}
 		});
 	}
@@ -86,12 +88,11 @@ public class SimpleCloudsClientConfigListeners
 	{
 		Minecraft.getInstance().execute(() -> 
 		{
-			if (!ClientCloudManager.isAvailableServerSide())
-			{
-				Popup.createYesNoPopup(null, () -> {
-					SimpleCloudsRenderer.getInstance().requestReload();
-				}, 300, Component.translatable("gui.simpleclouds.requires_reload.info"));
-			}
+			if (ClientCloudManager.isAvailableServerSide())
+				return;
+			Popup.createYesNoPopup(null, () -> {
+				SimpleCloudsRenderer.getInstance().requestReload();
+			}, 300, Component.translatable("gui.simpleclouds.requires_reload.info"));
 		});
 	}
 }

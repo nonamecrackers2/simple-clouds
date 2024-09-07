@@ -45,6 +45,7 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.lightning.LightningBolt;
 import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.CloudsRenderPipeline;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
+import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -273,11 +274,12 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			//Find the desired single mode cloud type, either from the client-side only context or
 			//from the synced cloud types from the server
-			ClientSideCloudTypeManager.getInstance().getCloudTypeFromRawId(this.determineSingleModeCloudTypeRawId()).ifPresentOrElse(type -> {
-				singleRegionGenerator.setCloudType(type);
-			}, () -> {
-				singleRegionGenerator.setCloudType(SimpleCloudsConstants.FALLBACK); //Fallback in case we can't find the desired cloud type
-			});
+			CloudType type = ClientSideCloudTypeManager.getInstance().getCloudTypeFromRawId(this.determineSingleModeCloudTypeRawId()).orElse(null);
+			if (!ClientCloudManager.isAvailableServerSide() && !ClientSideCloudTypeManager.isValidClientSideSingleModeCloudType(type))
+				type = SimpleCloudsConstants.FALLBACK;
+			if (type == null)
+				type = SimpleCloudsConstants.FALLBACK;
+			singleRegionGenerator.setCloudType(type);
 		}
 		
 		this.setupMeshGenerator(0.0F); //Setup the mesh generator

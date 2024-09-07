@@ -21,6 +21,7 @@ import net.minecraft.world.entity.player.Player;
 public class ClientCloudCommandHelper
 {
 	private static final SimpleCommandExceptionType ERROR_NOT_CLIENT_ONLY = new SimpleCommandExceptionType(Component.translatable("commands.simpleclouds.notClientSideOnly"));
+	private static final SimpleCommandExceptionType CONFIG_REFERAL = new SimpleCommandExceptionType(Component.translatable("commands.simpleclouds.client.configReferal"));
 	
 	public static final CloudCommandSource<ClientLevel, ClientCloudManager> SOURCE = new CloudCommandSource<>()
 	{
@@ -41,6 +42,18 @@ public class ClientCloudCommandHelper
 		
 		@Override
 		public void onValueUpdated(ClientCloudManager cloudManager, SyncType sync) {}
+
+		@Override
+		public int setCloudHeight(CommandContext<CommandSourceStack> context) throws CommandSyntaxException 
+		{
+			throw CONFIG_REFERAL.create();
+		}
+		
+		@Override
+		public int setSpeed(CommandContext<CommandSourceStack> context) throws CommandSyntaxException 
+		{
+			throw CONFIG_REFERAL.create();
+		}
 	};
 	
 	public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
