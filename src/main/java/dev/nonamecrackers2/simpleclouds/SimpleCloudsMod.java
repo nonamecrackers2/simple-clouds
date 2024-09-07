@@ -2,6 +2,7 @@ package dev.nonamecrackers2.simpleclouds;
 
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 
+import dev.nonamecrackers2.simpleclouds.client.config.SimpleCloudsClientConfigListeners;
 import dev.nonamecrackers2.simpleclouds.client.event.SimpleCloudsClientEvents;
 import dev.nonamecrackers2.simpleclouds.client.keybind.SimpleCloudsKeybinds;
 import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
@@ -52,6 +53,7 @@ public class SimpleCloudsMod
 			modBus.addListener(SimpleCloudsClientEvents::registerOverlays);
 			modBus.addListener(SimpleCloudsClientEvents::registerClientPresets);
 			forgeBus.register(WorldEffects.class);
+			SimpleCloudsClientConfigListeners.registerListener();
 		});
 		modBus.addListener(SimpleCloudsDataEvents::gatherData);
 		ModLoadingContext context = ModLoadingContext.get();

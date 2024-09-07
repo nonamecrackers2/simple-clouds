@@ -53,7 +53,7 @@ public class SimpleCloudsClientPacketHandler
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
 		if (SimpleCloudsConfig.SERVER_SPEC.isLoaded())
 		{
-			if (SimpleCloudsConfig.SERVER.cloudMode.get() != renderer.getCurrentCloudMode() || packet.type != renderer.getCurrentRegionGenerator())
+			if (SimpleCloudsConfig.SERVER.cloudMode.get() != renderer.getCloudMode() || packet.type != renderer.getRegionGenerator())
 			{
 				LOGGER.debug("Looks like the server cloud mode or region generator does not match with the client. Requesting a reload...");
 				renderer.requestReload();
@@ -86,11 +86,11 @@ public class SimpleCloudsClientPacketHandler
 	
 	public static void handleNotifyCloudModeUpdatedPacket(NotifyCloudModeUpdatedPacket packet)
 	{
-		SimpleCloudsClientConfigListeners.onCloudModeUpdated(packet.newMode);
+		SimpleCloudsClientConfigListeners.onCloudModeUpdatedFromServer(packet.newMode);
 	}
 	
 	public static void handleNotifySingleModeCloudTypeUpdatedPacket(NotifySingleModeCloudTypeUpdatedPacket packet)
 	{
-		SimpleCloudsClientConfigListeners.onSingleModeCloudTypeUpdated(packet.newType);
+		SimpleCloudsClientConfigListeners.onSingleModeCloudTypeUpdatedFromServer(packet.newType);
 	}
 }

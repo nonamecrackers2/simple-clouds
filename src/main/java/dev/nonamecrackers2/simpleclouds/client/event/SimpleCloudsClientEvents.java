@@ -7,8 +7,6 @@ import java.util.List;
 import org.joml.Math;
 import org.joml.Vector3f;
 
-import com.google.common.base.Joiner;
-
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.command.ClientCloudCommandHelper;
@@ -33,7 +31,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.FogRenderer.FogMode;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.level.material.FogType;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
@@ -49,12 +46,10 @@ import nonamecrackers2.crackerslib.client.event.impl.AddConfigEntryToMenuEvent;
 import nonamecrackers2.crackerslib.client.event.impl.ConfigMenuButtonEvent;
 import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;
 import nonamecrackers2.crackerslib.client.gui.ConfigHomeScreen;
-import nonamecrackers2.crackerslib.client.gui.Popup;
 import nonamecrackers2.crackerslib.client.gui.title.TextTitle;
 import nonamecrackers2.crackerslib.common.command.ConfigCommandBuilder;
 import nonamecrackers2.crackerslib.common.config.preset.ConfigPreset;
 import nonamecrackers2.crackerslib.common.config.preset.RegisterConfigPresetsEvent;
-import nonamecrackers2.crackerslib.common.event.impl.OnConfigOptionSaved;
 
 public class SimpleCloudsClientEvents
 {
@@ -100,39 +95,39 @@ public class SimpleCloudsClientEvents
 				.setDescription(Component.translatable("simpleclouds.config.preset.fast_culled_mesh.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 4).build());
 	}
-	
-	@SubscribeEvent
-	public static void onSingleModeCloudTypeChanged(OnConfigOptionSaved<String> event)
-	{
-		if (event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.singleModeCloudType))
-		{
-			String type = event.getNewValue();
-			ResourceLocation loc = ResourceLocation.tryParse(type);
-			var types = ClientSideCloudTypeManager.getInstance().getCloudTypes();
-			if (loc == null || !types.containsKey(loc))
-			{
-				Component valid = Component.literal(Joiner.on(", ").join(types.keySet().stream().map(ResourceLocation::toString).iterator())).withStyle(ChatFormatting.YELLOW);
-				Popup.createInfoPopup(null, 300, Component.translatable("gui.simpleclouds.unknown_cloud_type.info", loc == null ? type : loc.toString(), valid));
-				event.overrideValue(SimpleCloudsConfig.CLIENT.singleModeCloudType.getDefault());
-			}
-			else
-			{
-				if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof SingleRegionCloudMeshGenerator generator)
-					generator.setCloudType(types.get(loc));
-			}
-		}
-	}
-	
-	@SubscribeEvent
-	public static void onConfigChanged(OnConfigOptionSaved<?> event)
-	{
-		if (event.didValueChange() && (event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudMode) || event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudStyle)))
-		{
-			Popup.createYesNoPopup(null, () -> {
-				Minecraft.getInstance().reloadResourcePacks();
-			}, 300, Component.translatable("gui.simpleclouds.requires_reload.info"));
-		}
-	}
+//	
+//	@SubscribeEvent
+//	public static void onSingleModeCloudTypeChanged(OnConfigOptionSaved<String> event)
+//	{
+//		if (event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.singleModeCloudType))
+//		{
+//			String type = event.getNewValue();
+//			ResourceLocation loc = ResourceLocation.tryParse(type);
+//			var types = ClientSideCloudTypeManager.getInstance().getCloudTypes();
+//			if (loc == null || !types.containsKey(loc))
+//			{
+//				Component valid = Component.literal(Joiner.on(", ").join(types.keySet().stream().map(ResourceLocation::toString).iterator())).withStyle(ChatFormatting.YELLOW);
+//				Popup.createInfoPopup(null, 300, Component.translatable("gui.simpleclouds.unknown_cloud_type.info", loc == null ? type : loc.toString(), valid));
+//				event.overrideValue(SimpleCloudsConfig.CLIENT.singleModeCloudType.getDefault());
+//			}
+//			else
+//			{
+//				if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof SingleRegionCloudMeshGenerator generator)
+//					generator.setCloudType(types.get(loc));
+//			}
+//		}
+//	}
+//	
+//	@SubscribeEvent
+//	public static void onConfigChanged(OnConfigOptionSaved<?> event)
+//	{
+//		if (event.didValueChange() && (event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudMode) || event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudStyle)))
+//		{
+//			Popup.createYesNoPopup(null, () -> {
+//				Minecraft.getInstance().reloadResourcePacks();
+//			}, 300, Component.translatable("gui.simpleclouds.requires_reload.info"));
+//		}
+//	}
 	
 	@SubscribeEvent
 	public static void registerClientCommands(RegisterClientCommandsEvent event)
@@ -165,10 +160,7 @@ public class SimpleCloudsClientEvents
 	@SubscribeEvent
 	public static void modifyFog(ViewportEvent.RenderFog event)
 	{
-//		float factor = SimpleCloudsRenderer.getInstance().getWorldEffectsManager().getDarkenFactor((float)event.getPartialTick(), 1.4F);
-//		event.setNearPlaneDistance(event.getNearPlaneDistance() * factor);
-//		event.setCanceled(true);
-		if (event.getMode() == FogMode.FOG_TERRAIN && Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera() == FogType.NONE)
+		if (!SimpleCloudsConfig.CLIENT.renderTerrainFog.get() && event.getMode() == FogMode.FOG_TERRAIN && Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera() == FogType.NONE)
 			FogRenderer.setupNoFog();
 	}
 	
@@ -189,9 +181,9 @@ public class SimpleCloudsClientEvents
 			text.add("Frustum culling: " + (SimpleCloudsConfig.CLIENT.frustumCulling.get() ? "ON" : "OFF"));
 			boolean flag = ClientCloudManager.isAvailableServerSide();
 			text.add("Server-side: " + (flag ? ChatFormatting.GREEN : ChatFormatting.RED) + flag);
-			CloudMode mode = renderer.getCurrentCloudMode();
+			CloudMode mode = renderer.getCloudMode();
 			text.add("Cloud mode: " + mode);
-			RegionType generator = renderer.getCurrentRegionGenerator();
+			RegionType generator = renderer.getRegionGenerator();
 			if (generator != null)
 				text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(generator));
 			else
@@ -218,7 +210,8 @@ public class SimpleCloudsClientEvents
 					text.add(effects.getCloudTypeAtCamera().id().toString());
 				else
 					text.add("UNKNOWN");
-				text.add("Storminess: " + round(effects.getStorminessAtCamera()));
+				String vanillaWeatherOverrideAppend = manager.shouldUseVanillaWeather() ? " (Vanilla Weather Enabled)" : "";
+				text.add("Storminess: " + round(effects.getStorminessAtCamera()) + vanillaWeatherOverrideAppend);
 			}
 		}
 	}

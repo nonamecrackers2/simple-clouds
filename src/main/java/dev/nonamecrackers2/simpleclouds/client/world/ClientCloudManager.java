@@ -1,9 +1,8 @@
 package dev.nonamecrackers2.simpleclouds.client.world;
 
-import org.joml.Vector2i;
-
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
@@ -12,7 +11,6 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 
 public class ClientCloudManager extends CloudManager<ClientLevel>
 {
@@ -20,7 +18,32 @@ public class ClientCloudManager extends CloudManager<ClientLevel>
 	
 	public ClientCloudManager(ClientLevel level)
 	{
-		super(level);
+		super(level, ClientSideCloudTypeManager.getInstance());
+	}
+	
+	@Override
+	public CloudMode getCloudMode()
+	{
+		if (this.receivedSync && SimpleCloudsConfig.SERVER_SPEC.isLoaded())
+			return SimpleCloudsConfig.SERVER.cloudMode.get();
+		else
+			return SimpleCloudsConfig.CLIENT.cloudMode.get();
+	}
+	
+	@Override
+	public String getSingleModeCloudTypeRawId()
+	{
+		if (this.receivedSync && SimpleCloudsConfig.SERVER_SPEC.isLoaded())
+			return SimpleCloudsConfig.SERVER.singleModeCloudType.get();
+		else
+			return SimpleCloudsConfig.CLIENT.singleModeCloudType.get();
+	}
+	
+	@Override
+	protected void resetVanillaWeather()
+	{
+		this.level.setRainLevel(0.0F);
+		this.level.setThunderLevel(0.0F);
 	}
 	
 	@Override
@@ -44,10 +67,11 @@ public class ClientCloudManager extends CloudManager<ClientLevel>
 			int x = this.random.nextInt(SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER) - SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER / 2 + camX;
 			int z = this.random.nextInt(SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER) - SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER / 2 + camZ;
 			var info = this.getCloudTypeAtPosition((float)x + 0.5F, (float)z + 0.5F);
+			float fade = info.getRight();
 			CloudType type = info.getLeft();
-			if (!isValidLightning(type, info.getRight(), this.random))
+			if (!isValidLightning(type, fade, this.random))
 				continue;
-			this.spawnLightning(type, info.getRight(), x, z, this.random.nextInt(3) == 0);
+			this.spawnLightning(type, fade, x, z, this.random.nextInt(3) == 0);
 			break;
 		}
 	}
@@ -64,15 +88,9 @@ public class ClientCloudManager extends CloudManager<ClientLevel>
 	}
 	
 	@Override
-	public CloudType[] getIndexedCloudTypes()
+	protected boolean determineUseVanillaWeather()
 	{
-		return ClientSideCloudTypeManager.getInstance().getIndexed();
-	}
-	
-	@Override
-	public CloudType getCloudTypeForId(ResourceLocation id)
-	{
-		return ClientSideCloudTypeManager.getInstance().getCloudTypes().get(id);
+		return !this.receivedSync || super.determineUseVanillaWeather();
 	}
 	
 	@Override

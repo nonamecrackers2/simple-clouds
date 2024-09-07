@@ -8,8 +8,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
-import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudData;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManagerAccessor;
 import dev.nonamecrackers2.simpleclouds.common.world.ServerCloudManager;
@@ -38,7 +36,7 @@ public abstract class MixinServerLevel implements CloudManagerAccessor<ServerLev
 	@Inject(method = "advanceWeatherCycle", at = @At("HEAD"), cancellable = true)
 	public void simpleclouds$disableWeatherCycle_advanceWeatherCycle(CallbackInfo ci)
 	{
-		if (SimpleCloudsConfig.SERVER.cloudMode.get() != CloudMode.SINGLE)
+		if (!this.cloudManager.shouldUseVanillaWeather())
 		{
 			this.resetWeatherCycle();
 			ci.cancel();

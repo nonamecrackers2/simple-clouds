@@ -51,17 +51,24 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		this.style = style;
 	}
 
+	/**
+	 * Sets the fade start and end distances. One (1.0) unit is equivalent to one
+	 * cube in the cloud mesh.
+	 * 
+	 * @param fadeStart
+	 * @param fadeEnd
+	 */
 	public MultiRegionCloudMeshGenerator setFadeNearOrigin(float fadeStart, float fadeEnd)
 	{
 		if (fadeStart > fadeEnd)
 		{
-			this.fadeStart = fadeEnd * (float)this.getCloudAreaMaxRadius();
-			this.fadeEnd = fadeStart * (float)this.getCloudAreaMaxRadius();
+			this.fadeStart = fadeEnd;
+			this.fadeEnd = fadeStart;
 		}
 		else
 		{
-			this.fadeStart = fadeStart * (float)this.getCloudAreaMaxRadius();
-			this.fadeEnd = fadeEnd * (float)this.getCloudAreaMaxRadius();
+			this.fadeStart = fadeStart;
+			this.fadeEnd = fadeEnd;
 		}
 		this.fadeNearOrigin = true;
 		return this;

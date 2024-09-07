@@ -15,6 +15,8 @@ public class MixinLevel
 	@Inject(method = "isRainingAt", at = @At("HEAD"), cancellable = true)
 	public void simpleclouds$localizedWeather_isRainingAt(BlockPos pos, CallbackInfoReturnable<Boolean> ci)
 	{
-		ci.setReturnValue(CloudManager.get((Level)(Object)this).isRainingAt(pos));
+		CloudManager<?> manager = CloudManager.get((Level)(Object)this);
+		if (!manager.shouldUseVanillaWeather())
+			ci.setReturnValue(manager.isRainingAt(pos));
 	}
 }

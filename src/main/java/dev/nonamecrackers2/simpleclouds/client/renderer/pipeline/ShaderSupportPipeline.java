@@ -13,7 +13,6 @@ import dev.nonamecrackers2.simpleclouds.client.framebuffer.FrameBufferUtils;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.phys.Vec3;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
 public class ShaderSupportPipeline implements CloudsRenderPipeline

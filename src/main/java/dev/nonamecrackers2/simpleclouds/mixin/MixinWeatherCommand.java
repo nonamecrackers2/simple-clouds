@@ -3,22 +3,50 @@ package dev.nonamecrackers2.simpleclouds.mixin;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
-import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
+import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.commands.WeatherCommand;
 
 @Mixin(WeatherCommand.class)
 public class MixinWeatherCommand
 {
-	@Inject(method = "register", at = @At("HEAD"), cancellable = true)
-	private static void simpleclouds$preventWeatherCommandsFromRegistering_register(CommandDispatcher<CommandSourceStack> dispatcher, CallbackInfo ci)
+	private static final SimpleCommandExceptionType WEATHER_CANNOT_BE_MODIFIED = new SimpleCommandExceptionType(Component.translatable("command.simpleclouds.weather.override"));
+	
+//	@Inject(method = "register", at = @At("HEAD"), cancellable = true)
+//	private static void simpleclouds$preventWeatherCommandsFromRegistering_register(CommandDispatcher<CommandSourceStack> dispatcher, CallbackInfo ci)
+//	{
+//		if (!SimpleCloudsConfig.SERVER_SPEC.isLoaded() || SimpleCloudsConfig.SERVER.cloudMode.get() != CloudMode.SINGLE)
+//			ci.cancel();
+//	}
+	
+	private static void checkAndOrThrow() throws CommandSyntaxException
 	{
-		if (!SimpleCloudsConfig.SERVER_SPEC.isLoaded() || SimpleCloudsConfig.SERVER.cloudMode.get() != CloudMode.SINGLE)
-			ci.cancel();
+		if (!CloudManager.useVanillaWeather(CloudTypeDataManager.getServerInstance()))
+			throw WEATHER_CANNOT_BE_MODIFIED.create();
+	}
+	
+	@Inject(method = "setClear", at = @At("HEAD"), cancellable = true)
+	private static void simpleclouds$preventWeatherModification_setClear(CommandSourceStack stack, int duration, CallbackInfoReturnable<Integer> ci) throws CommandSyntaxException
+	{
+		checkAndOrThrow();
+	}
+	
+	@Inject(method = "setRain", at = @At("HEAD"), cancellable = true)
+	private static void simpleclouds$preventWeatherModification_setRain(CommandSourceStack stack, int duration, CallbackInfoReturnable<Integer> ci) throws CommandSyntaxException
+	{
+		checkAndOrThrow();
+	}
+	
+	@Inject(method = "setThunder", at = @At("HEAD"), cancellable = true)
+	private static void simpleclouds$preventWeatherModification_setThunder(CommandSourceStack stack, int duration, CallbackInfoReturnable<Integer> ci) throws CommandSyntaxException
+	{
+		checkAndOrThrow();
 	}
 }

@@ -6,14 +6,18 @@ import org.joml.Vector2i;
 
 import com.google.common.collect.Lists;
 
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
+import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPacket;
+import dev.nonamecrackers2.simpleclouds.mixin.MixinServerLevelAccessor;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.players.PlayerList;
 import net.minecraftforge.network.PacketDistributor;
 
 public class ServerCloudManager extends CloudManager<ServerLevel>
@@ -22,19 +26,37 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 	
 	public ServerCloudManager(ServerLevel level)
 	{
-		super(level);
+		super(level, CloudTypeDataManager.getServerInstance());
 	}
 	
 	@Override
-	public CloudType[] getIndexedCloudTypes()
+	public CloudMode getCloudMode()
 	{
-		return CloudTypeDataManager.getServerInstance().getIndexedCloudTypes();
+		return SimpleCloudsConfig.SERVER.cloudMode.get();
 	}
 	
 	@Override
-	public CloudType getCloudTypeForId(ResourceLocation id)
+	public String getSingleModeCloudTypeRawId()
 	{
-		return CloudTypeDataManager.getServerInstance().getCloudTypes().get(id);
+		return SimpleCloudsConfig.SERVER.singleModeCloudType.get();
+	}
+	
+	@Override
+	public void tick()
+	{
+		super.tick();
+		
+		if (!this.useVanillaWeather)
+			this.level.setRainLevel(0.0F);
+	}
+	
+	@Override
+	protected void resetVanillaWeather()
+	{
+		((MixinServerLevelAccessor)this.level).simpleclouds$invokeResetWeatherCycle();
+		PlayerList list = this.level.getServer().getPlayerList();
+		list.broadcastAll(new ClientboundGameEventPacket(ClientboundGameEventPacket.RAIN_LEVEL_CHANGE, 0.0F), this.level.dimension());
+        list.broadcastAll(new ClientboundGameEventPacket(ClientboundGameEventPacket.THUNDER_LEVEL_CHANGE, 0.0F), this.level.dimension());
 	}
 
 	@Override

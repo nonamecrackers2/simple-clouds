@@ -10,8 +10,10 @@ import org.joml.Vector3f;
 
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
 import net.minecraft.core.BlockPos;
@@ -22,13 +24,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 
-public abstract class CloudManager<T extends Level>
+public abstract class CloudManager<T extends Level> implements CloudTypeSource
 {
 	public static final int CLOUD_HEIGHT_MAX = 2048;
 	public static final int CLOUD_HEIGHT_MIN = 0;
 	public static final int UPDATE_INTERVAL = 200;
 	public static final float RANDOM_SPREAD = 10000.0F;
 	protected final T level;
+	protected final CloudTypeSource cloudSource;
 	private RegionType regionGenerator = RegionTypes.VORONOI_DIAGRAM.get();
 	private long seed;
 	protected @Nullable RandomSource random;
@@ -43,6 +46,7 @@ public abstract class CloudManager<T extends Level>
 	protected int cloudHeight = 128;
 	protected int tickCount;
 	protected int nextLightningStrike = 60;
+	protected boolean useVanillaWeather;
 
 	@SuppressWarnings("unchecked")
 	public static <T extends Level> CloudManager<T> get(T level)
@@ -50,14 +54,23 @@ public abstract class CloudManager<T extends Level>
 		return Objects.requireNonNull(((CloudManagerAccessor<T>)level).getCloudManager(), "Cloud manager is not available, this shouldn't happen!");
 	}
 	
-	public CloudManager(T level)
+	public CloudManager(T level, CloudTypeSource source)
 	{
 		this.level = level;
+		this.cloudSource = source;
 	}
 	
-	public abstract CloudType[] getIndexedCloudTypes();
+	@Override
+	public CloudType getCloudTypeForId(ResourceLocation id)
+	{
+		return this.cloudSource.getCloudTypeForId(id);
+	}
 	
-	public abstract @Nullable CloudType getCloudTypeForId(ResourceLocation id);
+	@Override
+	public CloudType[] getIndexedCloudTypes()
+	{
+		return this.cloudSource.getIndexedCloudTypes();
+	}
 	
 	public Pair<CloudType, Float> getCloudTypeAtPosition(float x, float z)
 	{
@@ -69,11 +82,15 @@ public abstract class CloudManager<T extends Level>
 			var result = this.getRegionGenerator().getCloudTypeIndexAt(posX, posZ, SimpleCloudsConstants.REGION_SCALE, types.length);
 			if (result.index() < 0 || result.index() >= types.length)
 				throw new IndexOutOfBoundsException("Region type generator sent an invalid index: " + result.index());
+//			float len = Vector2f.length(worldX, worldZ);
+//			float fadeStart = 0.0F;
+//			float fadeEnd = 100.0F;
+//			float fadeMod = 1.0F - Math.min(Math.max(len - fadeStart, 0.0F) / (fadeEnd - fadeStart), 1.0F);
 			return Pair.of(types[result.index()], result.fade());
 		}
 		else
 		{
-			String rawId = SimpleCloudsConfig.SERVER.singleModeCloudType.get();
+			String rawId = this.getSingleModeCloudTypeRawId();
 			ResourceLocation id = ResourceLocation.tryParse(rawId);
 			if (id != null)
 			{
@@ -160,7 +177,16 @@ public abstract class CloudManager<T extends Level>
 		this.scrollY -= this.getDirection().y() * speed;
 		this.scrollZ -= this.getDirection().z() * speed;
 		this.tickLightning();
+		
+		boolean flag = this.determineUseVanillaWeather();
+		if (flag != this.useVanillaWeather)
+		{
+			this.useVanillaWeather = flag;
+			this.resetVanillaWeather();
+		}
 	}
+	
+	protected void resetVanillaWeather() {}
 	
 	protected void tickLightning()
 	{
@@ -172,9 +198,23 @@ public abstract class CloudManager<T extends Level>
 		this.nextLightningStrike = Mth.randomBetweenInclusive(this.random, minInterval, maxInterval);
 	}
 	
+	protected boolean determineUseVanillaWeather()
+	{
+		return useVanillaWeather(this);
+	}
+	
+	public final boolean shouldUseVanillaWeather()
+	{
+		return this.useVanillaWeather;
+	}
+	
 	protected abstract void attemptToSpawnLightning();
 	
 	protected abstract void spawnLightning(CloudType type, float fade, int x, int z, boolean soundOnly);
+	
+	public abstract CloudMode getCloudMode();
+	
+	public abstract String getSingleModeCloudTypeRawId();
 	
 	public void spawnLightning(int x, int z, boolean soundOnly)
 	{
@@ -269,5 +309,36 @@ public abstract class CloudManager<T extends Level>
 	public static boolean isValidLightning(CloudType type, float fade, RandomSource random)
 	{
 		return type.weatherType().includesThunder() && fade < 0.8F;// && (fade > 0.7F || random.nextInt(3) == 0); 
+	}
+	
+	public static boolean useVanillaWeather(CloudTypeSource source)
+	{
+		if (!SimpleCloudsConfig.SERVER_SPEC.isLoaded())
+			return false;
+		
+		CloudMode mode = SimpleCloudsConfig.SERVER.cloudMode.get();
+		
+		switch (mode)
+		{
+		case AMBIENT:
+		{
+			return true;
+		}
+		case SINGLE:
+		{
+			String rawId = SimpleCloudsConfig.SERVER.singleModeCloudType.get();
+			ResourceLocation id = ResourceLocation.tryParse(rawId);
+			if (id != null)
+			{
+				CloudType type = source.getCloudTypeForId(id);
+				if (type != null && type.weatherType() == WeatherType.NONE)
+					return true;
+			}
+		}
+		default:
+		{
+			return false;
+		}
+		}
 	}
 }

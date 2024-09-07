@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
@@ -46,7 +45,6 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.lightning.LightningBolt;
 import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.CloudsRenderPipeline;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
-import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -105,7 +103,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private boolean failedToCopyDepthBuffer;
 	private @Nullable CloudMode cloudMode;
 	private @Nullable CloudStyle cloudStyle;
-	private @Nullable RegionType currentRegionGenerator;
+	private @Nullable RegionType regionGenerator;
 	private boolean needsReload;
 //	private int shadowMapPixelBufferId = -1;
 //	private @Nullable ByteBuffer shadowMapPixelBuffer;
@@ -127,6 +125,66 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			CloudManager<ClientLevel> manager = CloudManager.get(this.mc.level);
 			this.meshGenerator.setScroll(manager.getScrollX(partialTicks), manager.getScrollY(partialTicks), manager.getScrollZ(partialTicks));
 		}
+	}
+	
+	private CloudMode determineCloudMode()
+	{
+		if (this.mc.level != null)
+			return CloudManager.get(this.mc.level).getCloudMode();
+		else
+			return SimpleCloudsConfig.CLIENT.cloudMode.get();
+	}
+	
+	private String determineSingleModeCloudTypeRawId()
+	{
+		if (this.mc.level != null)
+			return CloudManager.get(this.mc.level).getSingleModeCloudTypeRawId();
+		else
+			return SimpleCloudsConfig.CLIENT.singleModeCloudType.get();
+	}
+	
+	private RegionType determineRegionGenerator()
+	{
+		if (this.mc.level != null)
+			return CloudManager.get(this.mc.level).getRegionGenerator();
+		else
+			return RegionTypes.VORONOI_DIAGRAM.get();
+	}
+	
+	/**
+	 * The current cloud mode that is set up with the renderer
+	 * <p><p>
+	 * May return {@code NULL} if the renderer has not been initialized yet
+	 * 
+	 * @return {@link CloudMode}
+	 */
+	public @Nullable CloudMode getCloudMode()
+	{
+		return this.cloudMode;
+	}
+	
+	/**
+	 * The current cloud style that is set up with the renderer
+	 * <p><p>
+	 * May return {@code NULL} if the renderer has not been initialized yet
+	 * 
+	 * @return {@link CloudStyle}
+	 */
+	public @Nullable CloudStyle getCloudStyle()
+	{
+		return this.cloudStyle;
+	}
+	
+	/**
+	 * The current region generator that is set up with the renderer
+	 * <p><p>
+	 * May return {@code NULL} if the renderer has not been initialized yet
+	 * 
+	 * @return {@link RegionType}
+	 */
+	public @Nullable RegionType getRegionGenerator()
+	{
+		return this.regionGenerator;
 	}
 	
 	public void requestReload()
@@ -159,60 +217,71 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.blurTarget.setFilterMode(GL11.GL_LINEAR);
 		
 		Instant started = Instant.now();
-		CloudMode mode = getCloudMode();
+		CloudMode mode = this.determineCloudMode(); //Determine the cloud mode we should use
 		CloudStyle style = SimpleCloudsConfig.CLIENT.cloudStyle.get();
 		LOGGER.info("Beginning mesh generator initialization for cloud mode {} and cloud style {}", mode, style);
-		if (this.cloudMode != mode || this.cloudStyle != style)
+		if (this.cloudMode != mode || this.cloudStyle != style) //If the cloud mode and cloud style is different then what was previously initialized, recreate the mesh generators
 		{
 			if (this.meshGenerator != null)
 			{
-				this.meshGenerator.close();
+				this.meshGenerator.close(); //Close the current generator
 				this.meshGenerator = null;
 			}
-			if (mode == CloudMode.DEFAULT || mode == CloudMode.AMBIENT)
+			
+			if (mode == CloudMode.DEFAULT || mode == CloudMode.AMBIENT) //Use the multi-region generator for DEFAULT or AMBIENT cloud mode
 			{
+				//Create the generator but use a fallback cloud types array
 				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { SimpleCloudsConstants.FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), RegionTypes.VORONOI_DIAGRAM.get(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
-				if (mode == CloudMode.AMBIENT)
-					generator.setFadeNearOrigin(0.2F, 0.4F);
+				if (mode == CloudMode.AMBIENT) //Enable the fade near origin when using AMBIENT
+					generator.setFadeNearOrigin(SimpleCloudsConstants.AMBIENT_MODE_FADE_START / SimpleCloudsConstants.CLOUD_SCALE, SimpleCloudsConstants.AMBIENT_MODE_FADE_END / SimpleCloudsConstants.CLOUD_SCALE);
 				this.meshGenerator = generator;
 			}
 			else if (mode == CloudMode.SINGLE)
 			{
 				float fadeStart = (float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F;
 				float fadeEnd = (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F;
+				//Create the generator but use a fallback single mode cloud type
 				this.meshGenerator = new SingleRegionCloudMeshGenerator(SimpleCloudsConstants.FALLBACK, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd, style);
 			}
 			else
 			{
 				throw new IllegalArgumentException("Not sure how to handle cloud mode " + mode);
 			}
-			this.cloudMode = mode;
+			this.cloudMode = mode; //Set the current cloud mode the renderer is using
 			this.cloudStyle = style;
 		}
 		
-		RegionType generator = this.fetchRegionGenerator();
-		this.currentRegionGenerator = generator;
+		//Figure out what region generator we should use
+		//This renderer can be initialized without having the player logged into a world,
+		//meaning that the client-side CloudManager may not exist. This method picks a
+		//region generator regardless of whether we are in game or not, to make sure
+		//one is always available. This is similiar with other methods, such as with
+		//determineCloudMode, etc.
+		RegionType generator = this.determineRegionGenerator();
+		this.regionGenerator = generator;
 		
 		if (this.meshGenerator instanceof MultiRegionCloudMeshGenerator multiRegionGenerator)
 		{
-			CloudType[] cloudTypes = ClientSideCloudTypeManager.getInstance().getIndexed();
+			CloudType[] cloudTypes = ClientSideCloudTypeManager.getInstance().getIndexedCloudTypes();
 			if (cloudTypes.length > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
 				LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
 			else
-				multiRegionGenerator.setCloudTypes(cloudTypes);
-			multiRegionGenerator.setRegionGenerator(this.currentRegionGenerator);
+				multiRegionGenerator.setCloudTypes(cloudTypes); //Set the cloud types using the synced, or client-side loaded ones, from ClientSideCloudTypeManager
+			multiRegionGenerator.setRegionGenerator(generator); //Set the region generator
 		}
 		else if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator singleRegionGenerator)
 		{
-			Pair<ResourceLocation, CloudType> type = getSingleModeCloudType();
-			if (type != null)
-				singleRegionGenerator.setCloudType(type.getRight());
-			else
-				singleRegionGenerator.setCloudType(SimpleCloudsConstants.FALLBACK);
+			//Find the desired single mode cloud type, either from the client-side only context or
+			//from the synced cloud types from the server
+			ClientSideCloudTypeManager.getInstance().getCloudTypeFromRawId(this.determineSingleModeCloudTypeRawId()).ifPresentOrElse(type -> {
+				singleRegionGenerator.setCloudType(type);
+			}, () -> {
+				singleRegionGenerator.setCloudType(SimpleCloudsConstants.FALLBACK); //Fallback in case we can't find the desired cloud type
+			});
 		}
 		
-		this.setupMeshGenerator(0.0F);
-		this.meshGenerator.init(manager);
+		this.setupMeshGenerator(0.0F); //Setup the mesh generator
+		this.meshGenerator.init(manager); //Initialize
 		long duration = Duration.between(started, Instant.now()).toMillis();
 		LOGGER.info("Finished, took {} ms", duration);
 		
@@ -317,21 +386,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		LOGGER.debug("Total LODs: {}", this.meshGenerator.getLodConfig().getLods().length + 1);
 		LOGGER.debug("Highest detail (primary) chunk span: {}", this.meshGenerator.getLodConfig().getPrimaryChunkSpan());
 		LOGGER.debug("Effective chunk span with LODs (total viewable area): {}", this.meshGenerator.getLodConfig().getEffectiveChunkSpan());
-	}
-	
-	public @Nullable CloudMode getCurrentCloudMode()
-	{
-		return this.cloudMode;
-	}
-	
-	public @Nullable CloudStyle getCurrentCloudStyle()
-	{
-		return this.cloudStyle;
-	}
-	
-	public @Nullable RegionType getCurrentRegionGenerator()
-	{
-		return this.currentRegionGenerator;
 	}
 	
 	private void destroyPostChains()
@@ -852,14 +906,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		return 1.0F - Math.min(Math.max(distance - this.fogStart, 0.0F) / (this.fogEnd - this.fogStart), 1.0F);
 	}
-	
-	private RegionType fetchRegionGenerator()
-	{
-		if (this.mc.level == null)
-			return RegionTypes.VORONOI_DIAGRAM.get();
-		else
-			return CloudManager.get(this.mc.level).getRegionGenerator();
-	}
 //	
 //	public float[] getStormColorAtCoord(int x, int y)
 //	{
@@ -972,40 +1018,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public static CloudsRenderPipeline getRenderPipeline()
 	{
 		return CompatHelper.areShadersRunning() ? CloudsRenderPipeline.SHADER_SUPPORT : CloudsRenderPipeline.DEFAULT;
-	}
-	
-	public static CloudMode getCloudMode()
-	{
-		return ClientCloudManager.isAvailableServerSide() && SimpleCloudsConfig.SERVER_SPEC.isLoaded() ? SimpleCloudsConfig.SERVER.cloudMode.get() : SimpleCloudsConfig.CLIENT.cloudMode.get();
-	}
-	
-	public static String getSingleModeCloudTypeRaw()
-	{
-		return ClientCloudManager.isAvailableServerSide() && SimpleCloudsConfig.SERVER_SPEC.isLoaded() ? SimpleCloudsConfig.SERVER.singleModeCloudType.get() : SimpleCloudsConfig.CLIENT.singleModeCloudType.get();
-	}
-	
-	public static @Nullable Pair<ResourceLocation, CloudType> getSingleModeCloudType()
-	{
-		String rawId;
-		Function<ResourceLocation, CloudType> cloudTypeGetter;
-		if (ClientCloudManager.isAvailableServerSide() && SimpleCloudsConfig.SERVER_SPEC.isLoaded())
-		{
-			cloudTypeGetter = ClientSideCloudTypeManager.getInstance().getCloudTypes()::get;
-			rawId = SimpleCloudsConfig.SERVER.singleModeCloudType.get();
-		}
-		else
-		{
-			cloudTypeGetter = ClientSideCloudTypeManager.getInstance().getClientSideDataManager().getCloudTypes()::get;
-			rawId = SimpleCloudsConfig.CLIENT.singleModeCloudType.get();
-		}
-		ResourceLocation loc = ResourceLocation.tryParse(rawId);
-		if (loc != null)
-		{
-			CloudType type = cloudTypeGetter.apply(loc);
-			if (type != null)
-				return Pair.of(loc, type);
-		}
-		return null;
 	}
 	
 	public static void initialize()

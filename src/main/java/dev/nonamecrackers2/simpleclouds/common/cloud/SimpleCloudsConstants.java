@@ -22,6 +22,10 @@ public class SimpleCloudsConstants
 	public static final int THUNDER_PITCH_MINIMUM_DIST = 5000;
 	//Effects
 	public static final float LIGHTNING_FLASH_STRENGTH = 1.0F;
+	public static final float SOUND_METERS_PER_SECOND = 2000.0F;
+	//Ambient cloud mode
+	public static final float AMBIENT_MODE_FADE_START = 2400.0F;
+	public static final float AMBIENT_MODE_FADE_END = 4800.0F;
 	
 	private SimpleCloudsConstants() {}
 }

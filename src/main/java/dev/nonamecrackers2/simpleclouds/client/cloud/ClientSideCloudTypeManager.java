@@ -6,9 +6,10 @@ import com.google.common.collect.ImmutableMap;
 
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import net.minecraft.resources.ResourceLocation;
 
-public class ClientSideCloudTypeManager
+public class ClientSideCloudTypeManager implements CloudTypeSource
 {
 	private static final ClientSideCloudTypeManager INSTANCE = new ClientSideCloudTypeManager();
 	private final CloudTypeDataManager dataManager;
@@ -30,20 +31,27 @@ public class ClientSideCloudTypeManager
 		this.synced = ImmutableMap.of();
 	}
 	
+	@Override
+	public CloudType getCloudTypeForId(ResourceLocation id)
+	{
+		return this.getCloudTypes().get(id);
+	}
+
+	@Override
+	public CloudType[] getIndexedCloudTypes()
+	{
+		if (this.indexed.length > 0)
+			return this.indexed;
+		else
+			return this.dataManager.getIndexedCloudTypes();
+	}
+	
 	public Map<ResourceLocation, CloudType> getCloudTypes()
 	{
 		if (!this.synced.isEmpty())
 			return this.synced;
 		else
 			return this.dataManager.getCloudTypes();
-	}
-	
-	public CloudType[] getIndexed()
-	{
-		if (this.indexed.length > 0)
-			return this.indexed;
-		else
-			return this.dataManager.getIndexedCloudTypes();
 	}
 	
 	public void receiveSynced(Map<ResourceLocation, CloudType> synced, CloudType[] indexed)

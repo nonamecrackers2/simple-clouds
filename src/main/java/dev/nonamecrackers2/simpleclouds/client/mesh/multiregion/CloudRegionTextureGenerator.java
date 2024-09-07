@@ -259,8 +259,10 @@ public class CloudRegionTextureGenerator
 						scale = (float)this.lodConfig.getLods()[z - 1].chunkScale();
 					int index = (x + y * buffer.textureSize + z * buffer.textureSize * buffer.textureSize) * BYTES_PER_PIXEL;
 					float centerOffset = (float)buffer.textureSize / 2.0F;
-					float posX = ((float)x - centerOffset) * scale + buffer.scrollX + buffer.offsetX;
-					float posZ = ((float)y - centerOffset) * scale + buffer.scrollZ + buffer.offsetZ;
+					float worldX = ((float)x - centerOffset) * scale;
+					float worldZ = ((float)y - centerOffset) * scale;
+					float posX = worldX + buffer.scrollX + buffer.offsetX;
+					float posZ = worldZ + buffer.scrollZ + buffer.offsetZ;
 //					Vector2f pos = new Vector2f((float)x, (float)y).sub((float)buffer.textureSize / 2.0F, (float)buffer.textureSize / 2.0F).mul(scale).add((float)buffer.textureSize / 2.0F, (float)buffer.textureSize / 2.0F).add(buffer.scrollX, buffer.scrollZ).add(buffer.offsetX, buffer.offsetZ);
 					RegionType.Result result = this.regionGenerator.getCloudTypeIndexAt(posX, posZ, this.cloudRegionScale, this.cloudTypes.length);
 					buffer.textureBuffer.putFloat(index, (float)result.index());

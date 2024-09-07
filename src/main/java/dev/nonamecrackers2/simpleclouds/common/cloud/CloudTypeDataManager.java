@@ -31,7 +31,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.fml.loading.FMLPaths;
 
-public class CloudTypeDataManager extends SimpleJsonResourceReloadListener
+public class CloudTypeDataManager extends SimpleJsonResourceReloadListener implements CloudTypeSource
 {
 	public static final LevelResource SIMPLE_CLOUDS_FOLDER = new LevelResource("simpleclouds");
 	private static @Nullable Path simpleCloudsWorldPath;
@@ -164,11 +164,18 @@ public class CloudTypeDataManager extends SimpleJsonResourceReloadListener
 		LOGGER.info("Loaded {} cloud types", this.cloudTypes.size());
 	}
 	
+	@Override
+	public CloudType getCloudTypeForId(ResourceLocation id)
+	{
+		return this.getCloudTypes().get(id);
+	}
+	
 	public Map<ResourceLocation, CloudType> getCloudTypes()
 	{
 		return this.cloudTypes;
 	}
 	
+	@Override
 	public CloudType[] getIndexedCloudTypes()
 	{
 		return this.indexedCloudTypes;
