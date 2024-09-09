@@ -89,6 +89,7 @@
   "gui.simpleclouds.error.unknown": "Please make a bug report on the mod's GitHub repository, linked below. Make sure to include the crash report and latest.log file with your issue.",
   "gui.simpleclouds.error_screen.button.crash_report": "Crash Report",
   "gui.simpleclouds.error_screen.description": "An error occured while initializing the cloud mesh generator.",
+  "gui.simpleclouds.error_screen.multiple": "More than one error has occured. Please see the 'crash-reports' folder for more information.",
   "gui.simpleclouds.error_screen.no_errors": "There are no errors? What?",
   "gui.simpleclouds.error_screen.title": "Simple Clouds Error",
   "gui.simpleclouds.noise_settings.param.fade_distance.name": "Fade Distance",

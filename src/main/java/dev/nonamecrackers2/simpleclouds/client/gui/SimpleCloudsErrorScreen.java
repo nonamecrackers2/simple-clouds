@@ -1,5 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.client.gui;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -23,6 +24,7 @@ public class SimpleCloudsErrorScreen extends Screen
 	private static final int PADDING = 20;
 	private static final Component DESCRIPTION = Component.translatable("gui.simpleclouds.error_screen.description");
 	private final GeneratorInitializeResult result;
+	private Path crashReportsFolder;
 	private Component openGLVersion;
 	private List<FormattedCharSequence> text;
 	private int totalTextHeight;
@@ -37,16 +39,20 @@ public class SimpleCloudsErrorScreen extends Screen
 	protected void init()
 	{
 		this.openGLVersion = Component.literal("OpenGL " + ImmediateWindowHandler.getGLVersion());
+		this.crashReportsFolder = this.minecraft.gameDirectory.toPath().resolve("crash-reports");
 		
 		this.text = Lists.newArrayList();
 		int textMaxWidth = Mth.floor((float)this.width / 1.5F);
 		this.text.addAll(this.font.split(DESCRIPTION, textMaxWidth));
 		if (!this.result.getErrors().isEmpty())
 		{
-			for (GeneratorInitializeResult.Error error : this.result.getErrors())
+			GeneratorInitializeResult.Error error = this.result.getErrors().get(this.result.getErrors().size() - 1);
+			this.text.add(FormattedCharSequence.EMPTY);
+			this.text.addAll(this.font.split(error.text(), textMaxWidth));
+			if (this.result.getErrors().size() > 1)
 			{
 				this.text.add(FormattedCharSequence.EMPTY);
-				this.text.addAll(this.font.split(error.text(), textMaxWidth));
+				this.text.addAll(this.font.split(Component.translatable("gui.simpleclouds.error_screen.multiple"), textMaxWidth));
 			}
 		}
 		else
@@ -69,8 +75,10 @@ public class SimpleCloudsErrorScreen extends Screen
 		
 		Button button = row.addChild(Button.builder(Component.translatable("gui.simpleclouds.error_screen.button.crash_report"), b -> {
 			var list = this.result.getSavedCrashReportPaths();
-			if (list != null && list.size() >= 1)
+			if (list != null && list.size() == 1)
 				Util.getPlatform().openUri(list.get(0).toUri());
+			else
+				Util.getPlatform().openUri(this.crashReportsFolder.toUri());
 		}).width(100).build());
 		button.active = this.result.getSavedCrashReportPaths() != null && !this.result.getSavedCrashReportPaths().isEmpty();
 		
