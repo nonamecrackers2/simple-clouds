@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL41;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.blaze3d.systems.RenderSystem;
 
@@ -22,6 +23,7 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
+import net.minecraft.CrashReportCategory;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
@@ -297,5 +299,13 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	public @Nullable CloudRegionTextureGenerator getCloudRegionTextureGenerator()
 	{
 		return this.regionTextureGenerator;
+	}
+	
+	@Override
+	public void fillReport(CrashReportCategory category)
+	{
+		category.setDetail("Cloud Types", "(" + this.cloudTypes.length + ") " + Joiner.on(", ").join(this.cloudTypes));
+		category.setDetail("Fade Near Origin", this.fadeNearOrigin);
+		super.fillReport(category);
 	}
 }

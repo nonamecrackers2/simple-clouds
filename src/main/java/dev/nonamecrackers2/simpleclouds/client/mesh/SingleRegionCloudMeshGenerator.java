@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
+import net.minecraft.CrashReportCategory;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.server.packs.resources.ResourceManager;
 
@@ -145,5 +146,12 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 		}
 		
 		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
+	}
+	
+	@Override
+	public void fillReport(CrashReportCategory category)
+	{
+		category.setDetail("Cloud Type", this.type);
+		super.fillReport(category);
 	}
 }

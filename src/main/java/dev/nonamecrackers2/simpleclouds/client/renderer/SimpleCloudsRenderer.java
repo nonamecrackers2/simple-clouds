@@ -39,6 +39,7 @@ import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
+import dev.nonamecrackers2.simpleclouds.client.mesh.GeneratorInitializeResult;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.lightning.LightningBolt;
@@ -52,8 +53,11 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
+import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.EffectInstance;
@@ -106,6 +110,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable CloudStyle cloudStyle;
 	private @Nullable RegionType regionGenerator;
 	private boolean needsReload;
+	private @Nullable GeneratorInitializeResult initialInitializationResult;
 //	private int shadowMapPixelBufferId = -1;
 //	private @Nullable ByteBuffer shadowMapPixelBuffer;
 //	private long currentShadowMapPixelFence = -1;
@@ -283,7 +288,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		}
 		
 		this.setupMeshGenerator(0.0F); //Setup the mesh generator
-		this.meshGenerator.init(manager); //Initialize
+		
+		GeneratorInitializeResult result = this.meshGenerator.init(manager); //Initialize
+		if (this.initialInitializationResult == null)
+			this.initialInitializationResult = result;
+		
 		long duration = Duration.between(started, Instant.now()).toMillis();
 		LOGGER.info("Finished, took {} ms", duration);
 		
@@ -388,6 +397,24 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		LOGGER.debug("Total LODs: {}", this.meshGenerator.getLodConfig().getLods().length + 1);
 		LOGGER.debug("Highest detail (primary) chunk span: {}", this.meshGenerator.getLodConfig().getPrimaryChunkSpan());
 		LOGGER.debug("Effective chunk span with LODs (total viewable area): {}", this.meshGenerator.getLodConfig().getEffectiveChunkSpan());
+		
+		switch (result.getState()) //Print crash reports if needed
+		{
+		case ERROR:
+		{
+			List<CrashReport> reports = result.createCrashReports();
+			LOGGER.error("---------CRASH REPORT BEGIN---------");
+			for (CrashReport report : reports)
+			{
+				this.mc.fillReport(report);
+				LOGGER.error("{}", report.getFriendlyReport());
+			}
+			LOGGER.error("---------CRASH REPORT END---------");
+			result.saveCrashReports(this.mc.gameDirectory);
+			break;
+		}
+		default:
+		}
 	}
 	
 	private void destroyPostChains()
@@ -907,6 +934,45 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public float getFadeFactorForDistance(float distance)
 	{
 		return 1.0F - Math.min(Math.max(distance - this.fogStart, 0.0F) / (this.fogEnd - this.fogStart), 1.0F);
+	}
+	
+	public void fillReport(CrashReport report)
+	{
+		CrashReportCategory category = report.addCategory("Simple Clouds Renderer");
+		category.setDetail("Cloud Mode", this.cloudMode);
+		category.setDetail("Cloud Style", this.cloudStyle);
+		category.setDetail("Region Generator", () -> {
+			ResourceLocation key = SimpleCloudsRegistries.getRegionTypeRegistry().getKey(this.regionGenerator);
+			if (key == null)
+				return "UNKNOWN";
+			else
+				return key.toString();
+		});
+		category.setDetail("Cloud Target Available", this.cloudTarget != null);
+		category.setDetail("Storm Fog Target Active", this.stormFogTarget != null);
+		category.setDetail("Blur Target Active", this.blurTarget != null);
+		category.setDetail("Post Chains", this.postChains.toString());
+		category.setDetail("Lightning Bolt SSBO", this.lightningBoltPositions);
+		category.setDetail("Shadow Map Buffer ID", this.shadowMapBufferId);
+		category.setDetail("Shadow Map Depth Texture ID", this.shadowMapDepthTextureId);
+		category.setDetail("Shadow Map Color Texture ID", this.shadowMapColorTextureId);
+		category.setDetail("Failed to copy depth buffer", this.failedToCopyDepthBuffer);
+		category.setDetail("Needs Reload", this.needsReload);
+		CrashReportCategory meshGenCategory = report.addCategory("Cloud Mesh Generator");
+		if (this.meshGenerator != null)
+		{
+			meshGenCategory.setDetail("Type", this.meshGenerator.toString());
+			this.meshGenerator.fillReport(meshGenCategory);
+		}
+		else
+		{
+			meshGenCategory.setDetail("Type", "Mesh generator is not initialized");
+		}
+	}
+	
+	public @Nullable GeneratorInitializeResult getInitialInitializationResult()
+	{
+		return this.initialInitializationResult;
 	}
 //	
 //	public float[] getStormColorAtCoord(int x, int y)

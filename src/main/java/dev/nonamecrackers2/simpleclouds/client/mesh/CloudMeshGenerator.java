@@ -36,6 +36,7 @@ import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
+import net.minecraft.CrashReportCategory;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -175,9 +176,12 @@ public abstract class CloudMeshGenerator
 		this.shader.bindShaderStorageBuffer("IndexBuffer", GL15.GL_DYNAMIC_COPY).allocateBuffer(INDEX_BUFFER_SIZE); //Index data, arbitrary size
 	}
 	
-	public final void init(ResourceManager manager)
+	public final GeneratorInitializeResult init(ResourceManager manager)
 	{
-		RenderSystem.assertOnRenderThreadOrInit();
+		GeneratorInitializeResult.Builder builder = GeneratorInitializeResult.builder();
+				
+		if (!RenderSystem.isOnRenderThreadOrInit())
+			return builder.errorUnknown(new IllegalStateException("Init not called on render thread"), "Head").build();
 		
 		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
 		this.chunkGenTasks.clear();
@@ -254,7 +258,14 @@ public abstract class CloudMeshGenerator
 		
 		LOGGER.debug("Created VBA with vertex buffer size {} and index buffer size {}", SIDE_BUFFER_SIZE, INDEX_BUFFER_SIZE);
 		
-		this.initExtra(manager);
+		try
+		{
+			this.initExtra(manager);
+		}
+		catch (Exception e)
+		{
+			builder.errorUnknown(e, "Init Extra");
+		}
 		
 		try
 		{
@@ -266,12 +277,19 @@ public abstract class CloudMeshGenerator
 		}
 		catch (IOException e)
 		{
-			LOGGER.warn("Failed to load compute shader", e);
+			//LOGGER.warn("Failed to load compute shader", e);
+			builder.errorCouldNotLoadMeshScript(e, "Compute Shader");
+		}
+		catch (Exception e)
+		{
+			builder.errorRecommendations(e, "Compute Shader");
 		}
 		
 		ComputeShader.printDebug();
 		
 		LOGGER.debug("Finished initializing mesh generator");
+		
+		return builder.build();
 	}
 	
 	protected void initExtra(ResourceManager manager) {}
@@ -448,6 +466,28 @@ public abstract class CloudMeshGenerator
 	public int getTotalSides()
 	{
 		return this.totalSides;
+	}
+	
+	public void fillReport(CrashReportCategory category)
+	{
+		category.setDetail("Compute Shader", this.shader);
+		category.setDetail("Level Of Details", 1 + this.lodConfig.lods.length);
+		category.setDetail("Generation Frame Interval", this.meshGenInterval);
+		category.setDetail("Total Prepared Chunks", this.lodConfig.preparedChunks.size());
+		category.setDetail("Tasks Per Frame", this.tasksPerTick);
+		category.setDetail("Scroll", String.format("X: %s, Y: %s, Z: %s", this.scrollX, this.scrollY, this.scrollZ));
+		category.setDetail("Array Object ID", this.arrayObjectId);
+		category.setDetail("Vertex Buffer ID", this.vertexBufferId);
+		category.setDetail("Index Buffer ID", this.indexBufferId);
+		category.setDetail("Total Indices", this.totalIndices);
+		category.setDetail("Total Triangles", this.totalSides * 2);
+		category.setDetail("Test Occluded Faces", this.testFacesFacingAway);
+	}
+	
+	@Override
+	public String toString()
+	{
+		return String.format("%s[shader_name=%s]", this.getClass().getSimpleName(), this.meshShaderLoc);
 	}
 	
 	public static class LevelOfDetailConfig

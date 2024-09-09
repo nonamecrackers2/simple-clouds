@@ -38,6 +38,8 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
 import net.minecraft.FileUtil;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -76,6 +78,13 @@ public class ComputeShader implements AutoCloseable
 	{
 		LOGGER.debug("Binded SSBOs: {}", ALL_SHADER_STORAGE_BUFFERS);
 		LOGGER.debug("Binded image units: {}", ALL_IMAGE_BINDINGS);
+	}
+	
+	public static void fillReport(CrashReport report)
+	{
+		CrashReportCategory category = report.addCategory("Simple Clouds Compute Shaders");
+		category.setDetail("Binded SSBOS", ALL_SHADER_STORAGE_BUFFERS);
+		category.setDetail("Binded Image Units", ALL_IMAGE_BINDINGS);
 	}
 	
 	public static int getAvailableShaderStorageBinding()
@@ -387,10 +396,7 @@ public class ComputeShader implements AutoCloseable
 		GlStateManager.glLinkProgram(programId);
 		int i = GlStateManager.glGetProgrami(programId, GL20.GL_LINK_STATUS);
 		if (i == 0)
-		{
-			LOGGER.warn("Error encountered when linking program containing computer shader {}. Log output:", loc);
-			LOGGER.warn(GlStateManager.glGetProgramInfoLog(programId, GL11.GL_HINT_BIT));
-		}
+			throw new RuntimeException("An error occured when linking program containing computer shader " + loc + ". Log output: " + GlStateManager.glGetProgramInfoLog(programId, GL11.GL_HINT_BIT));
 		return shader;
 	}
 	
