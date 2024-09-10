@@ -145,8 +145,17 @@ public class SimpleCloudsClientEvents
 				event.setCanceled(true);
 			if (ClientCloudManager.isAvailableServerSide())
 			{
-				if (event.isValue(SimpleCloudsConfig.CLIENT.cloudHeight) || event.isValue(SimpleCloudsConfig.CLIENT.speedModifier) || event.isValue(SimpleCloudsConfig.CLIENT.cloudMode) || event.isValue(SimpleCloudsConfig.CLIENT.singleModeCloudType) || event.isValue(SimpleCloudsConfig.CLIENT.cloudSeed) || event.isValue(SimpleCloudsConfig.CLIENT.useSpecificSeed))
+				if (event.isValue(SimpleCloudsConfig.CLIENT.cloudHeight) 
+						|| event.isValue(SimpleCloudsConfig.CLIENT.speedModifier) 
+						|| event.isValue(SimpleCloudsConfig.CLIENT.cloudMode) 
+						|| event.isValue(SimpleCloudsConfig.CLIENT.singleModeCloudType) 
+						|| event.isValue(SimpleCloudsConfig.CLIENT.cloudSeed) 
+						|| event.isValue(SimpleCloudsConfig.CLIENT.useSpecificSeed)
+						|| event.isValue(SimpleCloudsConfig.CLIENT.whitelistAsBlacklist)
+						|| event.isValue(SimpleCloudsConfig.CLIENT.dimensionWhitelist)) 
+				{
 					event.setCanceled(true);
+				}
 			}
 		}
 	}
@@ -174,44 +183,51 @@ public class SimpleCloudsClientEvents
 			List<String> text = event.getRight();
 			text.add("");
 			text.add(ChatFormatting.GREEN + SimpleCloudsMod.MODID + ": " + SimpleCloudsMod.getModVersion());
-			int totalSides = renderer.getMeshGenerator().getTotalSides();
-			text.add("Triangles: " + totalSides * 2 + "; Size: " + humanReadableByteCountSI(totalSides * CloudMeshGenerator.BYTES_PER_SIDE));
-			int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
-			text.add("Mesh gen frames: " + SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get() + "; Effective FPS: " + mc.getFps() / frames);
-			text.add("Frustum culling: " + (SimpleCloudsConfig.CLIENT.frustumCulling.get() ? "ON" : "OFF"));
-			boolean flag = ClientCloudManager.isAvailableServerSide();
-			text.add("Server-side: " + (flag ? ChatFormatting.GREEN : ChatFormatting.RED) + flag);
-			CloudMode mode = renderer.getCloudMode();
-			text.add("Cloud mode: " + mode);
-			if (renderer.getMeshGenerator() instanceof SingleRegionCloudMeshGenerator meshGenerator)
+			if (SimpleCloudsRenderer.canRenderInDimension(mc.level))
 			{
-				text.add("Fade start: " + meshGenerator.getFadeStart() + "; Fade end: " + meshGenerator.getFadeEnd());
-				if (meshGenerator.getCloudType() instanceof CloudType type)
-					text.add("Cloud type: " + type.id());
+				int totalSides = renderer.getMeshGenerator().getTotalSides();
+				text.add("Triangles: " + totalSides * 2 + "; Size: " + humanReadableByteCountSI(totalSides * CloudMeshGenerator.BYTES_PER_SIDE));
+				int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
+				text.add("Mesh gen frames: " + SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get() + "; Effective FPS: " + mc.getFps() / frames);
+				text.add("Frustum culling: " + (SimpleCloudsConfig.CLIENT.frustumCulling.get() ? "ON" : "OFF"));
+				boolean flag = ClientCloudManager.isAvailableServerSide();
+				text.add("Server-side: " + (flag ? ChatFormatting.GREEN : ChatFormatting.RED) + flag);
+				CloudMode mode = renderer.getCloudMode();
+				text.add("Cloud mode: " + mode);
+				if (renderer.getMeshGenerator() instanceof SingleRegionCloudMeshGenerator meshGenerator)
+				{
+					text.add("Fade start: " + meshGenerator.getFadeStart() + "; Fade end: " + meshGenerator.getFadeEnd());
+					if (meshGenerator.getCloudType() instanceof CloudType type)
+						text.add("Cloud type: " + type.id());
+				}
+				else
+				{
+					RegionType generator = renderer.getRegionGenerator();
+					if (generator != null)
+						text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(generator));
+					else
+						text.add("Region generator: NONE");
+					text.add("Cloud types: " + ClientSideCloudTypeManager.getInstance().getCloudTypes().size());
+				}
+				if (mc.level != null)
+				{
+					CloudManager<ClientLevel> manager = CloudManager.get(mc.level);
+					text.add("Speed: " + round(manager.getSpeed()) + "; Height: " + manager.getCloudHeight());
+					text.add("Scroll XYZ: " + round(manager.getScrollX()) + " / " + round(manager.getScrollY()) + " / " + round(manager.getScrollZ()));
+					Vector3f d = manager.getDirection();
+					text.add("Direction XYZ: " + round(d.x) + " / " + round(d.y) + " / " + round(d.z));
+					WorldEffects effects = renderer.getWorldEffectsManager();
+					if (effects.getCloudTypeAtCamera() != null)
+						text.add(effects.getCloudTypeAtCamera().id().toString());
+					else
+						text.add("UNKNOWN");
+					String vanillaWeatherOverrideAppend = manager.shouldUseVanillaWeather() ? " (Vanilla Weather Enabled)" : "";
+					text.add("Storminess: " + round(effects.getStorminessAtCamera()) + vanillaWeatherOverrideAppend);
+				}
 			}
 			else
 			{
-				RegionType generator = renderer.getRegionGenerator();
-				if (generator != null)
-					text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(generator));
-				else
-					text.add("Region generator: NONE");
-				text.add("Cloud types: " + ClientSideCloudTypeManager.getInstance().getCloudTypes().size());
-			}
-			if (mc.level != null)
-			{
-				CloudManager<ClientLevel> manager = CloudManager.get(mc.level);
-				text.add("Speed: " + round(manager.getSpeed()) + "; Height: " + manager.getCloudHeight());
-				text.add("Scroll XYZ: " + round(manager.getScrollX()) + " / " + round(manager.getScrollY()) + " / " + round(manager.getScrollZ()));
-				Vector3f d = manager.getDirection();
-				text.add("Direction XYZ: " + round(d.x) + " / " + round(d.y) + " / " + round(d.z));
-				WorldEffects effects = renderer.getWorldEffectsManager();
-				if (effects.getCloudTypeAtCamera() != null)
-					text.add(effects.getCloudTypeAtCamera().id().toString());
-				else
-					text.add("UNKNOWN");
-				String vanillaWeatherOverrideAppend = manager.shouldUseVanillaWeather() ? " (Vanilla Weather Enabled)" : "";
-				text.add("Storminess: " + round(effects.getStorminessAtCamera()) + vanillaWeatherOverrideAppend);
+				text.add(ChatFormatting.RED + "Disabled in this dimension");
 			}
 		}
 	}

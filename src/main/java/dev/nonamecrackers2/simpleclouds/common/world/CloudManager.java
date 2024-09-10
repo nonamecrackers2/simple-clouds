@@ -172,7 +172,6 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 		this.scrollX -= this.getDirection().x() * speed;
 		this.scrollY -= this.getDirection().y() * speed;
 		this.scrollZ -= this.getDirection().z() * speed;
-		this.tickLightning();
 		
 		boolean flag = this.determineUseVanillaWeather();
 		if (flag != this.useVanillaWeather)
@@ -180,6 +179,9 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 			this.useVanillaWeather = flag;
 			this.resetVanillaWeather();
 		}
+		
+		if (!this.useVanillaWeather)
+			this.tickLightning();
 	}
 	
 	protected void resetVanillaWeather() {}
@@ -196,7 +198,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 	
 	protected boolean determineUseVanillaWeather()
 	{
-		return useVanillaWeather(this);
+		return useVanillaWeather(this.level, this);
 	}
 	
 	public final boolean shouldUseVanillaWeather()
@@ -307,10 +309,17 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 		return type.weatherType().includesThunder() && fade < 0.8F;// && (fade > 0.7F || random.nextInt(3) == 0); 
 	}
 	
-	public static boolean useVanillaWeather(CloudTypeSource source)
+	public static boolean useVanillaWeather(Level level, CloudTypeSource source)
 	{
 		if (!SimpleCloudsConfig.SERVER_SPEC.isLoaded())
 			return false;
+		
+		boolean flag = SimpleCloudsConfig.SERVER.dimensionWhitelist.get().stream().anyMatch(val -> {
+			return level.dimension().location().toString().equals(val);
+		});
+		
+		if (SimpleCloudsConfig.SERVER.whitelistAsBlacklist.get() ? flag : !flag)
+			return true;
 		
 		CloudMode mode = SimpleCloudsConfig.SERVER.cloudMode.get();
 		

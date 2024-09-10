@@ -1129,4 +1129,29 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				throw new RuntimeException("glCheckFramebufferStatus returned unknown status:" + i);
 		}
 	}
+	
+	public static boolean canRenderInDimension(@Nullable ClientLevel level)
+	{
+		if (level == null)
+			return false;
+		
+		List<? extends String> whitelist;
+		boolean useAsBlacklist;
+		if (ClientCloudManager.isAvailableServerSide() && SimpleCloudsConfig.SERVER_SPEC.isLoaded())
+		{
+			whitelist = SimpleCloudsConfig.SERVER.dimensionWhitelist.get();
+			useAsBlacklist = SimpleCloudsConfig.SERVER.whitelistAsBlacklist.get();
+		}
+		else
+		{
+			whitelist = SimpleCloudsConfig.CLIENT.dimensionWhitelist.get();
+			useAsBlacklist = SimpleCloudsConfig.CLIENT.whitelistAsBlacklist.get();
+		}
+		
+		boolean flag = whitelist.stream().anyMatch(val -> {
+			return level.dimension().location().toString().equals(val);
+		});
+		
+		return useAsBlacklist ? !flag : flag;
+	}
 }

@@ -13,6 +13,7 @@ import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.commands.WeatherCommand;
+import net.minecraft.world.level.Level;
 
 @Mixin(WeatherCommand.class)
 public class MixinWeatherCommand
@@ -26,27 +27,27 @@ public class MixinWeatherCommand
 //			ci.cancel();
 //	}
 	
-	private static void checkAndOrThrow() throws CommandSyntaxException
+	private static void checkAndOrThrow(Level level) throws CommandSyntaxException
 	{
-		if (!CloudManager.useVanillaWeather(CloudTypeDataManager.getServerInstance()))
+		if (!CloudManager.useVanillaWeather(level, CloudTypeDataManager.getServerInstance()))
 			throw WEATHER_CANNOT_BE_MODIFIED.create();
 	}
 	
 	@Inject(method = "setClear", at = @At("HEAD"), cancellable = true)
 	private static void simpleclouds$preventWeatherModification_setClear(CommandSourceStack stack, int duration, CallbackInfoReturnable<Integer> ci) throws CommandSyntaxException
 	{
-		checkAndOrThrow();
+		checkAndOrThrow(stack.getLevel());
 	}
 	
 	@Inject(method = "setRain", at = @At("HEAD"), cancellable = true)
 	private static void simpleclouds$preventWeatherModification_setRain(CommandSourceStack stack, int duration, CallbackInfoReturnable<Integer> ci) throws CommandSyntaxException
 	{
-		checkAndOrThrow();
+		checkAndOrThrow(stack.getLevel());
 	}
 	
 	@Inject(method = "setThunder", at = @At("HEAD"), cancellable = true)
 	private static void simpleclouds$preventWeatherModification_setThunder(CommandSourceStack stack, int duration, CallbackInfoReturnable<Integer> ci) throws CommandSyntaxException
 	{
-		checkAndOrThrow();
+		checkAndOrThrow(stack.getLevel());
 	}
 }

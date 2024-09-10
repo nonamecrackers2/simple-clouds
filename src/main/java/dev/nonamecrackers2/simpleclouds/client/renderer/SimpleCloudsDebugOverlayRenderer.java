@@ -25,7 +25,7 @@ public class SimpleCloudsDebugOverlayRenderer
 {
 	public static void render(ForgeGui gui, GuiGraphics stack, float partialTicks, float width, float height)
 	{
-		if (gui.getMinecraft().options.renderDebug)
+		if (gui.getMinecraft().options.renderDebug && SimpleCloudsRenderer.canRenderInDimension(gui.getMinecraft().level))
 		{
 			if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof MultiRegionCloudMeshGenerator meshGenerator)
 			{
