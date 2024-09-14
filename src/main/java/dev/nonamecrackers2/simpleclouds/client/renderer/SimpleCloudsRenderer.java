@@ -70,6 +70,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.HandshakeHandler;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
 public class SimpleCloudsRenderer implements ResourceManagerReloadListener
@@ -138,7 +139,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.mc.level != null)
 			return CloudManager.get(this.mc.level).getCloudMode();
 		else
-			return SimpleCloudsConfig.CLIENT.cloudMode.get();
+			return CloudMode.DEFAULT;
 	}
 	
 	private String determineSingleModeCloudTypeRawId()
@@ -146,7 +147,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.mc.level != null)
 			return CloudManager.get(this.mc.level).getSingleModeCloudTypeRawId();
 		else
-			return SimpleCloudsConfig.CLIENT.singleModeCloudType.get();
+			return "simpleclouds:itty_bitty";
 	}
 	
 	private RegionType determineRegionGenerator()
@@ -195,6 +196,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void requestReload()
 	{
+		LOGGER.debug("Requesting reload...");
 		this.needsReload = true;
 	}
 	
