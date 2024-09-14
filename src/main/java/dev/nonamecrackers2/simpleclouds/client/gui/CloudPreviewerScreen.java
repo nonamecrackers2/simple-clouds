@@ -414,7 +414,7 @@ public class CloudPreviewerScreen extends Screen3D
 		super.render(stack, pMouseX, pMouseY, pPartialTick);
 		stack.drawString(this.font, Component.translatable("gui.simpleclouds.cloud_previewer.current_layer", Component.literal(this.layers.isEmpty() ? "NONE" : String.valueOf(this.currentLayer + 1)).withStyle(Style.EMPTY.withBold(true))), 10, 5, 0xFFFFFFFF);
 		
-		if (generator.getTotalSides() * CloudMeshGenerator.BYTES_PER_SIDE > CloudMeshGenerator.SIDE_BUFFER_SIZE)
+		if (generator.getTotalSides() * CloudMeshGenerator.BYTES_PER_SIDE > CloudMeshGenerator.MAX_SIDE_BUFFER_SIZE)
 			stack.drawString(this.font, WARNING_TOO_MANY_CUBES, this.width - this.font.width(WARNING_TOO_MANY_CUBES) - 5, this.height - this.font.lineHeight - 5, 0xFFFFFFFF);
 		
 		stack.drawString(this.font, WEATHER_TYPE_TITLE, this.weatherTypeButton.getX(), this.weatherTypeButton.getY() - this.font.lineHeight - 2, 0xFFFFFFFF);

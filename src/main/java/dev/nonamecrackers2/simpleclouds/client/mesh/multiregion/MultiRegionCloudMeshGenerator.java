@@ -130,13 +130,13 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	protected void setupShader()
 	{
 		super.setupShader();
+		this.shader.forUniform("FadeStart", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, this.fadeStart);
+		});
 		this.shader.bindShaderStorageBuffer("NoiseLayers", GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * MAX_CLOUD_TYPES);
 		this.shader.bindShaderStorageBuffer("LayerGroupings", GL15.GL_STATIC_DRAW).allocateBuffer(20 * MAX_CLOUD_TYPES);
 		if (this.fadeNearOrigin)
 		{
-			this.shader.forUniform("FadeStart", (id, loc) -> {
-				GL41.glProgramUniform1f(id, loc, this.fadeStart);
-			});
 			this.shader.forUniform("FadeEnd", (id, loc) -> {
 				GL41.glProgramUniform1f(id, loc, this.fadeEnd);
 			});

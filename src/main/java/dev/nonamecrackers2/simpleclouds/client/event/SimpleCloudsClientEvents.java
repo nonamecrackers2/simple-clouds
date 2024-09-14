@@ -193,7 +193,10 @@ public class SimpleCloudsClientEvents
 			if (SimpleCloudsRenderer.canRenderInDimension(mc.level))
 			{
 				int totalSides = renderer.getMeshGenerator().getTotalSides();
-				text.add("Triangles: " + totalSides * 2 + "; Size: " + humanReadableByteCountSI(totalSides * CloudMeshGenerator.BYTES_PER_SIDE));
+				int totalBytes = totalSides * CloudMeshGenerator.BYTES_PER_SIDE;
+				text.add("Triangles: " + totalSides * 2 + "; Size: " + humanReadableByteCountSI(totalBytes));
+				if (totalBytes > renderer.getMeshGenerator().getSideBufferSize())
+					text.add(ChatFormatting.RED + "Triangle Count Exceeded!");
 				int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
 				text.add("Mesh gen frames: " + SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get() + "; Effective FPS: " + mc.getFps() / frames);
 				text.add("Frustum culling: " + (SimpleCloudsConfig.CLIENT.frustumCulling.get() ? "ON" : "OFF"));

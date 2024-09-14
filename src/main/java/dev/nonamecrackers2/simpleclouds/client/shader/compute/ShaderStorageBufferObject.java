@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL43;
@@ -16,6 +17,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 
 public class ShaderStorageBufferObject
 {
+	private static int maxSize = -1;
 	protected int id;
 	protected final int binding;
 	protected final int usage;
@@ -26,6 +28,13 @@ public class ShaderStorageBufferObject
 		this.id = id;
 		this.binding = binding;
 		this.usage = usage;
+	}
+	
+	public static int getMaxSize()
+	{
+		if (maxSize == -1)
+			maxSize = GL11.glGetInteger(GL43.GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
+		return maxSize;
 	}
 	
 	public static ShaderStorageBufferObject create(int usage)
@@ -62,6 +71,9 @@ public class ShaderStorageBufferObject
 	
 	public void uploadData(ByteBuffer buffer)
 	{
+		int size = buffer.remaining();
+		if (size > getMaxSize())
+			throw new IllegalArgumentException("Size exceeds the SSBO maximum supported by current hardware, wanted: " + size + " bytes, maximum: " + maxSize + " bytes");
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
 		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.id);
@@ -70,9 +82,11 @@ public class ShaderStorageBufferObject
 		this.buffer = buffer;
 	}
 	
-	public void allocateBuffer(int bytes)
+	public int allocateBuffer(int bytes)
 	{
-		this.uploadData(MemoryTracker.create(bytes));
+		int size = Math.min(bytes, getMaxSize());
+		this.uploadData(MemoryTracker.create(size));
+		return size;
 	}
 	
 	public void closeAndClearBinding()

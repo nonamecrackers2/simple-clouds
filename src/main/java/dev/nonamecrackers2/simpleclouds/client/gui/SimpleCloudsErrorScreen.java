@@ -3,9 +3,12 @@ package dev.nonamecrackers2.simpleclouds.client.gui;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.lwjgl.glfw.GLFW;
+
 import com.google.common.collect.Lists;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.GeneratorInitializeResult;
+import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -85,6 +88,21 @@ public class SimpleCloudsErrorScreen extends Screen
 		layout.arrangeElements();
 		FrameLayout.centerInRectangle(layout, 0, this.height - 40, this.width, 40);
 		layout.visitWidgets(this::addRenderableWidget);
+	}
+	
+	@Override
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers)
+	{
+		if (super.keyPressed(keyCode, scanCode, modifiers))
+			return true;
+		
+		if (keyCode == GLFW.GLFW_KEY_R && Screen.hasControlDown())
+		{
+			this.minecraft.reloadResourcePacks();
+			return true;
+		}
+		
+		return false;
 	}
 	
 	@Override

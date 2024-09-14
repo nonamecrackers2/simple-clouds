@@ -32,4 +32,8 @@ void main()
 		float fogFactor = 1.0 - min(max(depth - FogStart, 0.0) / (FogEnd - FogStart), 1.0);
 		fragColor = vec4(col.rgb, col.a * fogFactor);
 	}
+	else
+	{
+		fragColor = vec4(0.0);
+	}
 }

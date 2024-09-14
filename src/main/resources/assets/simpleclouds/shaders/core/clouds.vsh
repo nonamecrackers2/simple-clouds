@@ -1,10 +1,10 @@
-#version 420
+#version 330
 
 #define SHADE vec3(0.6, 0.7, 0.8)
 
 in vec3 Position;
-in float Darkness;
-in uint Index;
+in float Brightness;
+in int Index;
 
 uniform mat4 ModelViewMat;
 uniform mat4 ProjMat;
@@ -40,5 +40,5 @@ void main()
 {
     gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
     vec3 normal = normals[uint(Index)];
-	vertexColor = mixLight(Light0_Direction, Light1_Direction, normal, vec4(mix(DarknessColorModifier, vec3(1.0), Darkness), 1.0));
+	vertexColor = mixLight(Light0_Direction, Light1_Direction, normal, vec4(mix(DarknessColorModifier, vec3(1.0), Brightness), 1.0));
 }

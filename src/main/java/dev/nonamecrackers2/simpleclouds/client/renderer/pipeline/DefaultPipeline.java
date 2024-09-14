@@ -54,7 +54,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 			mc.getProfiler().pop();
 		}
 		
-        renderer.getCloudTarget().clear(Minecraft.ON_OSX);
+		renderer.getCloudTarget().clear(Minecraft.ON_OSX);
         renderer.getCloudTarget().bindWrite(false);
         
         mc.getProfiler().push("clouds");

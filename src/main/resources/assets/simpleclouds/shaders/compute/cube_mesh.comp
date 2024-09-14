@@ -35,7 +35,7 @@ struct Vertex {
 	float y;
 	float z;
 	float brightness;
-	uint index;
+	int index;
 };
 
 struct Side {
@@ -192,7 +192,7 @@ bool shouldNotOcclude(int index)
 	}
 }
 
-void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, uint index, float brightness)
+void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, int index, float brightness)
 {
 	uint currentFace = atomicAdd(counter, 1u);
 	uint lastIndex = currentFace * 6;

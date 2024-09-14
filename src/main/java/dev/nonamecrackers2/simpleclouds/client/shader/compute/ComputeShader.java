@@ -60,6 +60,8 @@ public class ComputeShader implements AutoCloseable
 	private static int maxLocalGroupY = -1;
 	private static int maxLocalGroupZ = -1;
 	private static int maxLocalInvocations = -1;
+	private static int maxSSBOBindings = -1;
+	private static int maxImageUnits = -1;
 	private int id;
 	private final ComputeShader.CompiledShader compiledShader;
 	private final String name;
@@ -89,24 +91,26 @@ public class ComputeShader implements AutoCloseable
 	
 	public static int getAvailableShaderStorageBinding()
 	{
-		int max = GL11.glGetInteger(GL43.GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS);
-		for (int i = max - 1; i > 0; i--)
+		if (maxSSBOBindings == -1)
+			maxSSBOBindings = GL11.glGetInteger(GL43.GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS);
+		for (int i = maxSSBOBindings - 1; i > 0; i--)
 		{
 			if (!ALL_SHADER_STORAGE_BUFFERS.containsKey(i))
 				return i;
 		}
-		throw new NullPointerException("No available buffer binding. Total available buffer bindings: " + max);
+		throw new NullPointerException("No available buffer binding. Total available buffer bindings: " + maxSSBOBindings);
 	}
 	
 	public static int getAvailableImageUnit()
 	{
-		int max = GL11.glGetInteger(GL43.GL_MAX_IMAGE_UNITS);
-		for (int i = max - 1; i > 0; i--)
+		if (maxImageUnits == -1)
+			maxImageUnits = GL11.glGetInteger(GL43.GL_MAX_IMAGE_UNITS);
+		for (int i = maxImageUnits - 1; i > 0; i--)
 		{
 			if (!ALL_IMAGE_BINDINGS.contains(i))
 				return i;
 		}
-		throw new NullPointerException("No available image binding. Total available image units: " + max);
+		throw new NullPointerException("No available image binding. Total available image units: " + maxImageUnits);
 	}
 	
 	public static int getAndUseImageUnit()
@@ -396,7 +400,7 @@ public class ComputeShader implements AutoCloseable
 		GlStateManager.glLinkProgram(programId);
 		int i = GlStateManager.glGetProgrami(programId, GL20.GL_LINK_STATUS);
 		if (i == 0)
-			throw new RuntimeException("An error occured when linking program containing computer shader " + loc + ". Log output: " + GlStateManager.glGetProgramInfoLog(programId, GL11.GL_HINT_BIT));
+			throw new RuntimeException("An error occured when linking program containing computer shader " + loc + ". Log output: " + GlStateManager.glGetProgramInfoLog(programId, 32768));
 		return shader;
 	}
 	
@@ -411,7 +415,7 @@ public class ComputeShader implements AutoCloseable
 		GlStateManager.glCompileShader(shaderId);
 		if (GlStateManager.glGetShaderi(shaderId, GL20.GL_COMPILE_STATUS) == 0)
 		{
-			String error = StringUtils.trim(GL20.glGetShaderInfoLog(shaderId, GL11.GL_HINT_BIT));
+			String error = StringUtils.trim(GL20.glGetShaderInfoLog(shaderId, 32768));
 			throw new IOException("Couldn't compile compute shader (" + packId + ", " + loc + ") : " + error);
 		}
 		return new ComputeShader.CompiledShader(shaderId, id);
