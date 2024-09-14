@@ -18,9 +18,9 @@ public class CloudCommands
 {
 	public static void register(CommandDispatcher<CommandSourceStack> dispatcher, String baseName, Predicate<CommandSourceStack> requirement, CloudCommandSource<?, ?> source)
 	{
-		LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(SimpleCloudsMod.MODID).requires(requirement);
+		LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(SimpleCloudsMod.MODID);
 		
-		root.then(Commands.literal(baseName)
+		root.then(Commands.literal(baseName).requires(requirement)
 				.then(Commands.literal("scroll")
 						.then(Commands.literal("get")
 								.executes(source::getScrollAmount)
@@ -33,7 +33,7 @@ public class CloudCommands
 				)
 		);
 		
-		root.then(Commands.literal(baseName)
+		root.then(Commands.literal(baseName).requires(requirement)
 				.then(Commands.literal("speed")
 						.then(Commands.literal("get")
 								.executes(source::getSpeed)
@@ -46,7 +46,7 @@ public class CloudCommands
 				)
 		);
 		
-		root.then(Commands.literal(baseName)
+		root.then(Commands.literal(baseName).requires(requirement)
 				.then(Commands.literal("seed")
 						.then(Commands.literal("get")
 								.executes(source::getSeed)
@@ -54,7 +54,7 @@ public class CloudCommands
 				)
 		);
 		
-		root.then(Commands.literal(baseName)
+		root.then(Commands.literal(baseName).requires(requirement)
 				.then(Commands.literal("reset")
 						.then(Commands.literal("random")
 								.executes(source::reinitializeWithRandomSeed)
@@ -66,7 +66,7 @@ public class CloudCommands
 				)
 		);
 		
-		root.then(Commands.literal(baseName)
+		root.then(Commands.literal(baseName).requires(requirement)
 				.then(Commands.literal("direction")
 						.then(Commands.literal("get")
 								.executes(source::getDirection)
@@ -82,7 +82,7 @@ public class CloudCommands
 				)
 		);
 		
-		root.then(Commands.literal(baseName)
+		root.then(Commands.literal(baseName).requires(requirement)
 				.then(Commands.literal("height")
 						.then(Commands.literal("get")
 								.executes(source::getCloudHeight)
