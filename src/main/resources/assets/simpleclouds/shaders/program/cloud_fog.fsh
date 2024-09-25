@@ -6,7 +6,6 @@ uniform mat4 InverseWorldProjMat;
 uniform mat4 InverseModelViewMat;
 uniform float FogStart;
 uniform float FogEnd;
-uniform vec3 DefaultFogColor;
 
 in vec2 texCoord;
 in vec2 oneTexel;

@@ -64,7 +64,11 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 			mc.getProfiler().pop();
 		}
 	}
+	
+	@Override
+	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ) {}
 
+	//TODO: Make this render before weather so rain renders properly
 	@Override
 	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{

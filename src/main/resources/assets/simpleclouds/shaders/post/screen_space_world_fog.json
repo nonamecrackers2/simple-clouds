@@ -1,0 +1,23 @@
+{
+    "targets": [
+        "out"
+    ],
+    "passes": [
+        {
+            "name": "simpleclouds:screen_space_world_fog",
+            "intarget": "minecraft:main",
+            "outtarget": "out",
+            "auxtargets": [
+            	{
+            		"name": "DiffuseDepthSampler",
+            		"id": "minecraft:main:depth"
+            	}
+            ]
+        },
+        {
+            "name": "blit",
+            "intarget": "out",
+            "outtarget": "minecraft:main"
+        }
+    ]
+}

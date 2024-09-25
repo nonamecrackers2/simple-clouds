@@ -4,8 +4,9 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.List;
 
-import org.joml.Math;
 import org.joml.Vector3f;
+
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
@@ -19,6 +20,7 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
+import dev.nonamecrackers2.simpleclouds.client.world.FogRenderMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
@@ -32,6 +34,7 @@ import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.FogRenderer.FogMode;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.material.FogType;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
@@ -42,7 +45,6 @@ import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.network.NetworkHooks;
 import nonamecrackers2.crackerslib.client.event.impl.AddConfigEntryToMenuEvent;
 import nonamecrackers2.crackerslib.client.event.impl.ConfigMenuButtonEvent;
 import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;
@@ -176,8 +178,34 @@ public class SimpleCloudsClientEvents
 	@SubscribeEvent
 	public static void modifyFog(ViewportEvent.RenderFog event)
 	{
-		if (!SimpleCloudsConfig.CLIENT.renderTerrainFog.get() && event.getMode() == FogMode.FOG_TERRAIN && Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera() == FogType.NONE)
-			FogRenderer.setupNoFog();
+		if (event.getMode() == FogMode.FOG_TERRAIN && Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera() == FogType.NONE)
+		{
+			if (SimpleCloudsConfig.CLIENT.fogMode.get() == FogRenderMode.OFF)
+			{
+				FogRenderer.setupNoFog();
+				return;
+			}
+			SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
+			WorldEffects effects = renderer.getWorldEffectsManager();
+			float partialTick = (float)event.getPartialTick();
+			float storminess = Mth.sqrt(effects.getDarkenFactor(partialTick, 2.0F));
+			RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * storminess);
+		}
+	}
+	
+	@SubscribeEvent
+	public static void modifyFogColor(ViewportEvent.ComputeFogColor event)
+	{
+		if (SimpleCloudsConfig.CLIENT.fogMode.get() != FogRenderMode.OFF && Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera() == FogType.NONE)
+		{
+			SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
+			WorldEffects effects = renderer.getWorldEffectsManager();
+			float partialTick = (float)event.getPartialTick();
+			float lerp = effects.getDarkenFactor(partialTick);
+			event.setRed(Mth.lerp(event.getRed(), 0.03F, lerp));
+			event.setGreen(Mth.lerp(event.getGreen(), 0.02F, lerp));
+			event.setBlue(Mth.lerp(event.getBlue(), 0.0F, lerp));
+		}
 	}
 	
 	@SubscribeEvent

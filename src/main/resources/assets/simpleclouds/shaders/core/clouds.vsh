@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 #define SHADE vec3(0.6, 0.7, 0.8)
 

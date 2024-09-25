@@ -126,7 +126,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 			return 0.0F;
 		
 		float fade = info.getRight();
-		float verticalFade = 1.0F - Mth.clamp((y - (type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 128.0F)) / SimpleCloudsConstants.RAIN_VERTICAL_FADE, 0.0F, 1.0F);
+		float verticalFade = 1.0F - Mth.clamp((y - (type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + this.getCloudHeight())) / SimpleCloudsConstants.RAIN_VERTICAL_FADE, 0.0F, 1.0F);
 		return Math.min(1.0F, Math.max(0.0F, SimpleCloudsConstants.RAIN_THRESHOLD - fade) / SimpleCloudsConstants.RAIN_FADE) * verticalFade;
 	}
 	

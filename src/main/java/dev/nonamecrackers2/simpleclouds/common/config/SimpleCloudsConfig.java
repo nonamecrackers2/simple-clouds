@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
+import dev.nonamecrackers2.simpleclouds.client.world.FogRenderMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.resources.ResourceLocation;
@@ -55,9 +56,9 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<CloudStyle> cloudStyle;
 		public final ForgeConfigSpec.ConfigValue<Long> cloudSeed;
 		public final ForgeConfigSpec.ConfigValue<Boolean> useSpecificSeed;
-		public final ForgeConfigSpec.ConfigValue<Boolean> renderTerrainFog;
 		public final ForgeConfigSpec.ConfigValue<List<? extends String>> dimensionWhitelist;
 		public final ForgeConfigSpec.ConfigValue<Boolean> whitelistAsBlacklist;
+		public final ForgeConfigSpec.ConfigValue<FogRenderMode> fogMode;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -82,6 +83,8 @@ public class SimpleCloudsConfig
 			}, "dimensionWhitelist", false, "Specifies the allowed dimensions that Simple Clouds is active in");
 			
 			this.whitelistAsBlacklist = this.createValue(false, "whitelistAsBlacklist", false, "Specifies if the dimension whitelist should instead be use as a blacklist");
+			
+			this.fogMode = this.createEnumValue(FogRenderMode.SCREEN_SPACE, "fogMode", false, "Specifies the type of world fog that should be used. Each has their own advantages and disadvantages, ranging from visual discrepancies to possible compatibility issues");
 			
 			builder.comment("Seed").push("seed");
 			
@@ -120,12 +123,6 @@ public class SimpleCloudsConfig
 			this.singleModeFadeStartPercentage = this.createRangedIntValue(80, 0, 100, "singleModeFadeStartPercentage", false, "Specifies the percentage of the cloud render distance that the clouds should begin to fade away, when using the single cloud type mode (e.x. 50 would start to make the clouds fade away at half of the cloud render distance)");
 			
 			this.singleModeFadeEndPercentage = this.createRangedIntValue(100, 0, 100, "singleModeFadeEndPercentage", false, "Specifies the percentage of the cloud render distance that the clouds will be fully faded away, when using the single cloud type mode (e.x. 50 would make the clouds completely disappear past half the cloud render distance)");
-			
-			builder.pop();
-			
-			builder.comment("Preference").push("preference");
-			
-			this.renderTerrainFog = this.createValue(false, "renderTerrainFog", false, "Specifies if terrain fog should be rendered or not. Enabling may cause the fog to appear out of place against the storm fog that appears under clouds.");
 			
 			builder.pop();
 		}

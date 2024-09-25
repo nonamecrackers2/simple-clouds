@@ -26,6 +26,7 @@ import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
@@ -64,7 +65,7 @@ public class WorldEffects
 		
 		if (!manager.shouldUseVanillaWeather() && type.weatherType().causesDarkening())
 		{
-			float verticalFade = 1.0F - Mth.clamp(((float)camY - (type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 128.0F)) / SimpleCloudsConstants.RAIN_VERTICAL_FADE, 0.0F, 1.0F);
+			float verticalFade = 1.0F - Mth.clamp(((float)camY - (type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + manager.getCloudHeight())) / SimpleCloudsConstants.RAIN_VERTICAL_FADE, 0.0F, 1.0F);
 			float factor = Mth.clamp((1.0F - result.getRight()) * 3.0F, 0.0F, 1.0F);
 			this.storminessAtCamera = type.storminess() * factor * verticalFade;
 		}
@@ -84,6 +85,8 @@ public class WorldEffects
 	{
 		if (!this.lightningBolts.isEmpty())
 		{
+			float currentFogStart = RenderSystem.getShaderFogStart();
+			RenderSystem.setShaderFogStart(Float.MAX_VALUE);
 			PoseStack modelViewStack = RenderSystem.getModelViewStack();
 			modelViewStack.pushPose();
 			RenderSystem.applyModelViewMatrix();
@@ -95,6 +98,7 @@ public class WorldEffects
 			RenderSystem.colorMask(true, true, true, true);
 			RenderSystem.enableBlend();
 			RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+			RenderSystem.enableDepthTest();
 			PoseStack stack = new PoseStack();
 			stack.pushPose();
 			stack.translate(-camX, -camY, -camZ);
@@ -111,6 +115,7 @@ public class WorldEffects
 			RenderSystem.defaultBlendFunc();
 			modelViewStack.popPose();
 			RenderSystem.applyModelViewMatrix();
+			RenderSystem.setShaderFogStart(currentFogStart);
 		}
 	}
 	

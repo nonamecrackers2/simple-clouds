@@ -11,8 +11,10 @@ import com.mojang.blaze3d.vertex.VertexSorting;
 
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.FrameBufferUtils;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
+import dev.nonamecrackers2.simpleclouds.client.world.FogRenderMode;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.material.FogType;
 
 public class DefaultPipeline implements CloudsRenderPipeline
 {
@@ -81,6 +83,16 @@ public class DefaultPipeline implements CloudsRenderPipeline
 		mc.getProfiler().pop();
 		
         RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
+	}
+	
+	@Override
+	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	{
+		if (SimpleCloudsConfig.CLIENT.fogMode.get() == FogRenderMode.SCREEN_SPACE && mc.gameRenderer.getMainCamera().getFluidInCamera() == FogType.NONE)
+		{
+			renderer.doScreenSpaceWorldFog(stack, projMat, partialTick);
+			mc.getMainRenderTarget().bindWrite(false);
+		}
 	}
 
 	@Override

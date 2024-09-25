@@ -53,6 +53,13 @@ public class MixinLevelRenderer
 			SimpleCloudsRenderer.getInstance().renderAfterSky(stack, RenderSystem.getProjectionMatrix(), partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
+	@Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Options;getCloudsType()Lnet/minecraft/client/CloudStatus;")) // @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;blendFuncSeparate(Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;Lcom/mojang/blaze3d/platform/GlStateManager$SourceFactor;Lcom/mojang/blaze3d/platform/GlStateManager$DestFactor;)V", ordinal = 0)
+	public void simpleclouds$injectCustomCloudRenderingPre_beforeWeather(PoseStack stack, float partialTick, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
+	{
+		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
+			SimpleCloudsRenderer.getInstance().renderBeforeWeather(stack, projMat, partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+	}
+	
 	@Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V"))
 	public void simpleclouds$injectCustomWeatherRendering_renderLevel(PoseStack stack, float partialTick, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
 	{
@@ -66,6 +73,22 @@ public class MixinLevelRenderer
 		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
 			SimpleCloudsRenderer.getInstance().tick();
 	}
+//	
+//	@ModifyVariable(method = "renderChunkLayer", at = @At("STORE"))
+//	public boolean simpleclouds$enableTranslucentSortForNonTranslucent_enableBackwardsRender_renderChunkLayer(boolean flag1, RenderType type)
+//	{
+//		if (!flag1)
+//			return false;
+//		else
+//			return !FogRenderMode.shouldUseTranslucency(type);
+//	}
+//	
+//	@Redirect(method = "renderChunkLayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/RenderType;translucent()Lnet/minecraft/client/renderer/RenderType;", opcode = Opcodes.GETSTATIC, ordinal = 0))
+//	public RenderType simpleclouds$disableTranslucentSort_renderChunkLayer(RenderType inputType)
+//	{
+//		return null;//FogRenderMode.shouldUseTranslucency(inputType) ? inputType : RenderType.translucent();
+//	}
+	
 //	
 //	@Inject(method = "renderLevel", at = @At("TAIL"))
 //	public void simpleclouds$renderPost_renderLevel(PoseStack stack, float partialTicks, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
