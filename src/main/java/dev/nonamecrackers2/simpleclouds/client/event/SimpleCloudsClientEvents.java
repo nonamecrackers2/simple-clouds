@@ -94,9 +94,9 @@ public class SimpleCloudsClientEvents
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 16)
 				.setPreset(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded, true)
 				.setPreset(SimpleCloudsConfig.CLIENT.frustumCulling, false).build());
-		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.fast_culled_mesh"))
-				.setDescription(Component.translatable("simpleclouds.config.preset.fast_culled_mesh.description"))
-				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 4).build());
+//		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.fast_culled_mesh"))
+//				.setDescription(Component.translatable("simpleclouds.config.preset.fast_culled_mesh.description"))
+//				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 4).build());
 	}
 //	
 //	@SubscribeEvent
