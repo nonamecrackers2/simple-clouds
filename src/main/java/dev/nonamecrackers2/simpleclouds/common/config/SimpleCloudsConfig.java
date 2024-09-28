@@ -61,6 +61,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<FogRenderMode> fogMode;
 		public final ForgeConfigSpec.ConfigValue<Boolean> lightningColorVariation;
 		public final ForgeConfigSpec.ConfigValue<Double> rainAngle;
+		public final ForgeConfigSpec.ConfigValue<Integer> thunderAttenuationDistance;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -91,6 +92,8 @@ public class SimpleCloudsConfig
 			this.lightningColorVariation = this.createValue(true, "lightningColorVariation", false, "Specifies if lightning should have slight random color variation");
 			
 			this.rainAngle = this.createRangedDoubleValue(15.0D, 0.0D, 45.0D, "rainAngle", false, "Specifies the angle of the rain, perpendicular to the ground. Higher values makes it more horizontal");
+			
+			this.thunderAttenuationDistance = this.createRangedIntValue(2000, 100, 20000, "thunderAttenuationDistance", false, "Specifies the attenuation distance for thunder. The lower the value, the quieter it will be from longer distances");
 			
 			builder.comment("Seed").push("seed");
 			

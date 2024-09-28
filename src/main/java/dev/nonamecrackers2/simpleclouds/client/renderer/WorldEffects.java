@@ -19,8 +19,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
+import dev.nonamecrackers2.simpleclouds.client.event.SimpleCloudsClientEvents;
 import dev.nonamecrackers2.simpleclouds.client.renderer.lightning.LightningBolt;
 import dev.nonamecrackers2.simpleclouds.client.renderer.rain.PrecipitationQuad;
+import dev.nonamecrackers2.simpleclouds.client.sound.AdjustableAttenuationSoundInstance;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -33,7 +35,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -189,7 +190,8 @@ public class WorldEffects
 			sound = SimpleCloudsSounds.CLOSE_THUNDER.get();
 		float fade = 1.0F - Math.min(Math.max(dist - (float)SimpleCloudsConstants.THUNDER_PITCH_FULL_DIST, 0.0F) / ((float)SimpleCloudsConstants.THUNDER_PITCH_MINIMUM_DIST - (float)SimpleCloudsConstants.THUNDER_PITCH_FULL_DIST), 1.0F);
 		RandomSource random = RandomSource.create((long)seed);
-		SimpleSoundInstance instance = new SimpleSoundInstance(sound, SoundSource.WEATHER, 1.0F + random.nextFloat() * 4.0F, 0.5F + fade * 0.5F, random, (double)pos.getX() + 0.5D, (float)pos.getY() + 0.5D, (double)pos.getZ() + 0.5D);
+		int attenuation = SimpleCloudsConfig.CLIENT.thunderAttenuationDistance.get();
+		AdjustableAttenuationSoundInstance instance = new AdjustableAttenuationSoundInstance(sound, SoundSource.WEATHER, 1.0F + this.random.nextFloat() * 4.0F, 0.5F + fade * 0.5F, random, (double)pos.getX() + 0.5D, (float)pos.getY() + 0.5D, (double)pos.getZ() + 0.5D, attenuation);
 		int time = Mth.floor(dist / SimpleCloudsConstants.SOUND_METERS_PER_SECOND) * 20; 
 		this.mc.getSoundManager().playDelayed(instance, time);
 		if (!onlySound)

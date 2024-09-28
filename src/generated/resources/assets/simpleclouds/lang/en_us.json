@@ -86,6 +86,8 @@
   "gui.simpleclouds.config.stormFogAngle.title": "Storm Fog Angle",
   "gui.simpleclouds.config.testSidesThatAreOccluded.description": "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of some visual artifacts.",
   "gui.simpleclouds.config.testSidesThatAreOccluded.title": "Test Sides That Are Occluded",
+  "gui.simpleclouds.config.thunderAttenuationDistance.description": "Specifies the attenuation distance for thunder. The lower the value, the quieter it will be from longer distances.\nRange: 100 ~ 20000",
+  "gui.simpleclouds.config.thunderAttenuationDistance.title": "Thunder Attenuation Distance",
   "gui.simpleclouds.config.useSpecificSeed.description": "Specifies if the seed set by the 'Cloud Seed' option should be used or not.",
   "gui.simpleclouds.config.useSpecificSeed.title": "Use Specific Seed",
   "gui.simpleclouds.config.whitelistAsBlacklist.description": "Specifies if the dimension whitelist should instead be use as a blacklist",
