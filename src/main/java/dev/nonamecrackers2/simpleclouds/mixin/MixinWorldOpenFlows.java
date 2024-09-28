@@ -16,6 +16,6 @@ public class MixinWorldOpenFlows
 	@Inject(method = "createWorldAccess", at = @At("RETURN"), locals = LocalCapture.CAPTURE_FAILHARD)
 	public void simpleclouds$captureWorldPath_createWorldAccess(String level, CallbackInfoReturnable<LevelStorageSource.LevelStorageAccess> ci)
 	{
-		CloudTypeDataManager.setSimpleCloudsWorldPath(ci.getReturnValue().getLevelPath(CloudTypeDataManager.SIMPLE_CLOUDS_FOLDER));
+		//CloudTypeDataManager.setSimpleCloudsWorldPath(ci.getReturnValue().getLevelPath(CloudTypeDataManager.SIMPLE_CLOUDS_FOLDER));
 	}
 }

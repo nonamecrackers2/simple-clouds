@@ -21,7 +21,7 @@ public class ClientSideCloudTypeManager implements CloudTypeSource
 	
 	private ClientSideCloudTypeManager()
 	{
-		this.dataManager = new CloudTypeDataManager(CloudTypeDataManager.Environment.CLIENT);
+		this.dataManager = new CloudTypeDataManager();
 	}
 	
 	public CloudTypeDataManager getClientSideDataManager()

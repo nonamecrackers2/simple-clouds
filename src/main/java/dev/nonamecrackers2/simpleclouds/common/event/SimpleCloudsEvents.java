@@ -42,10 +42,10 @@ public class SimpleCloudsEvents
 			target = PacketDistributor.ALL.noArg();
 		SimpleCloudsPacketHandlers.MAIN.send(target, new SendCloudTypesPacket(CloudTypeDataManager.getServerInstance()));
 	}
-	
-	@SubscribeEvent
-	public static void onServerStopping(ServerStoppingEvent event)
-	{
-		CloudTypeDataManager.setSimpleCloudsWorldPath(null);
-	}
+//	
+//	@SubscribeEvent
+//	public static void onServerStopping(ServerStoppingEvent event)
+//	{
+//		CloudTypeDataManager.setSimpleCloudsWorldPath(null);
+//	}
 }
