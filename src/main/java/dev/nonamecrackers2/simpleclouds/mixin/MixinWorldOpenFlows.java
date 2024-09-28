@@ -10,6 +10,7 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import net.minecraft.client.gui.screens.worldselection.WorldOpenFlows;
 import net.minecraft.world.level.storage.LevelStorageSource;
 
+@Deprecated
 @Mixin(WorldOpenFlows.class)
 public class MixinWorldOpenFlows
 {

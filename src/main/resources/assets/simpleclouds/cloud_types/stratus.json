@@ -22,7 +22,7 @@
     }
   ],
   "weather_type": "rain",
-  "storminess": 0.6,
+  "storminess": 0.5,
   "storm_start": 0.0,
   "storm_fade_distance": 32.0
 }
