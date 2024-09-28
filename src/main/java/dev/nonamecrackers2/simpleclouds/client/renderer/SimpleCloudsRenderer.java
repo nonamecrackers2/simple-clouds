@@ -1096,6 +1096,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private void _copyDepthSafe(RenderTarget to, RenderTarget from)
 	{
 		RenderSystem.assertOnRenderThread();
+		GlStateManager._getError(); //Clear old error
 		if (!this.failedToCopyDepthBuffer)
 		{
 			to.bindWrite(false);

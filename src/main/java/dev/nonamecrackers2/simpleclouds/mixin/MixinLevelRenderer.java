@@ -64,7 +64,7 @@ public class MixinLevelRenderer
 	public void simpleclouds$injectCustomWeatherRendering_renderLevel(PoseStack stack, float partialTick, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
 	{
 		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
-			SimpleCloudsRenderer.getInstance().getWorldEffectsManager().renderWeather(partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+			SimpleCloudsRenderer.getInstance().getWorldEffectsManager().renderWeather(texture, partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
 	@Inject(method = "tick", at = @At("HEAD"))
@@ -72,6 +72,13 @@ public class MixinLevelRenderer
 	{
 		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
 			SimpleCloudsRenderer.getInstance().tick();
+	}
+	
+	@Inject(method = "renderSnowAndRain", at = @At("HEAD"), cancellable = true)
+	public void simpleclouds$overrideRainRendering_renderSnowAndRain(LightTexture texture, float partialTick, double camX, double camY, double camZ, CallbackInfo ci)
+	{
+		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
+			ci.cancel();
 	}
 //	
 //	@ModifyVariable(method = "renderChunkLayer", at = @At("STORE"))

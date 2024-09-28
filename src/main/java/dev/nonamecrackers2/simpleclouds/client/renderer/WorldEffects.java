@@ -1,6 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -9,6 +10,7 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -18,6 +20,7 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
 import dev.nonamecrackers2.simpleclouds.client.renderer.lightning.LightningBolt;
+import dev.nonamecrackers2.simpleclouds.client.renderer.rain.PrecipitationQuad;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -26,19 +29,26 @@ import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public class WorldEffects
 {
 	public static final float EFFECTS_STRENGTH_MULTIPLER = 1.2F;
+	public static final int RAIN_SCAN_WIDTH = 32;
+	public static final int RAIN_SCAN_HEIGHT = 8;
+	public static final int RAIN_HEIGHT_OFFSET = 8;
 //	private static final int RAINY_WATER_COLOR = 0xFF303030;
 	private final Minecraft mc;
 	private final SimpleCloudsRenderer renderer;
@@ -48,6 +58,9 @@ public class WorldEffects
 	private float storminessSmoothed;
 	private float storminessSmoothedO;
 	private final List<LightningBolt> lightningBolts = Lists.newArrayList();
+	private final Map<BlockPos, PrecipitationQuad> precipitationQuads = Maps.newHashMap();
+	private final Map<Biome.Precipitation, List<PrecipitationQuad>> quadsByPrecipitation = Maps.newHashMap();
+	private final RandomSource random = RandomSource.create();
 	
 	protected WorldEffects(Minecraft mc, SimpleCloudsRenderer renderer)
 	{
@@ -81,8 +94,15 @@ public class WorldEffects
 		}
 	}
 	
-	public void renderWeather(float partialTick, double camX, double camY, double camZ)
+	public void renderWeather(LightTexture texture, float partialTick, double camX, double camY, double camZ)
 	{
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder builder = tesselator.getBuilder();
+		RenderSystem.depthMask(Minecraft.useShaderTransparency());
+		RenderSystem.colorMask(true, true, true, true);
+		RenderSystem.enableBlend();
+		RenderSystem.enableDepthTest();
+		
 		if (!this.lightningBolts.isEmpty())
 		{
 			float currentFogStart = RenderSystem.getShaderFogStart();
@@ -90,15 +110,9 @@ public class WorldEffects
 			PoseStack modelViewStack = RenderSystem.getModelViewStack();
 			modelViewStack.pushPose();
 			RenderSystem.applyModelViewMatrix();
-			Tesselator tesselator = Tesselator.getInstance();
-			BufferBuilder builder = tesselator.getBuilder();
 			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 			RenderSystem.setShader(GameRenderer::getRendertypeLightningShader);
-			RenderSystem.depthMask(Minecraft.useShaderTransparency());
-			RenderSystem.colorMask(true, true, true, true);
-			RenderSystem.enableBlend();
 			RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
-			RenderSystem.enableDepthTest();
 			PoseStack stack = new PoseStack();
 			stack.pushPose();
 			stack.translate(-camX, -camY, -camZ);
@@ -111,12 +125,37 @@ public class WorldEffects
 			}
 			stack.popPose();
 			tesselator.end();
-			RenderSystem.disableBlend();
-			RenderSystem.defaultBlendFunc();
 			modelViewStack.popPose();
 			RenderSystem.applyModelViewMatrix();
 			RenderSystem.setShaderFogStart(currentFogStart);
 		}
+		
+		if (!this.quadsByPrecipitation.isEmpty())
+		{
+			texture.turnOnLightLayer();
+			RenderSystem.defaultBlendFunc();
+			RenderSystem.disableCull();
+			RenderSystem.setShader(GameRenderer::getParticleShader);
+			for (var entry : this.quadsByPrecipitation.entrySet())
+			{
+				RenderSystem.setShaderTexture(0, PrecipitationQuad.TEXTURE_BY_PRECIPITATION.get(entry.getKey()));
+				builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
+				PoseStack stack = new PoseStack();
+				stack.translate(-camX, -camY, -camZ);
+				for (PrecipitationQuad quad : entry.getValue())
+				{
+					stack.pushPose();
+					int packedLight = LevelRenderer.getLightColor(this.mc.level, quad.getBlockPos());
+					quad.render(stack, builder, partialTick, packedLight, camX, camY, camZ);
+					stack.popPose();
+				}
+				tesselator.end();
+			}
+			RenderSystem.enableCull();
+		}
+		
+		RenderSystem.disableBlend();
+		RenderSystem.defaultBlendFunc();
 	}
 	
 	public void spawnLightning(BlockPos pos, boolean onlySound, int seed, int depth, int branchCount, float maxBranchLength, float maxWidth, float minimumPitch, float maximumPitch)
@@ -157,13 +196,77 @@ public class WorldEffects
 	
 	public void tick()
 	{
-		var iterator = this.lightningBolts.iterator();
-		while (iterator.hasNext())
+		var lightning = this.lightningBolts.iterator();
+		while (lightning.hasNext())
 		{
-			LightningBolt bolt = iterator.next();
+			LightningBolt bolt = lightning.next();
 			if (bolt.isDead())
-				iterator.remove();
+				lightning.remove();
 			bolt.tick();
+		}
+		
+		float rainIntensity = this.mc.level.getRainLevel(0.0F);
+		BlockPos camPos = this.mc.gameRenderer.getMainCamera().getBlockPosition();
+		float xRot = 15.0F * ((float)Math.PI / 180.0F);
+		Vector3f direction = CloudManager.get(this.mc.level).getDirection();
+		float yRot = (float)-Mth.atan2((double)direction.x, (double)direction.z);
+		float xRotCos = Mth.cos(xRot - (float)Math.PI / 2.0F);
+		int xOffset = Mth.floor(Mth.sin(-yRot) * xRotCos * ((float)RAIN_SCAN_WIDTH / 2.0F));
+		int zOffset = Mth.floor(Mth.cos(-yRot) * xRotCos * ((float)RAIN_SCAN_WIDTH / 2.0F));
+		int radius = Mth.floor((float)RAIN_SCAN_WIDTH / 2.0F * (Minecraft.useFancyGraphics() ? 1.0F : 0.5F));
+		int minX = camPos.getX() - radius - xOffset;
+		int minY = camPos.getY() + RAIN_HEIGHT_OFFSET;
+		int minZ = camPos.getZ() - radius - zOffset;
+		int maxX = camPos.getX() + radius - xOffset;
+		int maxY = camPos.getY() + RAIN_SCAN_HEIGHT + RAIN_HEIGHT_OFFSET;
+		int maxZ = camPos.getZ() + radius - zOffset;
+		AABB box = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
+		Biome biome = this.mc.level.getBiome(camPos).value();
+		if (rainIntensity > 0.0F && biome.hasPrecipitation())
+		{
+			int chance = 50 + (int)(100.0F * (1.0F - rainIntensity));
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int height = this.mc.level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+					for (int y = minY; y < maxY; y++)
+					{
+						if (height > y)
+							continue;
+						BlockPos pos = new BlockPos(x, y, z);
+						Biome.Precipitation precipitation = biome.getPrecipitationAt(pos);
+						RandomSource blockRandom = RandomSource.create(pos.asLong());
+						if (!this.precipitationQuads.containsKey(pos))
+						{
+							if (blockRandom.nextInt(chance) == 0)
+							{
+								float widthModifier = precipitation == Biome.Precipitation.SNOW ? 4.0F : 2.0F;
+								PrecipitationQuad quad = new PrecipitationQuad(precipitation, this.mc.level::clip, pos, xRot + this.random.nextFloat() * 0.1F, yRot + this.random.nextFloat() * 0.1F, 60 + this.random.nextInt(60), rainIntensity * widthModifier);
+								this.precipitationQuads.put(pos, quad);
+								this.quadsByPrecipitation.computeIfAbsent(precipitation, p -> Lists.newArrayList()).add(quad);
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		var rain = this.precipitationQuads.entrySet().iterator();
+		while (rain.hasNext())
+		{
+			var entry = rain.next();
+			PrecipitationQuad quad = entry.getValue();
+			BlockPos pos = entry.getKey();
+			if (!box.contains(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) || quad.isDead())
+			{
+				rain.remove();
+				this.quadsByPrecipitation.get(quad.getPrecipitation()).remove(quad);
+			}
+			else
+			{
+				quad.tick();
+			}
 		}
 		
 		this.storminessSmoothedO = this.storminessSmoothed;

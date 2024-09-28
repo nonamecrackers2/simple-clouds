@@ -111,7 +111,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 		if ((float)pos.getY() + 0.5F > type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 128.0F)
 			return false;
 		
-		if (info.getLeft().weatherType().includesRain() && info.getRight() < SimpleCloudsConstants.RAIN_THRESHOLD)
+		if (info.getLeft().weatherType().includesRain() && info.getRight() < SimpleCloudsConstants.RAIN_THRESHOLD - 0.01F)
 			return true;
 		else
 			return false;
