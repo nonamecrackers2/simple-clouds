@@ -40,8 +40,11 @@ public class LightningBolt
 	private int tickCount;
 	private float fade;
 	private float fadeO;
+	private float r;
+	private float g;
+	private float b;
 	
-	public LightningBolt(RandomSource random, Vector3f position, int depth, int branchCount, float maxBranchLength, float maxWidth, float minimumPitch, float maximumPitch)
+	public LightningBolt(RandomSource random, Vector3f position, int depth, int branchCount, float maxBranchLength, float maxWidth, float minimumPitch, float maximumPitch, float r, float g, float b)
 	{
 		this.random = random;
 		this.totalDepth = Mth.clamp(depth, 1, MAX_DEPTH);
@@ -52,6 +55,9 @@ public class LightningBolt
 		this.maxPitch = Mth.clamp(maximumPitch, minimumPitch, MAXIMUM_PITCH_ALLOWED);
 		this.position = position;
 		this.root = buildBranchesWithChildren(random, depth, 0, branchCount, maxBranchLength, maxWidth, maxWidth, maximumPitch, minimumPitch);
+		this.r = r;
+		this.g = g;
+		this.b = b;
 	}
 	
 	private static float calculateWidthAtDepth(int maxDepth, int desiredDepth, float maxWidth)
@@ -159,7 +165,7 @@ public class LightningBolt
 		int depth = Mth.floor((float)this.totalDepth * animFactor);
 		
 		for (LightningBolt.Branch branch : this.root)
-			renderBranch(depth, 0, new Vector3f(), stack, consumer, r, g, b, alpha, branch);
+			renderBranch(depth, 0, new Vector3f(), stack, consumer, r * this.r, g * this.g, b * this.b, alpha, branch);
 		
 		stack.popPose();
 	}

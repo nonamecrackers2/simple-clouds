@@ -59,6 +59,8 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<List<? extends String>> dimensionWhitelist;
 		public final ForgeConfigSpec.ConfigValue<Boolean> whitelistAsBlacklist;
 		public final ForgeConfigSpec.ConfigValue<FogRenderMode> fogMode;
+		public final ForgeConfigSpec.ConfigValue<Boolean> lightningColorVariation;
+		public final ForgeConfigSpec.ConfigValue<Double> rainAngle;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -85,6 +87,10 @@ public class SimpleCloudsConfig
 			this.whitelistAsBlacklist = this.createValue(false, "whitelistAsBlacklist", false, "Specifies if the dimension whitelist should instead be use as a blacklist");
 			
 			this.fogMode = this.createEnumValue(FogRenderMode.SCREEN_SPACE, "fogMode", false, "Specifies the type of world fog that should be used. Each has their own advantages and disadvantages, ranging from visual discrepancies to possible compatibility issues");
+			
+			this.lightningColorVariation = this.createValue(true, "lightningColorVariation", false, "Specifies if lightning should have slight random color variation");
+			
+			this.rainAngle = this.createRangedDoubleValue(15.0D, 0.0D, 45.0D, "rainAngle", false, "Specifies the angle of the rain, perpendicular to the ground. Higher values makes it more horizontal");
 			
 			builder.comment("Seed").push("seed");
 			

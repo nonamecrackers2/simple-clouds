@@ -24,6 +24,7 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.rain.PrecipitationQuad;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
+import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.init.SimpleCloudsSounds;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Camera;
@@ -36,8 +37,10 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.util.random.SimpleWeightedRandomList;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
@@ -50,6 +53,13 @@ public class WorldEffects
 	public static final int RAIN_SCAN_HEIGHT = 8;
 	public static final int RAIN_HEIGHT_OFFSET = 8;
 	public static final int RAIN_SOUND_INTERVAL_MODIFIER = 100;
+	public static final SimpleWeightedRandomList<Integer> LIGHTNING_COLORS = SimpleWeightedRandomList.<Integer>builder()
+			.add(0xFFFFFFFF, 30) // White
+			.add(0xFF8C80FF, 13) // Blue
+			.add(0xFF8C80FF, 12) // Purple
+			.add(0xFFF0FFB4, 10) // Yellow
+			.add(0xFFFFB4BE, 5) // Red
+			.build();
 //	private static final int RAINY_WATER_COLOR = 0xFF303030;
 	private final Minecraft mc;
 	private final SimpleCloudsRenderer renderer;
@@ -183,7 +193,19 @@ public class WorldEffects
 		int time = Mth.floor(dist / SimpleCloudsConstants.SOUND_METERS_PER_SECOND) * 20; 
 		this.mc.getSoundManager().playDelayed(instance, time);
 		if (!onlySound)
-			this.lightningBolts.add(new LightningBolt(random, vec, depth, branchCount, maxBranchLength, maxWidth, minimumPitch, maximumPitch));
+		{
+			int color = LIGHTNING_COLORS.getRandomValue(random).get();
+			float r = 1.0F;
+			float g = 1.0F;
+			float b = 1.0F;
+			if (SimpleCloudsConfig.CLIENT.lightningColorVariation.get())
+			{
+				r = (float)FastColor.ARGB32.red(color) / 255.0F;
+				g = (float)FastColor.ARGB32.green(color) / 255.0F;
+				b = (float)FastColor.ARGB32.blue(color) / 255.0F;
+			}
+			this.lightningBolts.add(new LightningBolt(random, vec, depth, branchCount, maxBranchLength, maxWidth, minimumPitch, maximumPitch, r, g, b));
+		}
 	}
 	
 	public void modifyLightMapTexture(float partialTick, int pixelX, int pixelY, Vector3f color)
@@ -208,7 +230,7 @@ public class WorldEffects
 		
 		float rainIntensity = this.mc.level.getRainLevel(0.0F);
 		BlockPos camPos = this.mc.gameRenderer.getMainCamera().getBlockPosition();
-		float xRot = 15.0F * ((float)Math.PI / 180.0F);
+		float xRot = SimpleCloudsConfig.CLIENT.rainAngle.get().floatValue() * ((float)Math.PI / 180.0F);
 		Vector3f direction = CloudManager.get(this.mc.level).getDirection();
 		float yRot = (float)-Mth.atan2((double)direction.x, (double)direction.z);
 		float xRotCos = Mth.cos(xRot - (float)Math.PI / 2.0F);
@@ -225,7 +247,6 @@ public class WorldEffects
 		Biome biome = this.mc.level.getBiome(camPos).value();
 		if (rainIntensity > 0.0F && biome.hasPrecipitation())
 		{
-			float chance = 1.0F / (10.0F + 100.0F * (1.0F - rainIntensity));
 			for (int x = minX; x < maxX; x++)
 			{
 				for (int z = minZ; z < maxZ; z++)
