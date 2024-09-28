@@ -6,7 +6,9 @@ import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -80,6 +82,19 @@ public class MixinLevelRenderer
 		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
 			ci.cancel();
 	}
+	
+	@ModifyConstant(method = "tickRain", constant = @Constant(floatValue = 0.2F, ordinal = 0))
+	public float simpleclouds$modifyRainSoundVolume_tickRain(float value)
+	{
+		return value * this.level.getRainLevel(0.0F);
+	}
+	
+	@ModifyConstant(method = "tickRain", constant = @Constant(floatValue = 0.1F, ordinal = 0))
+	public float simpleclouds$modifyAboveRainSoundVolume_tickRain(float value)
+	{
+		return value * this.level.getRainLevel(0.0F);
+	}
+	
 //	
 //	@ModifyVariable(method = "renderChunkLayer", at = @At("STORE"))
 //	public boolean simpleclouds$enableTranslucentSortForNonTranslucent_enableBackwardsRender_renderChunkLayer(boolean flag1, RenderType type)

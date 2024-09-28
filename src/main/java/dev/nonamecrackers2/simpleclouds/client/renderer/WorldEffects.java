@@ -49,6 +49,7 @@ public class WorldEffects
 	public static final int RAIN_SCAN_WIDTH = 32;
 	public static final int RAIN_SCAN_HEIGHT = 8;
 	public static final int RAIN_HEIGHT_OFFSET = 8;
+	public static final int RAIN_SOUND_INTERVAL_MODIFIER = 100;
 //	private static final int RAINY_WATER_COLOR = 0xFF303030;
 	private final Minecraft mc;
 	private final SimpleCloudsRenderer renderer;
@@ -224,7 +225,7 @@ public class WorldEffects
 		Biome biome = this.mc.level.getBiome(camPos).value();
 		if (rainIntensity > 0.0F && biome.hasPrecipitation())
 		{
-			int chance = 50 + (int)(100.0F * (1.0F - rainIntensity));
+			float chance = 1.0F / (10.0F + 100.0F * (1.0F - rainIntensity));
 			for (int x = minX; x < maxX; x++)
 			{
 				for (int z = minZ; z < maxZ; z++)
@@ -239,7 +240,7 @@ public class WorldEffects
 						RandomSource blockRandom = RandomSource.create(pos.asLong());
 						if (!this.precipitationQuads.containsKey(pos))
 						{
-							if (blockRandom.nextInt(chance) == 0)
+							if (blockRandom.nextInt(100) <= 2)
 							{
 								float widthModifier = precipitation == Biome.Precipitation.SNOW ? 4.0F : 2.0F;
 								PrecipitationQuad quad = new PrecipitationQuad(precipitation, this.mc.level::clip, pos, xRot + this.random.nextFloat() * 0.1F, yRot + this.random.nextFloat() * 0.1F, 60 + this.random.nextInt(60), rainIntensity * widthModifier);
