@@ -11,3 +11,5 @@
 /time set noon
 /tp ~ ~500 ~
 /tp ~ ~-500 ~
+/time set noon
+/simpleclouds clouds reset random
