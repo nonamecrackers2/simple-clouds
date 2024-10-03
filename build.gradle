@@ -147,9 +147,9 @@ dependencies {
     
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     
-    runtimeOnly fg.deobf("curse.maven:embeddium-908741:5681725")
+    //runtimeOnly fg.deobf("curse.maven:embeddium-908741:5681725")
     //runtimeOnly fg.deobf("curse.maven:create-328085:5689514")
-    runtimeOnly fg.deobf("curse.maven:oculus-581495:5299671")
+    //runtimeOnly fg.deobf("curse.maven:oculus-581495:5299671")
     //runtimeOnly fg.deobf("curse.maven:borderless-378979:4575494")
     //runtimeOnly fg.deobf("curse.maven:stellarview-865273:5373192")
     //runtimeOnly fg.deobf("curse.maven:bobby-reforged-883502:4650227")
@@ -194,26 +194,12 @@ tasks.named('processResources', ProcessResources).configure {
             loader_version_range: loader_version_range,
             mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
             mod_authors: mod_authors, mod_description: mod_description,
+            crackerslib_version_range: crackerslib_version_range,
     ]
     inputs.properties replaceProperties
 
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
-    }
-    
-    //So stuff gets properly replaced in the mods.toml file when using Eclipse (rip eclipse)
-    var resourceTargets = ['META-INF/mods.toml', 'pack.mcmeta']
-    var intoTargets = ["$rootDir/bin/main/"]
-    intoTargets.each { target ->
-        if (file(target).exists()) {
-            copy {
-                from(sourceSets.main.resources) {
-                    include resourceTargets
-                    expand replaceProperties
-                }
-                into target
-            }
-        }
     }
 }
 

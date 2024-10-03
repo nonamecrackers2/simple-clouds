@@ -30,7 +30,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.NetworkConstants;
 
-//TODO: Re-add open gl version check in mods.toml when building mod
 @Mod(SimpleCloudsMod.MODID)
 public class SimpleCloudsMod
 {

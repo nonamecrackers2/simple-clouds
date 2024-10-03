@@ -8,7 +8,6 @@ import org.lwjgl.glfw.GLFW;
 import com.google.common.collect.Lists;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.GeneratorInitializeResult;
-import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
