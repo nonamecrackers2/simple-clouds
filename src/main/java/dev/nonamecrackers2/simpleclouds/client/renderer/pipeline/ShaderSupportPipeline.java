@@ -7,7 +7,6 @@ import org.joml.Matrix4f;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexSorting;
 
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.FrameBufferUtils;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
@@ -20,12 +19,10 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 	protected ShaderSupportPipeline() {}
 	
 	@Override
-	public void prepare(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	public void prepare(Minecraft mc, SimpleCloudsRenderer renderer, Matrix4f camMat, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		mc.getProfiler().push("shadow_map");
-		PoseStack shadowMapStack = new PoseStack();
-		shadowMapStack.setIdentity();
-		renderer.renderShadowMap(shadowMapStack, camX, camY, camZ);
+		renderer.renderShadowMap(camX, camY, camZ);
 		mc.getProfiler().pop();
 		
 		float[] cloudCol = renderer.getCloudColor(partialTick);
@@ -35,18 +32,17 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 	
 		if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
 		{
-			renderer.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
+			renderer.doStormPostProcessing(camMat, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
 			renderer.getBlurTarget().clear(Minecraft.ON_OSX);
 			renderer.getBlurTarget().bindWrite(true);
 			FrameBufferUtils.blitTargetPreservingAlpha(renderer.getStormFogTarget(), mc.getWindow().getWidth(), mc.getWindow().getHeight());
 			renderer.doBlurPostProcessing(partialTick);
 			mc.getMainRenderTarget().bindWrite(false);
-			RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
 		}
 	}
 
 	@Override
-	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, Matrix4f camMat, @Nullable Matrix4f shadowMapViewMat, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
 		{
@@ -59,17 +55,15 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 			RenderSystem.disableBlend();
 			RenderSystem.defaultBlendFunc();
 			
-			RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
-			
 			mc.getProfiler().pop();
 		}
 	}
 	
 	@Override
-	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ) {}
+	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, Matrix4f camMat, @Nullable Matrix4f shadowMapViewMat, Matrix4f projMat, float partialTick, double camX, double camY, double camZ) {}
 
 	@Override
-	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, Matrix4f camMat, @Nullable Matrix4f shadowMapViewMat, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		float[] cloudCol = renderer.getCloudColor(partialTick);
 		float cloudR = (float)cloudCol[0];
@@ -82,15 +76,11 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
         renderer.getCloudTarget().clear(Minecraft.ON_OSX);
         renderer.copyDepthFromMainToClouds();
 		
-		//NOTE: Running this clears the depth buffer of the main frame buffer. This should be okay since the game clears it right after the world is rendered
-		//for the player's hand anyways
-//		this.mc.getProfiler().push("world_post");
-//		this.doWorldPostProcessing(stack, this.shadowMapStack, partialTick, projMat, camX, camY, camZ);
-//		this.mc.getProfiler().pop();
-		
         renderer.getCloudTarget().bindWrite(false);
 
 		mc.getProfiler().push("clouds");
+		PoseStack stack = new PoseStack();
+		stack.mulPose(camMat);
 		stack.pushPose();
 		renderer.translateClouds(stack, camX, camY, camZ);
 		renderer.getMeshGenerator().render(stack, projMat, partialTick, cloudR, cloudG, cloudB);
@@ -98,7 +88,7 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 		mc.getProfiler().pop();
 
 		mc.getProfiler().push("clouds_post");
-		renderer.doCloudPostProcessing(stack, partialTick, projMat);
+		renderer.doCloudPostProcessing(camMat, partialTick, projMat);
 		mc.getProfiler().pop();
 		
 		mc.getMainRenderTarget().bindWrite(false);
@@ -110,7 +100,5 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 		RenderSystem.disableBlend();
 		RenderSystem.defaultBlendFunc();
 		mc.getProfiler().pop();
-		
-        RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
 	}
 }

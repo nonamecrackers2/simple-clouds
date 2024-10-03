@@ -269,8 +269,6 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 
 		if (this.regionTextureGenerator != null)
 		{
-//			if (!this.regionTextureGenerator.isStarted())
-//				this.regionTextureGenerator.start();
 			float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * scale;
 			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * (float)SimpleCloudsConstants.CHUNK_SIZE);
 			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * (float)SimpleCloudsConstants.CHUNK_SIZE);

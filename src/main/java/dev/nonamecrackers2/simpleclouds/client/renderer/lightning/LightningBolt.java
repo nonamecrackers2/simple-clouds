@@ -213,35 +213,35 @@ public class LightningBolt
 	private static void lightningBoltSection(Matrix4f poseMatrix, VertexConsumer consumer, float yStart, float width, float length, float r, float g, float b, float a)
 	{
 		float halfWidth = width / 2.0F;
-		consumer.vertex(poseMatrix, +halfWidth, yStart, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, -halfWidth, yStart, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, -halfWidth, yStart - length, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, +halfWidth, yStart - length, -halfWidth).color(r, g, b, a).endVertex();
+		consumer.addVertex(poseMatrix, +halfWidth, yStart, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, -halfWidth, yStart, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, -halfWidth, yStart - length, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, +halfWidth, yStart - length, -halfWidth).setColor(r, g, b, a);
 		
-		consumer.vertex(poseMatrix, +halfWidth, yStart - length, halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, -halfWidth, yStart - length, halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, -halfWidth, yStart, halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, +halfWidth, yStart, halfWidth).color(r, g, b, a).endVertex();
+		consumer.addVertex(poseMatrix, +halfWidth, yStart - length, halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, -halfWidth, yStart - length, halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, -halfWidth, yStart, halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, +halfWidth, yStart, halfWidth).setColor(r, g, b, a);
 		
-		consumer.vertex(poseMatrix, -halfWidth, yStart - length, halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, -halfWidth, yStart - length, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, -halfWidth, yStart, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, -halfWidth, yStart, halfWidth).color(r, g, b, a).endVertex();
+		consumer.addVertex(poseMatrix, -halfWidth, yStart - length, halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, -halfWidth, yStart - length, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, -halfWidth, yStart, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, -halfWidth, yStart, halfWidth).setColor(r, g, b, a);
 		
-		consumer.vertex(poseMatrix, halfWidth, yStart, halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, halfWidth, yStart, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, halfWidth, yStart - length, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, halfWidth, yStart - length, halfWidth).color(r, g, b, a).endVertex();
+		consumer.addVertex(poseMatrix, halfWidth, yStart, halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, halfWidth, yStart, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, halfWidth, yStart - length, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, halfWidth, yStart - length, halfWidth).setColor(r, g, b, a);
 		
-		consumer.vertex(poseMatrix, -halfWidth, yStart - length, halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, halfWidth, yStart - length, halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, halfWidth, yStart - length, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, -halfWidth, yStart - length, -halfWidth).color(r, g, b, a).endVertex();
+		consumer.addVertex(poseMatrix, -halfWidth, yStart - length, halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, halfWidth, yStart - length, halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, halfWidth, yStart - length, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, -halfWidth, yStart - length, -halfWidth).setColor(r, g, b, a);
 		
-		consumer.vertex(poseMatrix, -halfWidth, yStart, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, halfWidth, yStart, -halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, halfWidth, yStart, halfWidth).color(r, g, b, a).endVertex();
-		consumer.vertex(poseMatrix, -halfWidth, yStart, halfWidth).color(r, g, b, a).endVertex();
+		consumer.addVertex(poseMatrix, -halfWidth, yStart, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, halfWidth, yStart, -halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, halfWidth, yStart, halfWidth).setColor(r, g, b, a);
+		consumer.addVertex(poseMatrix, -halfWidth, yStart, halfWidth).setColor(r, g, b, a);
 	}
 	
 	public static class Branch

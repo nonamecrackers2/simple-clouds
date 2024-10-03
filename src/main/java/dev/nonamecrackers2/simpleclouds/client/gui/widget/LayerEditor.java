@@ -27,12 +27,9 @@ public class LayerEditor extends ContainerObjectSelectionList<LayerEditor.Entry>
 	private final ModifiableNoiseSettings settings;
 	private final Runnable onChanged;
 	
-	public LayerEditor(ModifiableNoiseSettings settings, Minecraft mc, int x, int y, int width, int height, Runnable onChanged)
+	public LayerEditor(ModifiableNoiseSettings settings, Minecraft mc, int width, int height, int headerHeight, Runnable onChanged)
 	{
-		super(mc, width, height, y, y + height, ROW_HEIGHT);
-		this.setLeftPos(x);
-		this.setRenderBackground(false);
-		this.setRenderTopAndBottom(false);
+		super(mc, width, height, headerHeight, ROW_HEIGHT);
 		this.settings = settings;
 		this.onChanged = onChanged;
 		this.buildEntries();
@@ -46,12 +43,6 @@ public class LayerEditor extends ContainerObjectSelectionList<LayerEditor.Entry>
 	}
 	
 	@Override
-	protected void renderBackground(GuiGraphics graphics)
-	{
-		graphics.fill(this.x0, this.y0, this.x1, this.y1, 0x99000000);
-	}
-	
-	@Override
 	public int getRowWidth()
 	{
 		return this.getWidth() - 5;
@@ -60,7 +51,7 @@ public class LayerEditor extends ContainerObjectSelectionList<LayerEditor.Entry>
 	@Override
 	protected int getScrollbarPosition()
 	{
-		return this.getLeft() + this.getWidth() - 5;
+		return this.getX() + this.getWidth() - 5;
 	}
 	
 	@Override

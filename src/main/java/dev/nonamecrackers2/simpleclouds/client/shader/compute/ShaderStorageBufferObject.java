@@ -12,7 +12,6 @@ import org.lwjgl.opengl.GL43;
 import org.lwjgl.system.MemoryUtil;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 public class ShaderStorageBufferObject
@@ -85,7 +84,7 @@ public class ShaderStorageBufferObject
 	public int allocateBuffer(int bytes)
 	{
 		int size = Math.min(bytes, getMaxSize());
-		this.uploadData(MemoryTracker.create(size));
+		this.uploadData(MemoryUtil.memAlloc(size));
 		return size;
 	}
 	

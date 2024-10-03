@@ -1,0 +1,17 @@
+#Specifies the allowed dimensions that Simple Clouds is active in
+#Requires restart of WORLD
+dimensionWhitelist = ["minecraft:overworld"]
+#Specifies if the dimension whitelist should instead be use as a blacklist
+#Requires restart of WORLD
+#Default: false
+whitelistAsBlacklist = false
+#Specifies how the clouds should behave. DEFAULT uses all cloud types with the default weather in Simple Clouds. SINGLE uses only a single cloud type and its associated weather. AMBIENT disables localized weather and carves clouds around the player, keeping them at a distance.
+#Default: DEFAULT
+#Allowed Values: DEFAULT, SINGLE, AMBIENT
+cloudMode = "DEFAULT"
+
+#Single Mode
+[single_mode]
+	#Specifies the cloud type that should be used when the SINGLE cloud mode is active.
+	#Default: simpleclouds:itty_bitty
+	singleModeCloudType = "simpleclouds:itty_bitty"

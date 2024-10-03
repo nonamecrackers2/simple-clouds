@@ -14,7 +14,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfig;
 import nonamecrackers2.crackerslib.client.gui.Popup;
 import nonamecrackers2.crackerslib.common.config.listener.ConfigListener;
 

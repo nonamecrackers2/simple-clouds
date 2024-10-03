@@ -36,15 +36,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.material.FogType;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
-import net.minecraftforge.client.event.RegisterClientCommandsEvent;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.event.ViewportEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.CustomizeGuiOverlayEvent;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.event.ViewportEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import nonamecrackers2.crackerslib.client.event.impl.AddConfigEntryToMenuEvent;
 import nonamecrackers2.crackerslib.client.event.impl.ConfigMenuButtonEvent;
 import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;
@@ -56,9 +56,9 @@ import nonamecrackers2.crackerslib.common.config.preset.RegisterConfigPresetsEve
 
 public class SimpleCloudsClientEvents
 {
-	public static void registerOverlays(RegisterGuiOverlaysEvent event)
+	public static void registerOverlays(RegisterGuiLayersEvent event)
 	{
-		event.registerBelow(VanillaGuiOverlay.DEBUG_TEXT.id(), "simple_clouds_debug", SimpleCloudsDebugOverlayRenderer::render);
+		event.registerBelow(VanillaGuiLayers.DEBUG_OVERLAY, SimpleCloudsMod.id("simple_clouds_debug"), SimpleCloudsDebugOverlayRenderer::render);
 	}
 	
 	public static void registerReloadListeners(RegisterClientReloadListenersEvent event)
@@ -212,7 +212,7 @@ public class SimpleCloudsClientEvents
 	public static void onRenderDebugOverlay(CustomizeGuiOverlayEvent.DebugText event)
 	{
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.options.renderDebug)
+		if (mc.getDebugOverlay().showDebugScreen())
 		{
 			SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
 			List<String> text = event.getRight();
@@ -242,7 +242,7 @@ public class SimpleCloudsClientEvents
 				{
 					RegionType generator = renderer.getRegionGenerator();
 					if (generator != null)
-						text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(generator));
+						text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.REGION_TYPES.getKey(generator));
 					else
 						text.add("Region generator: NONE");
 					text.add("Cloud types: " + ClientSideCloudTypeManager.getInstance().getCloudTypes().size());

@@ -1,6 +1,5 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
@@ -12,6 +11,7 @@ import com.google.common.collect.Lists;
 
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
+import net.minecraft.ReportType;
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 
@@ -54,24 +54,24 @@ public class GeneratorInitializeResult
 		return reports;
 	}
 	
-	public void saveCrashReports(File gameDirectory)
+	public void saveCrashReports(Path gameDirectory)
 	{
 		this.savedReportsPaths = Lists.newArrayList();
 		boolean flag = this.crashReports.size() > 1;
 		for (int i = 0; i < this.crashReports.size(); i++)
 		{
 			CrashReport report = this.crashReports.get(i);
-			File crashReportPath = new File(gameDirectory, "crash-reports");
+			Path crashReportPath = gameDirectory.resolve("crash-reports");
 			String fileName = "crash-" + Util.getFilenameFormattedDateTime() + "-simpleclouds-mesh-generator";
 			if (flag)
 				fileName += "-" + i + ".txt";
 			else
 				fileName += ".txt";
-			File file = new File(crashReportPath, fileName);
+			Path file = crashReportPath.resolve(fileName);
 			if (report.getSaveFile() == null)
 			{
-				report.saveToFile(file);
-				this.savedReportsPaths.add(file.toPath());
+				report.saveToFile(file, ReportType.CRASH);
+				this.savedReportsPaths.add(file);
 			}
 		}
 	}

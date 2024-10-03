@@ -11,14 +11,13 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
-import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPayload;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinServerLevelAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.players.PlayerList;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class ServerCloudManager extends CloudManager<ServerLevel>
 {
@@ -94,7 +93,7 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 		float length = spreadnessFactor * 300.0F + 200.0F;
 		float minPitch = 20.0F + spreadnessFactor * 40.0F;
 		float maxPitch = 80.0F + spreadnessFactor * 10.0F;
-		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(() -> this.level.dimension()), new SpawnLightningPacket(new BlockPos(x, y, z), soundOnly, this.random.nextInt(), 4, 2, length, 20.0F, minPitch, maxPitch));
+		PacketDistributor.sendToPlayersInDimension(this.level, new SpawnLightningPayload(new BlockPos(x, y, z), soundOnly, this.random.nextInt(), 4, 2, length, 20.0F, minPitch, maxPitch));
 	}
 	
 	public void setRequiresSync(SyncType syncType)

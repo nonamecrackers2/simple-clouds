@@ -1,25 +1,21 @@
 package dev.nonamecrackers2.simpleclouds.client.gui;
 
 import java.nio.file.Path;
-import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 
-import com.google.common.collect.Lists;
-
 import dev.nonamecrackers2.simpleclouds.client.mesh.GeneratorInitializeResult;
-import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.FocusableTextWidget;
 import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.GridLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
-import net.minecraftforge.fml.loading.ImmediateWindowHandler;
+import net.neoforged.fml.loading.ImmediateWindowHandler;
 import nonamecrackers2.crackerslib.client.util.GUIUtils;
 
 public class SimpleCloudsErrorScreen extends Screen
@@ -29,8 +25,6 @@ public class SimpleCloudsErrorScreen extends Screen
 	private final GeneratorInitializeResult result;
 	private Path crashReportsFolder;
 	private Component openGLVersion;
-	private List<FormattedCharSequence> text;
-	private int totalTextHeight;
 	
 	public SimpleCloudsErrorScreen(GeneratorInitializeResult result)
 	{
@@ -44,26 +38,28 @@ public class SimpleCloudsErrorScreen extends Screen
 		this.openGLVersion = Component.literal("OpenGL " + ImmediateWindowHandler.getGLVersion());
 		this.crashReportsFolder = this.minecraft.gameDirectory.toPath().resolve("crash-reports");
 		
-		this.text = Lists.newArrayList();
-		int textMaxWidth = Mth.floor((float)this.width / 1.5F);
-		this.text.addAll(this.font.split(DESCRIPTION, textMaxWidth));
+		MutableComponent text = DESCRIPTION.copy();
+		text.append("\n\n");
 		if (!this.result.getErrors().isEmpty())
 		{
 			GeneratorInitializeResult.Error error = this.result.getErrors().get(this.result.getErrors().size() - 1);
-			this.text.add(FormattedCharSequence.EMPTY);
-			this.text.addAll(this.font.split(error.text(), textMaxWidth));
+			text.append(error.text());
 			if (this.result.getErrors().size() > 1)
 			{
-				this.text.add(FormattedCharSequence.EMPTY);
-				this.text.addAll(this.font.split(Component.translatable("gui.simpleclouds.error_screen.multiple"), textMaxWidth));
+				text.append("\n\n");
+				text.append(Component.translatable("gui.simpleclouds.error_screen.multiple"));
 			}
 		}
 		else
 		{
-			this.text.add(Component.translatable("gui.simpleclouds.error_screen.no_errors").getVisualOrderText());
+			text.append(Component.translatable("gui.simpleclouds.error_screen.no_errors"));
 		}
 		
-		this.totalTextHeight = this.text.size() * (this.font.lineHeight + 2);
+		
+		var textWidget = this.addRenderableWidget(new FocusableTextWidget(Math.min(this.width, 400), text, this.font, 20));
+		textWidget.setCentered(true);
+        textWidget.setPosition(this.width / 2 - textWidget.getWidth() / 2, this.height / 2 - textWidget.getHeight() / 2);
+        this.setInitialFocus(textWidget);
 		
 		GridLayout layout = new GridLayout().spacing(10);
 		GridLayout.RowHelper row = layout.createRowHelper(3);
@@ -108,21 +104,10 @@ public class SimpleCloudsErrorScreen extends Screen
 	@Override
 	public void render(GuiGraphics stack, int mouseX, int mouseY, float partialTick)
 	{
-		this.renderBackground(stack);
-		
 		super.render(stack, mouseX, mouseY, partialTick);
 		
 		stack.drawCenteredString(this.font, this.getTitle(), this.width / 2, PADDING, 0xFFFFFFFF);
 		stack.drawString(this.font, this.openGLVersion, PADDING, PADDING, 0xFFFFFFFF);
-		
-		int top = PADDING + this.font.lineHeight;
-		int y = top + (this.height - top - 40) / 2 - this.totalTextHeight / 2;
-		
-		for (FormattedCharSequence text : this.text)
-		{
-			stack.drawCenteredString(this.font, text, this.width / 2, y, 0xFFFFFFFF);
-			y += this.font.lineHeight + 2;
-		}
 	}
 	
 	@Override

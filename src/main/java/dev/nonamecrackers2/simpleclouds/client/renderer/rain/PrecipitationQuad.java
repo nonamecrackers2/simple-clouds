@@ -20,6 +20,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 
 public class PrecipitationQuad
 {
@@ -27,8 +28,8 @@ public class PrecipitationQuad
 	public static final float MAX_WIDTH = 2.0F;
 	public static final Map<Biome.Precipitation, ResourceLocation> TEXTURE_BY_PRECIPITATION = Util.make(() -> {
 		ImmutableMap.Builder<Biome.Precipitation, ResourceLocation> map = ImmutableMap.builder();
-		map.put(Biome.Precipitation.RAIN, new ResourceLocation("textures/environment/rain.png"));
-		map.put(Biome.Precipitation.SNOW, new ResourceLocation("textures/environment/snow.png"));
+		map.put(Biome.Precipitation.RAIN, ResourceLocation.withDefaultNamespace("textures/environment/rain.png"));
+		map.put(Biome.Precipitation.SNOW, ResourceLocation.withDefaultNamespace("textures/environment/snow.png"));
 		return map.build();
 	});
 	private final Biome.Precipitation precipitation;
@@ -117,7 +118,7 @@ public class PrecipitationQuad
 		float pitchRadians = this.xRot - (float)Math.PI / 2.0F;
 		float pitchCos = Mth.cos(pitchRadians);
 		Vec3 end = new Vec3(Mth.sin(yawRadians) * pitchCos, Mth.sin(pitchRadians), Mth.cos(yawRadians) * pitchCos).scale(MAX_LENGTH).add(start);
-		ClipContext context = new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, null);
+		ClipContext context = new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, (CollisionContext)null);
 		BlockHitResult result = this.raycaster.apply(context);
 		Vec3 hit = result.getLocation();
 		this.length = (float)start.distanceTo(hit);
@@ -144,9 +145,9 @@ public class PrecipitationQuad
 		float width = Mth.lerp(partialTick, this.widthO, this.width);
 		float u1 = width / 2.0F * 0.5F + 0.5F;
 		float u0 = 0.5F - width / 2.0F * 0.5F;
-		consumer.vertex(mat, width / 2.0F, 0.0F, 0.0F).uv(u0, vOffset).color(1.0F, 1.0F, 1.0F, 1.0F).uv2(packedLight).endVertex();
-		consumer.vertex(mat, -width / 2.0F, 0.0F, 0.0F).uv(u1, vOffset).color(1.0F, 1.0F, 1.0F, 1.0F).uv2(packedLight).endVertex();
-		consumer.vertex(mat, -width / 2.0F, -this.length, 0.0F).uv(u1, this.length / 10.0F + vOffset).color(1.0F, 1.0F, 1.0F, 1.0F).uv2(packedLight).endVertex();
-		consumer.vertex(mat, width / 2.0F, -this.length, 0.0F).uv(u0, this.length / 10.0F + vOffset).color(1.0F, 1.0F, 1.0F, 1.0F).uv2(packedLight).endVertex();
+		consumer.addVertex(mat, width / 2.0F, 0.0F, 0.0F).setUv(u0, vOffset).setColor(1.0F, 1.0F, 1.0F, 1.0F).setLight(packedLight);
+		consumer.addVertex(mat, -width / 2.0F, 0.0F, 0.0F).setUv(u1, vOffset).setColor(1.0F, 1.0F, 1.0F, 1.0F).setLight(packedLight);
+		consumer.addVertex(mat, -width / 2.0F, -this.length, 0.0F).setUv(u1, this.length / 10.0F + vOffset).setColor(1.0F, 1.0F, 1.0F, 1.0F).setLight(packedLight);
+		consumer.addVertex(mat, width / 2.0F, -this.length, 0.0F).setUv(u0, this.length / 10.0F + vOffset).setColor(1.0F, 1.0F, 1.0F, 1.0F).setLight(packedLight);
 	}
 }

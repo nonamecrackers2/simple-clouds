@@ -5,9 +5,9 @@ import org.lwjgl.glfw.GLFW;
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
 public class SimpleCloudsKeybinds
 {
@@ -20,7 +20,7 @@ public class SimpleCloudsKeybinds
 	}
 	
 	@SubscribeEvent
-	public static void onClientTick(TickEvent.ClientTickEvent event)
+	public static void onClientTick(ClientTickEvent.Pre event)
 	{
 		Minecraft mc = Minecraft.getInstance();
 		while (OPEN_GEN_PREVIEWER.consumeClick())

@@ -24,10 +24,10 @@ import org.lwjgl.system.MemoryUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
@@ -36,6 +36,7 @@ import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import net.minecraft.CrashReportCategory;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -266,7 +267,7 @@ public abstract class CloudMeshGenerator
 		GL30.glBindVertexArray(this.arrayObjectId);
 		
 		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
-		this.vertexBuffer = MemoryTracker.create(this.sideBufferSize);
+		this.vertexBuffer = MemoryUtil.memAlloc(this.sideBufferSize);
 		GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_DYNAMIC_DRAW);
 //		//Vertex position
 //		GL20.glEnableVertexAttribArray(0);
@@ -281,7 +282,7 @@ public abstract class CloudMeshGenerator
 		SimpleCloudsShaders.POSITION_BRIGHTNESS_NORMAL_INDEX.setupBufferState();
 		
 		GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
-		this.indexBuffer = MemoryTracker.create(this.indexBufferSize);
+		this.indexBuffer = MemoryUtil.memAlloc(this.indexBufferSize);
 		GlStateManager._glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_DYNAMIC_DRAW);
 		
 		GL30.glBindVertexArray(0);
@@ -445,7 +446,9 @@ public abstract class CloudMeshGenerator
 			GL30.glBindVertexArray(this.arrayObjectId);
 			
 			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShader);
-			SimpleCloudsRenderer.prepareShader(RenderSystem.getShader(), stack.last().pose(), projMat);
+			
+			SimpleCloudsRenderer.setupCloudShaderLights();
+			RenderSystem.getShader().setDefaultUniforms(VertexFormat.Mode.QUADS, stack.last().pose(), projMat, Minecraft.getInstance().getWindow());
 			RenderSystem.getShader().apply();
 			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.totalIndices, GL11.GL_UNSIGNED_INT);
 			RenderSystem.getShader().clear();

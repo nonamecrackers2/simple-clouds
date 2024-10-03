@@ -1,53 +1,50 @@
 package dev.nonamecrackers2.simpleclouds.common.event;
 
-import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
-import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacket;
-import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPayload;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPayload;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.ServerCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.SyncType;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class CloudManagerEvents
 {
 	@SubscribeEvent
-	public static void onWorldTick(TickEvent.LevelTickEvent event)
+	public static void onWorldTick(LevelTickEvent.Pre event)
 	{
-		Level level = event.level;
-		if (event.phase == TickEvent.Phase.START)
+		Level level = event.getLevel();
+		CloudManager<?> manager = CloudManager.get(level);
+		manager.tick();
+		if (!level.isClientSide() && manager instanceof ServerCloudManager serverManager)
 		{
-			CloudManager<?> manager = CloudManager.get(level);
-			manager.tick();
-			if (!level.isClientSide && manager instanceof ServerCloudManager serverManager)
+			SyncType syncType = serverManager.getAndResetSync();
+			if (syncType != SyncType.NONE)
 			{
-				SyncType syncType = serverManager.getAndResetSync();
-				if (syncType != SyncType.NONE)
+				switch (syncType)
 				{
-					switch (syncType)
-					{
-					case BASE_PROPERTIES:
-					{
-						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new SendCloudManagerPacket(manager));
-						break;
-					}
-					case MOVEMENT:
-					{
-						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new UpdateCloudManagerPacket(manager));
-						break;
-					}
-					default:
-						throw new IllegalArgumentException("Unexpected value: " + syncType);
-					}
-				}
-				else if (manager.getTickCount() % CloudManager.UPDATE_INTERVAL == 0)
+				case BASE_PROPERTIES:
 				{
-					SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new UpdateCloudManagerPacket(manager));
+					PacketDistributor.sendToPlayersInDimension((ServerLevel)level, new SendCloudManagerPayload(manager));
+					break;
 				}
+				case MOVEMENT:
+				{
+					PacketDistributor.sendToPlayersInDimension((ServerLevel)level, new UpdateCloudManagerPayload(manager));
+					break;
+				}
+				default:
+					throw new IllegalArgumentException("Unexpected value: " + syncType);
+				}
+			}
+			else if (manager.getTickCount() % CloudManager.UPDATE_INTERVAL == 0)
+			{
+				PacketDistributor.sendToPlayersInDimension((ServerLevel)level, new UpdateCloudManagerPayload(manager));
 			}
 		}
 	}
@@ -75,6 +72,6 @@ public class CloudManagerEvents
 	
 	private static void update(ServerPlayer player)
 	{
-		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.PLAYER.with(() -> player), new SendCloudManagerPacket(CloudManager.get(player.level())));
+		PacketDistributor.sendToPlayer(player, new SendCloudManagerPayload(CloudManager.get(player.level())));
 	}
 }

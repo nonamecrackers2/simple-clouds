@@ -1,20 +1,21 @@
 package dev.nonamecrackers2.simpleclouds.common.init;
 
+import java.util.function.Supplier;
+
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 public class SimpleCloudsSounds
 {
-	private static final DeferredRegister<SoundEvent> SOUND_EVENTS = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, SimpleCloudsMod.MODID);
+	private static final DeferredRegister<SoundEvent> SOUND_EVENTS = DeferredRegister.create(Registries.SOUND_EVENT, SimpleCloudsMod.MODID);
 	
-	public static final RegistryObject<SoundEvent> DISTANT_THUNDER = createSoundEvent("distant_thunder");
-	public static final RegistryObject<SoundEvent> CLOSE_THUNDER = createSoundEvent("close_thunder");
+	public static final Supplier<SoundEvent> DISTANT_THUNDER = createSoundEvent("distant_thunder");
+	public static final Supplier<SoundEvent> CLOSE_THUNDER = createSoundEvent("close_thunder");
 	
-	private static RegistryObject<SoundEvent> createSoundEvent(String name)
+	private static Supplier<SoundEvent> createSoundEvent(String name)
 	{
 		return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(SimpleCloudsMod.id(name)));
 	}

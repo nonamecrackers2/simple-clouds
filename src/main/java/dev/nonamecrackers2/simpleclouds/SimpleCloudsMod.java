@@ -2,10 +2,9 @@ package dev.nonamecrackers2.simpleclouds;
 
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 
-import dev.nonamecrackers2.simpleclouds.client.config.SimpleCloudsClientConfigListeners;
+import dev.nonamecrackers2.simpleclouds.client.SimpleCloudsModClient;
 import dev.nonamecrackers2.simpleclouds.client.event.SimpleCloudsClientEvents;
 import dev.nonamecrackers2.simpleclouds.client.keybind.SimpleCloudsKeybinds;
-import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfigListeners;
@@ -14,59 +13,61 @@ import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsDataEvents;
 import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsEvents;
 import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
 import dev.nonamecrackers2.simpleclouds.common.init.SimpleCloudsSounds;
-import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
 import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
+import dev.nonamecrackers2.simpleclouds.server.SimpleCloudsModServer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.IExtensionPoint;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.network.NetworkConstants;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.NeoForge;
 
-//TODO: Re-add open gl version check in mods.toml when building mod
 @Mod(SimpleCloudsMod.MODID)
 public class SimpleCloudsMod
 {
 	public static final String MODID = "simpleclouds";
 	private static ArtifactVersion version;
 	
-	public SimpleCloudsMod()
+	public SimpleCloudsMod(IEventBus modBus, ModContainer container)
 	{
-		version = ModLoadingContext.get().getActiveContainer().getModInfo().getVersion();
-		IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
+		version = container.getModInfo().getVersion();
+		IEventBus forgeBus = NeoForge.EVENT_BUS;
 		modBus.addListener(this::clientInit);
 		modBus.addListener(this::commonInit);
 		modBus.addListener(SimpleCloudsRegistries::registerRegistries);
 		RegionTypes.register(modBus);
 		SimpleCloudsSounds.register(modBus);
-		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-			modBus.addListener(SimpleCloudsClientEvents::registerReloadListeners);
-			modBus.addListener(SimpleCloudsKeybinds::registerKeyMappings);
-			modBus.addListener(SimpleCloudsClientEvents::registerOverlays);
-			modBus.addListener(SimpleCloudsClientEvents::registerClientPresets);
-			forgeBus.register(WorldEffects.class);
-			SimpleCloudsClientConfigListeners.registerListener();
-		});
+		setupSideOnly(modBus, forgeBus);
 		modBus.addListener(SimpleCloudsDataEvents::gatherData);
-		ModLoadingContext context = ModLoadingContext.get();
-		context.registerConfig(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC);
-		context.registerConfig(ModConfig.Type.COMMON, SimpleCloudsConfig.COMMON_SPEC);
-		context.registerConfig(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC);
-		ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
+		container.registerConfig(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC);
+		container.registerConfig(ModConfig.Type.COMMON, SimpleCloudsConfig.COMMON_SPEC);
+		container.registerConfig(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC);
+	}
+	
+	private static void setupSideOnly(IEventBus modBus, IEventBus forgeBus)
+	{
+		switch (FMLEnvironment.dist)
+		{
+		case CLIENT:
+		{
+			SimpleCloudsModClient.init(modBus, forgeBus);
+			break;
+		}
+		case DEDICATED_SERVER:
+		{
+			SimpleCloudsModServer.init(modBus, forgeBus);
+			break;
+		}
+		}
 	}
 	
 	private void commonInit(FMLCommonSetupEvent event)
 	{
-		SimpleCloudsPacketHandlers.register();
-		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
+		IEventBus forgeBus = NeoForge.EVENT_BUS;
 		forgeBus.register(CloudManagerEvents.class);
 		forgeBus.register(SimpleCloudsEvents.class);
 		SimpleCloudsConfigListeners.registerListener();
@@ -74,18 +75,18 @@ public class SimpleCloudsMod
 	
 	private void clientInit(FMLClientSetupEvent event)
 	{
-		IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+		IEventBus modBus = ModLoadingContext.get().getActiveContainer().getEventBus();
 		modBus.register(SimpleCloudsShaders.class);
 		modBus.addListener(SimpleCloudsClientEvents::registerConfigMenu);
 		modBus.addListener(SimpleCloudsClientEvents::registerConfigMenuButton);
-		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
+		IEventBus forgeBus = NeoForge.EVENT_BUS;
 		forgeBus.register(SimpleCloudsClientEvents.class);
 		forgeBus.register(SimpleCloudsKeybinds.class);
 	}
 	
 	public static ResourceLocation id(String path)
 	{
-		return new ResourceLocation(MODID, path);
+		return ResourceLocation.fromNamespaceAndPath(MODID, path);
 	}
 	
 	public static ArtifactVersion getModVersion()

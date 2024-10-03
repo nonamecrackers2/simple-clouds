@@ -1,5 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.common.world;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.saveddata.SavedData;
 import nonamecrackers2.crackerslib.common.util.primitives.PrimitiveHelper;
@@ -14,7 +15,12 @@ public class CloudData extends SavedData
 		this.manager = manager;
 	}
 	
-	public static CloudData load(CloudManager<?> manager, CompoundTag tag)
+	public static SavedData.Factory<CloudData> factory(CloudManager<?> manager)
+	{
+		return new SavedData.Factory<>(() -> new CloudData(manager), (tag, lookup) -> load(manager, tag, lookup));
+	}
+	
+	public static CloudData load(CloudManager<?> manager, CompoundTag tag, HolderLookup.Provider provider)
 	{
 		CloudData data = new CloudData(manager);
 		if (tag.contains("Seed"))
@@ -36,7 +42,7 @@ public class CloudData extends SavedData
 	}
 	
 	@Override
-	public CompoundTag save(CompoundTag tag)
+	public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider)
 	{
 		tag.putLong("Seed", this.manager.getSeed());
 		CompoundTag scroll = new CompoundTag();

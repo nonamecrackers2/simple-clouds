@@ -1,0 +1,214 @@
+---- Minecraft Crash Report ----
+// Hi. I'm Minecraft, and I'm a crashaholic.
+
+Time: 2024-10-03 11:50:37
+Description: Unexpected error
+
+java.lang.IllegalStateException: BufferBuilder was empty
+	at TRANSFORMER/minecraft@1.21.1/com.mojang.blaze3d.vertex.BufferBuilder.buildOrThrow(BufferBuilder.java:60) ~[neoforge-21.1.64.jar%23189!/:?] {re:classloading,pl:runtimedistcleaner:A}
+	at TRANSFORMER/simpleclouds@0.6/dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects.renderWeather(WorldEffects.java:165) ~[%23191!/:?] {re:mixin,re:classloading}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.renderer.LevelRenderer.handler$zzd000$simpleclouds$injectCustomWeatherRendering_renderLevel(LevelRenderer.java:3754) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:simpleclouds.mixins.json:MixinLevelRenderer from mod simpleclouds,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.renderer.LevelRenderer.renderLevel(LevelRenderer.java:1227) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:simpleclouds.mixins.json:MixinLevelRenderer from mod simpleclouds,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.renderer.GameRenderer.renderLevel(GameRenderer.java:1271) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:crackerslib.mixins.json:MixinGameRendererAccessor from mod crackerslib,pl:mixin:APP:simpleclouds.mixins.json:MixinGameRenderer from mod simpleclouds,pl:mixin:APP:simpleclouds.mixins.json:MixinGameRendererAccessor from mod simpleclouds,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.renderer.GameRenderer.render(GameRenderer.java:1024) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:crackerslib.mixins.json:MixinGameRendererAccessor from mod crackerslib,pl:mixin:APP:simpleclouds.mixins.json:MixinGameRenderer from mod simpleclouds,pl:mixin:APP:simpleclouds.mixins.json:MixinGameRendererAccessor from mod simpleclouds,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.Minecraft.runTick(Minecraft.java:1195) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:runtimedistcleaner:A,re:classloading,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.Minecraft.run(Minecraft.java:807) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:runtimedistcleaner:A,re:classloading,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.main.Main.main(Main.java:230) ~[neoforge-21.1.64.jar%23189!/:?] {re:classloading,pl:runtimedistcleaner:A}
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?] {}
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.24/net.neoforged.fml.loading.targets.CommonLaunchHandler.runTarget(CommonLaunchHandler.java:136) ~[loader-4.0.24.jar%23143!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.24/net.neoforged.fml.loading.targets.CommonLaunchHandler.clientService(CommonLaunchHandler.java:124) ~[loader-4.0.24.jar%23143!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.24/net.neoforged.fml.loading.targets.NeoForgeClientUserdevLaunchHandler.runService(NeoForgeClientUserdevLaunchHandler.java:23) ~[loader-4.0.24.jar%23143!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.24/net.neoforged.fml.loading.targets.CommonLaunchHandler.lambda$launchService$4(CommonLaunchHandler.java:118) ~[loader-4.0.24.jar%23143!/:4.0] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:30) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:53) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:71) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.Launcher.run(Launcher.java:103) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.Launcher.main(Launcher.java:74) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:26) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:23) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at cpw.mods.bootstraplauncher@2.0.2/cpw.mods.bootstraplauncher.BootstrapLauncher.run(BootstrapLauncher.java:210) [bootstraplauncher-2.0.2.jar:?] {}
+	at cpw.mods.bootstraplauncher@2.0.2/cpw.mods.bootstraplauncher.BootstrapLauncher.main(BootstrapLauncher.java:69) [bootstraplauncher-2.0.2.jar:?] {}
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Render thread
+Stacktrace:
+	at TRANSFORMER/minecraft@1.21.1/com.mojang.blaze3d.vertex.BufferBuilder.buildOrThrow(BufferBuilder.java:60) ~[neoforge-21.1.64.jar%23189!/:?] {re:classloading,pl:runtimedistcleaner:A}
+-- Simple Clouds Renderer --
+Details:
+	Cloud Mode: DEFAULT
+	Cloud Style: DEFAULT
+	Region Generator: simpleclouds:voronoi_diagram
+	Cloud Target Available: true
+	Storm Fog Target Active: true
+	Blur Target Active: true
+	Post Chains: {net.minecraft.client.renderer.PostChain@8c84fb8=(1.0,1.0), net.minecraft.client.renderer.PostChain@2c6a222a=(0.25,0.25), net.minecraft.client.renderer.PostChain@5233b9e0=(1.0,1.0), net.minecraft.client.renderer.PostChain@31287930=(1.0,1.0)}
+	Lightning Bolt SSBO: SSBO[binding=90,id=26,usage=35048]
+	Shadow Map Buffer ID: 12
+	Shadow Map Depth Texture ID: 58
+	Shadow Map Color Texture ID: 59
+	Failed to copy depth buffer: false
+	Needs Reload: false
+Stacktrace:
+	at TRANSFORMER/simpleclouds@0.6/dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer.fillReport(SimpleCloudsRenderer.java:1000) ~[%23191!/:?] {re:mixin,re:classloading}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.Minecraft.md459f0b$simpleclouds$lambda$0$0(Minecraft.java:3010) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:runtimedistcleaner:A,re:classloading,pl:mixin:A,pl:runtimedistcleaner:A}
+	at java.base/java.util.Optional.ifPresent(Optional.java:178) ~[?:?] {re:mixin}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.Minecraft.handler$zzg000$simpleclouds$appendCrashReportDetails_fillReport(Minecraft.java:3009) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:runtimedistcleaner:A,re:classloading,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.Minecraft.fillReport(Minecraft.java) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:runtimedistcleaner:A,re:classloading,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.Minecraft.emergencySaveAndCrash(Minecraft.java:868) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:runtimedistcleaner:A,re:classloading,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.Minecraft.run(Minecraft.java:828) ~[neoforge-21.1.64.jar%23189!/:?] {re:mixin,pl:runtimedistcleaner:A,re:classloading,pl:mixin:A,pl:runtimedistcleaner:A}
+	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.main.Main.main(Main.java:230) ~[neoforge-21.1.64.jar%23189!/:?] {re:classloading,pl:runtimedistcleaner:A}
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?] {}
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.24/net.neoforged.fml.loading.targets.CommonLaunchHandler.runTarget(CommonLaunchHandler.java:136) ~[loader-4.0.24.jar%23143!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.24/net.neoforged.fml.loading.targets.CommonLaunchHandler.clientService(CommonLaunchHandler.java:124) ~[loader-4.0.24.jar%23143!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.24/net.neoforged.fml.loading.targets.NeoForgeClientUserdevLaunchHandler.runService(NeoForgeClientUserdevLaunchHandler.java:23) ~[loader-4.0.24.jar%23143!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.24/net.neoforged.fml.loading.targets.CommonLaunchHandler.lambda$launchService$4(CommonLaunchHandler.java:118) ~[loader-4.0.24.jar%23143!/:4.0] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:30) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:53) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:71) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.Launcher.run(Launcher.java:103) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.Launcher.main(Launcher.java:74) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:26) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:23) [modlauncher-11.0.4.jar%23125!/:?] {}
+	at cpw.mods.bootstraplauncher@2.0.2/cpw.mods.bootstraplauncher.BootstrapLauncher.run(BootstrapLauncher.java:210) [bootstraplauncher-2.0.2.jar:?] {}
+	at cpw.mods.bootstraplauncher@2.0.2/cpw.mods.bootstraplauncher.BootstrapLauncher.main(BootstrapLauncher.java:69) [bootstraplauncher-2.0.2.jar:?] {}
+
+
+-- Cloud Mesh Generator --
+Details:
+	Type: MultiRegionCloudMeshGenerator[shader_name=simpleclouds:cube_mesh]
+	Cloud Types: (7) CloudType[id=simpleclouds:cumulonimbus, weatherType=THUNDERSTORM, storminess=0.7, stormStart=16.0, stormFadeDistance=128.0, noiseConfig=dev.nonamecrackers2.simpleclouds.common.noise.StaticLayeredNoise@4d77a14d], CloudType[id=simpleclouds:cumulus, weatherType=NONE, storminess=0.0, stormStart=16.0, stormFadeDistance=32.0, noiseConfig=dev.nonamecrackers2.simpleclouds.common.noise.StaticLayeredNoise@2ac974bc], CloudType[id=simpleclouds:itty_bitty, weatherType=NONE, storminess=0.0, stormStart=16.0, stormFadeDistance=32.0, noiseConfig=dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings@50a7dc25], CloudType[id=simpleclouds:nimbostratus, weatherType=THUNDERSTORM, storminess=0.6, stormStart=16.0, stormFadeDistance=128.0, noiseConfig=dev.nonamecrackers2.simpleclouds.common.noise.StaticLayeredNoise@2ae032c4], CloudType[id=simpleclouds:small_cumulus, weatherType=NONE, storminess=0.0, stormStart=16.0, stormFadeDistance=32.0, noiseConfig=dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings@5a6d931c], CloudType[id=simpleclouds:stratocumulus, weatherType=NONE, storminess=0.6, stormStart=64.0, stormFadeDistance=32.0, noiseConfig=dev.nonamecrackers2.simpleclouds.common.noise.StaticLayeredNoise@3b606079], CloudType[id=simpleclouds:stratus, weatherType=RAIN, storminess=0.5, stormStart=0.0, stormFadeDistance=32.0, noiseConfig=dev.nonamecrackers2.simpleclouds.common.noise.StaticLayeredNoise@5548d5c4]
+	Fade Near Origin: false
+	Compute Shader: ComputeShader[id=14, name=simpleclouds:cube_mesh]
+	Level Of Details: 4
+	Generation Frame Interval: 3
+	Total Prepared Chunks: 1304
+	Tasks Per Frame: 111
+	Scroll: X: 496.98166, Y: 1229.0408, Z: -1815.2222
+	Array Object ID: 8
+	Vertex Buffer ID: 24
+	Index Buffer ID: 25
+	Total Indices: 473796
+	Total Triangles: 157932
+	Test Occluded Faces: false
+
+-- Simple Clouds Compute Shaders --
+Details:
+	Binded SSBOS: {91=>SSBO[binding=91,id=21,usage=35044], 92=>SSBO[binding=92,id=20,usage=35044], 93=>SSBO[binding=93,id=19,usage=35050], 95=>SSBO[binding=95,id=17,usage=35050], 94=>SSBO[binding=94,id=18,usage=35050], 90=>SSBO[binding=90,id=26,usage=35048]}
+	Binded Image Units: []
+
+-- Uptime --
+Details:
+	JVM uptime: 106.062s
+	Wall uptime: 96.727s
+	High-res time: 103.776s
+	Client ticks: 1840 ticks / 92.000s
+
+-- Affected level --
+Details:
+	All players: 1 total; [LocalPlayer['Dev'/26, l='ClientLevel', x=5.61, y=-60.00, z=7.03]]
+	Chunk stats: 961, 821
+	Level dimension: minecraft:overworld
+	Level spawn location: World: (0,-60,0), Section: (at 0,4,0 in 0,-4,0; chunk contains blocks 0,-64,0 to 15,319,15), Region: (0,0; contains chunks 0,0 to 31,31, blocks 0,-64,0 to 511,319,511)
+	Level time: 60656 game time, 39577 day time
+	Server brand: neoforge
+	Server type: Integrated singleplayer server
+	Tracked entity count: 117
+
+-- Last reload --
+Details:
+	Reload number: 1
+	Reload reason: initial
+	Finished: Yes
+	Packs: vanilla, mod_resources, mod/crackerslib, mod/simpleclouds, mod/neoforge
+
+-- System Details --
+Details:
+	Minecraft Version: 1.21.1
+	Minecraft Version ID: 1.21.1
+	Operating System: Windows 11 (amd64) version 10.0
+	Java Version: 21.0.2, Oracle Corporation
+	Java VM Version: Java HotSpot(TM) 64-Bit Server VM (mixed mode, sharing), Oracle Corporation
+	Memory: 1066340856 bytes (1016 MiB) / 2139095040 bytes (2040 MiB) up to 8556380160 bytes (8160 MiB)
+	CPUs: 20
+	Processor Vendor: GenuineIntel
+	Processor Name: 12th Gen Intel(R) Core(TM) i7-12700KF
+	Identifier: Intel64 Family 6 Model 151 Stepping 2
+	Microarchitecture: Alder Lake
+	Frequency (GHz): 3.61
+	Number of physical packages: 1
+	Number of physical CPUs: 12
+	Number of logical CPUs: 20
+	Graphics card #0 name: NVIDIA GeForce RTX 3060 Ti
+	Graphics card #0 vendor: NVIDIA
+	Graphics card #0 VRAM (MiB): 8192.00
+	Graphics card #0 deviceId: VideoController1
+	Graphics card #0 versionInfo: 32.0.15.5612
+	Memory slot #0 capacity (MiB): 16384.00
+	Memory slot #0 clockSpeed (GHz): 3.60
+	Memory slot #0 type: DDR4
+	Memory slot #1 capacity (MiB): 16384.00
+	Memory slot #1 clockSpeed (GHz): 3.60
+	Memory slot #1 type: DDR4
+	Virtual memory max (MiB): 37491.87
+	Virtual memory used (MiB): 30791.73
+	Swap memory total (MiB): 4864.00
+	Swap memory used (MiB): 261.64
+	Space in storage for jna.tmpdir (MiB): <path not set>
+	Space in storage for org.lwjgl.system.SharedLibraryExtractPath (MiB): <path not set>
+	Space in storage for io.netty.native.workdir (MiB): <path not set>
+	Space in storage for java.io.tmpdir (MiB): available: 48317.13, total: 953045.00
+	Space in storage for workdir (MiB): available: 48317.13, total: 953045.00
+	JVM Flags: 2 total; -XX:+ShowCodeDetailsInExceptionMessages -XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump
+	Launched Version: 21.1.64
+	Backend library: LWJGL version 3.3.3+5
+	Backend API: NVIDIA GeForce RTX 3060 Ti/PCIe/SSE2 GL version 4.6.0 NVIDIA 556.12, NVIDIA Corporation
+	Window size: 1920x1080
+	GFLW Platform: win32
+	GL Caps: Using framebuffer using OpenGL 3.2
+	GL debug messages: 
+	Is Modded: Definitely; Client brand changed to 'neoforge'; Server brand changed to 'neoforge'
+	Universe: 400921fb54442d18
+	Type: Integrated Server (map_client.txt)
+	Graphics mode: fancy
+	Render Distance: 12/12 chunks
+	Resource Packs: vanilla, mod_resources, mod/crackerslib, mod/simpleclouds (incompatible), mod/neoforge
+	Current Language: en_us
+	Locale: en_US
+	System encoding: Cp1252
+	File encoding: UTF-8
+	CPU: 20x 12th Gen Intel(R) Core(TM) i7-12700KF
+	Server Running: true
+	Player Count: 1 / 8; [ServerPlayer['Dev'/26, l='ServerLevel[Test]', x=5.61, y=-60.00, z=7.03]]
+	Active Data Packs: vanilla, mod_data, mod/crackerslib, mod/simpleclouds (incompatible), mod/neoforge
+	Available Data Packs: bundle, trade_rebalance, vanilla, mod/crackerslib, mod/neoforge, mod/simpleclouds (incompatible), mod_data
+	Enabled Feature Flags: minecraft:vanilla
+	World Generation: Stable
+	World Seed: 6323235754011377922
+	ModLauncher: 11.0.4+main.d2e20e43
+	ModLauncher launch target: forgeclientuserdev
+	ModLauncher services: 
+		sponge-mixin-0.15.2+mixin.0.8.7.jar mixin PLUGINSERVICE 
+		loader-4.0.24.jar slf4jfixer PLUGINSERVICE 
+		loader-4.0.24.jar runtime_enum_extender PLUGINSERVICE 
+		at-modlauncher-10.0.1.jar accesstransformer PLUGINSERVICE 
+		loader-4.0.24.jar runtimedistcleaner PLUGINSERVICE 
+		modlauncher-11.0.4.jar mixin TRANSFORMATIONSERVICE 
+		modlauncher-11.0.4.jar fml TRANSFORMATIONSERVICE 
+	FML Language Providers: 
+		javafml@4.0
+		lowcodefml@4.0
+		minecraft@4.0
+	Mod List: 
+		neoforge-21.1.64.jar                              |Minecraft                     |minecraft                     |1.21.1              |Manifest: a1:d4:5e:04:4f:d3:d6:e0:7b:37:97:cf:77:b0:de:ad:4a:47:ce:8c:96:49:5f:0a:cf:8c:ae:b2:6d:4b:8a:3f
+		crackerslib-neoforge-1.21.1-0.1-beta.jar          |CrackersLib                   |crackerslib                   |1.21.1-0.1-beta     |Manifest: NOSIGNATURE
+		main                                              |Simple Clouds                 |simpleclouds                  |0.6                 |Manifest: NOSIGNATURE
+		neoforge-21.1.64.jar                              |NeoForge                      |neoforge                      |21.1.64             |Manifest: NOSIGNATURE
+	Crash Report UUID: 4212d4b4-eb78-48f4-bd9d-5ab555ae81f3
+	FML: 4.0.24
+	NeoForge: 21.1.64

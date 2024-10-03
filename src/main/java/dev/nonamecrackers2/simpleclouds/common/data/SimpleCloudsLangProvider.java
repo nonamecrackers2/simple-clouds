@@ -6,8 +6,8 @@ import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import net.minecraft.data.PackOutput;
-import net.minecraftforge.common.data.LanguageProvider;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.common.data.LanguageProvider;
 import nonamecrackers2.crackerslib.common.util.data.ConfigLangGeneratorHelper;
 
 public class SimpleCloudsLangProvider extends LanguageProvider

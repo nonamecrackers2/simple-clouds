@@ -3,7 +3,7 @@ package dev.nonamecrackers2.simpleclouds.common.event;
 import dev.nonamecrackers2.simpleclouds.common.data.SimpleCloudsLangProvider;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
-import net.minecraftforge.data.event.GatherDataEvent;
+import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 public class SimpleCloudsDataEvents
 {

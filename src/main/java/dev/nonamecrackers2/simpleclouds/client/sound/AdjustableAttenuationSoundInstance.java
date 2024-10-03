@@ -34,6 +34,6 @@ public class AdjustableAttenuationSoundInstance extends SimpleSoundInstance
 	
 	private static Sound wrap(Sound sound, int attenuationDistance)
 	{
-		return new Sound(sound.getLocation().toString(), sound.getVolume(), sound.getPitch(), sound.getWeight(), sound.getType(), sound.shouldStream(), sound.shouldPreload(), attenuationDistance);
+		return new Sound(sound.getLocation(), sound.getVolume(), sound.getPitch(), sound.getWeight(), sound.getType(), sound.shouldStream(), sound.shouldPreload(), attenuationDistance);
 	}
 }

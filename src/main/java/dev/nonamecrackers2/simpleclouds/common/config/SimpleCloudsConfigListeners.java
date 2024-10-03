@@ -2,13 +2,12 @@ package dev.nonamecrackers2.simpleclouds.common.config;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
-import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
-import dev.nonamecrackers2.simpleclouds.common.packet.impl.update.NotifyCloudModeUpdatedPacket;
-import dev.nonamecrackers2.simpleclouds.common.packet.impl.update.NotifySingleModeCloudTypeUpdatedPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.update.NotifyCloudModeUpdatedPayload;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.update.NotifySingleModeCloudTypeUpdatedPayload;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import nonamecrackers2.crackerslib.common.config.listener.ConfigListener;
 
 public class SimpleCloudsConfigListeners
@@ -23,12 +22,12 @@ public class SimpleCloudsConfigListeners
 	
 	public static void onCloudModeChanged(CloudMode newMode)
 	{
-		executeOnServerThread(() -> SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.ALL.noArg(), new NotifyCloudModeUpdatedPacket(newMode)));
+		executeOnServerThread(() -> PacketDistributor.sendToAllPlayers(new NotifyCloudModeUpdatedPayload(newMode)));
 	}
 	
 	public static void onSingleModeCloudTypeChanged(String newType)
 	{
-		executeOnServerThread(() -> SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.ALL.noArg(), new NotifySingleModeCloudTypeUpdatedPacket(newType)));
+		executeOnServerThread(() -> PacketDistributor.sendToAllPlayers(new NotifySingleModeCloudTypeUpdatedPayload(newType)));
 	}
 	
 	private static void executeOnServerThread(Runnable runnable)

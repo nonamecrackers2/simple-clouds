@@ -1,0 +1,63 @@
+[01Oct2024 21:39:11.258] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher running: args [--nogui, --launchTarget, forgeserveruserdev, --gameDir, ., --fml.neoForgeVersion, 21.1.64, --fml.fmlVersion, 4.0.24, --fml.mcVersion, 1.21.1, --fml.neoFormVersion, 20240808.144430]
+[01Oct2024 21:39:11.261] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: JVM identified as Oracle Corporation Java HotSpot(TM) 64-Bit Server VM 21.0.2+13-LTS-58
+[01Oct2024 21:39:11.262] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher 11.0.4+main.d2e20e43 starting: java version 21.0.2 by Oracle Corporation; OS Windows 11 arch amd64 version 10.0
+[01Oct2024 21:39:11.367] [main/INFO] [net.neoforged.fml.loading.ImmediateWindowHandler/]: ImmediateWindowProvider not loading because launch target is forgeserveruserdev
+[01Oct2024 21:39:11.412] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=union:/C:/Users/nonam/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.15.2+mixin.0.8.7/2af2f021d8e02a0220dc27a7a72b4666d66d44ca/sponge-mixin-0.15.2+mixin.0.8.7.jar%23135!/ Service=ModLauncher Env=SERVER
+[01Oct2024 21:39:11.585] [main/INFO] [net.neoforged.fml.loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "neoforge-21.1.64.jar" [locator: neoforge devenv provider ([C:\Users\nonam\git\Simple-Clouds-New-1.21.1\.gradle\repositories\ng_dummy_ng\net\neoforged\neoforge\21.1.64\neoforge-21.1.64.jar])]
+[01Oct2024 21:39:11.600] [main/INFO] [net.neoforged.fml.loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "neoforge-21.1.64.jar" [locator: neoforge devenv provider ([C:\Users\nonam\git\Simple-Clouds-New-1.21.1\.gradle\repositories\ng_dummy_ng\net\neoforged\neoforge\21.1.64\neoforge-21.1.64.jar])]
+[01Oct2024 21:39:11.609] [main/INFO] [net.neoforged.fml.loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "main" [locator: userdev mods and services, reader: mod manifest]
+[01Oct2024 21:39:11.619] [main/INFO] [net.neoforged.fml.loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "neoforge-21.1.64.jar" [locator: userdev mods and services, reader: mod manifest]
+[01Oct2024 21:39:11.623] [main/INFO] [net.neoforged.fml.loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "crackerslib-neoforge-1.21.1-0.1-beta.jar" [locator: userdev mods and services, reader: mod manifest]
+[01Oct2024 21:39:11.644] [main/INFO] [net.neoforged.fml.loading.moddiscovery.ModDiscoverer/SCAN]: Found gamelibrary file "mixinextras-neoforge-0.4.1.jar" [locator: userdev mods and services, reader: mod manifest]
+[01Oct2024 21:39:11.893] [main/WARN] [net.neoforged.jarjar.selection.JarSelector/]: Attempted to select a dependency jar for JarJar which was passed in as source: mixinextras-neoforge-0.4.1.jar. Using Mod File: C:\Users\nonam\.gradle\caches\modules-2\files-2.1\io.github.llamalad7\mixinextras-neoforge\0.4.1\eff97772ecd0dcf8e52cdbafd3b3ccec425f8314\mixinextras-neoforge-0.4.1.jar
+[01Oct2024 21:39:11.893] [main/INFO] [net.neoforged.fml.loading.moddiscovery.locators.JarInJarDependencyLocator/]: Found 1 dependencies adding them to mods collection
+[01Oct2024 21:39:11.893] [main/INFO] [net.neoforged.fml.loading.moddiscovery.ModDiscoverer/SCAN]: Found library file "neoforge-coremods-21.1.64.jar" [parent: neoforge-21.1.64.jar, locator: jarinjar, reader: mod manifest]
+[01Oct2024 21:39:12.328] [main/INFO] [mixin/]: Compatibility level set to JAVA_21
+[01Oct2024 21:39:12.341] [main/INFO] [cpw.mods.modlauncher.LaunchServiceHandler/MODLAUNCHER]: Launching target 'forgeserveruserdev' with arguments [--gameDir, ., --nogui]
+[01Oct2024 21:39:12.415] [main/WARN] [mixin/]: Reference map 'crackerslib.refmap.json' for crackerslib.mixins.json could not be read. If this is a development environment you can ignore this message
+[01Oct2024 21:39:12.416] [main/WARN] [mixin/]: Reference map 'simpleclouds.refmap.json' for simpleclouds.mixins.json could not be read. If this is a development environment you can ignore this message
+[01Oct2024 21:39:13.591] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.4.1).
+[01Oct2024 21:39:18.457] [main/WARN] [net.minecraft.commands.Commands/]: Ambiguity between arguments [teleport, location] and [teleport, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[01Oct2024 21:39:18.458] [main/WARN] [net.minecraft.commands.Commands/]: Ambiguity between arguments [teleport, location] and [teleport, targets] with inputs: [0.1 -0.5 .9, 0 0 0]
+[01Oct2024 21:39:18.461] [main/WARN] [net.minecraft.commands.Commands/]: Ambiguity between arguments [teleport, destination] and [teleport, targets] with inputs: [Player, 0123, @e, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[01Oct2024 21:39:18.462] [main/WARN] [net.minecraft.commands.Commands/]: Ambiguity between arguments [teleport, targets] and [teleport, destination] with inputs: [Player, 0123, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[01Oct2024 21:39:18.463] [main/WARN] [net.minecraft.commands.Commands/]: Ambiguity between arguments [teleport, targets, location] and [teleport, targets, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[01Oct2024 21:39:18.567] [modloading-worker-0/INFO] [net.neoforged.neoforge.common.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 21.1.64, for MC 1.21.1
+[01Oct2024 21:39:18.882] [main/INFO] [com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService/]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[01Oct2024 21:39:18.961] [main/WARN] [net.minecraft.server.packs.VanillaPackResourcesBuilder/]: Assets URL 'union:/C:/Users/nonam/git/Simple-Clouds-New-1.21.1/.gradle/repositories/ng_dummy_ng/net/neoforged/neoforge/21.1.64/neoforge-21.1.64.jar%23189!/assets/.mcassetsroot' uses unexpected schema
+[01Oct2024 21:39:18.961] [main/WARN] [net.minecraft.server.packs.VanillaPackResourcesBuilder/]: Assets URL 'union:/C:/Users/nonam/git/Simple-Clouds-New-1.21.1/.gradle/repositories/ng_dummy_ng/net/neoforged/neoforge/21.1.64/neoforge-21.1.64.jar%23189!/data/.mcassetsroot' uses unexpected schema
+[01Oct2024 21:39:20.076] [main/INFO] [net.minecraft.world.item.crafting.RecipeManager/]: Loaded 1290 recipes
+[01Oct2024 21:39:20.220] [main/INFO] [net.minecraft.advancements.AdvancementTree/]: Loaded 1399 advancements
+[01Oct2024 21:39:20.230] [main/INFO] [dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager/]: Loaded 7 cloud types
+[01Oct2024 21:39:20.531] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer/]: Starting minecraft server version 1.21.1
+[01Oct2024 21:39:20.532] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer/]: Loading properties
+[01Oct2024 21:39:20.532] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer/]: Default game type: SURVIVAL
+[01Oct2024 21:39:20.532] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Generating keypair
+[01Oct2024 21:39:20.585] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer/]: Starting Minecraft server on *:25565
+[01Oct2024 21:39:20.660] [Server thread/INFO] [net.minecraft.server.network.ServerConnectionListener/]: Using default channel type
+[01Oct2024 21:39:20.703] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer/]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[01Oct2024 21:39:20.703] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer/]: The server will make no attempt to authenticate usernames. Beware.
+[01Oct2024 21:39:20.703] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer/]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[01Oct2024 21:39:20.703] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer/]: To change this, set "online-mode" to "true" in the server.properties file.
+[01Oct2024 21:39:20.752] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer/]: Preparing level "world"
+[01Oct2024 21:39:21.380] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Preparing start region for dimension minecraft:overworld
+[01Oct2024 21:39:21.650] [worldgen/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: Preparing spawn area: 0%
+[01Oct2024 21:39:21.746] [Server thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: Time elapsed: 365 ms
+[01Oct2024 21:39:21.746] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer/]: Done (1.028s)! For help, type "help"
+[01Oct2024 21:39:21.775] [Server thread/INFO] [net.neoforged.neoforge.gametest.GameTestHooks/]: Enabled Gametest Namespaces: []
+[01Oct2024 21:39:21.784] [Server thread/INFO] [net.neoforged.neoforge.server.permission.PermissionAPI/]: Successfully initialized permission handler neoforge:default_handler
+[01Oct2024 21:39:36.120] [Server thread/INFO] [net.minecraft.server.players.PlayerList/]: Dev[/[::1]:62867] logged in with entity id 1 at (44.45899874589792, 64.0, 82.33572442886182)
+[01Oct2024 21:39:36.188] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Dev joined the game
+[01Oct2024 21:40:56.193] [Server thread/INFO] [net.minecraft.server.network.ServerGamePacketListenerImpl/]: Dev lost connection: Disconnected
+[01Oct2024 21:40:56.193] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Dev left the game
+[01Oct2024 21:40:59.194] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Stopping the server
+[01Oct2024 21:40:59.238] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Stopping server
+[01Oct2024 21:40:59.240] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving players
+[01Oct2024 21:40:59.240] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving worlds
+[01Oct2024 21:40:59.419] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[01Oct2024 21:40:59.457] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[01Oct2024 21:40:59.468] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[01Oct2024 21:40:59.484] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[01Oct2024 21:40:59.485] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[01Oct2024 21:40:59.485] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[01Oct2024 21:40:59.485] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage: All dimensions are saved

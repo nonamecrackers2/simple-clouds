@@ -44,7 +44,7 @@ import net.minecraft.FileUtil;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceProvider;
-import net.minecraftforge.client.ForgeHooksClient;
+import net.neoforged.neoforge.client.ClientHooks;
 
 public class ComputeShader implements AutoCloseable
 {
@@ -149,7 +149,7 @@ public class ComputeShader implements AutoCloseable
 	
 	public void forUniform(String name, BiConsumer<Integer, Integer> consumer)
 	{
-		RenderSystem.assertOnGameThreadOrInit();
+		RenderSystem.assertOnRenderThreadOrInit();
 		this.assertValid();
 		int loc = Uniform.glGetUniformLocation(this.id, name);
 		if (loc == -1 && !this.missingUniformErrors.contains(name))
@@ -165,7 +165,7 @@ public class ComputeShader implements AutoCloseable
 	
 	private void setSampler(String name, Runnable binder, int id)
 	{
-		RenderSystem.assertOnGameThreadOrInit();
+		RenderSystem.assertOnRenderThreadOrInit();
 		this.assertValid();
 		ProgramManager.glUseProgram(this.id);
 		int loc = Uniform.glGetUniformLocation(this.id, name);
@@ -332,7 +332,7 @@ public class ComputeShader implements AutoCloseable
 		else
 		{
 			String path = "shaders/compute/" + loc.getPath() + ".comp";
-			ResourceLocation finalLoc = new ResourceLocation(loc.getNamespace(), path);
+			ResourceLocation finalLoc = ResourceLocation.fromNamespaceAndPath(loc.getNamespace(), path);
 			Resource resource = provider.getResourceOrThrow(finalLoc);
 				
 			try (InputStream inputStream = resource.open())
@@ -372,7 +372,7 @@ public class ComputeShader implements AutoCloseable
 					
 					public String applyImport(boolean isRelative, String importPath)
 					{
-						ResourceLocation glslImport = ForgeHooksClient.getShaderImportLocation(fullPath, isRelative, importPath);
+						ResourceLocation glslImport = ClientHooks.getShaderImportLocation(fullPath, isRelative, importPath);
 						if (!this.importedPaths.add(glslImport.toString()))
 						{
 							return null;

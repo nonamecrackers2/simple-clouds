@@ -10,7 +10,6 @@ import javax.annotation.Nullable;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.joml.Matrix4f;
 
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
@@ -18,11 +17,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.gui.widget.LayerEditor;
@@ -49,7 +44,6 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.GridLayout;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -57,7 +51,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import nonamecrackers2.crackerslib.client.gui.Popup;
 import nonamecrackers2.crackerslib.client.gui.Screen3D;
 import nonamecrackers2.crackerslib.client.gui.widget.CyclableButton;
@@ -296,9 +290,12 @@ public class CloudPreviewerScreen extends Screen3D
 	private void addLayer(ModifiableNoiseSettings layer)
 	{
 		this.layers.add(layer);
-		this.layerEditors.add(new LayerEditor(layer, this.minecraft, PADDING, PADDING + this.font.lineHeight, Math.max(200, this.width / 4), this.height - PADDING * 2 - this.toolbarHeight - this.font.lineHeight, () -> {
+		LayerEditor editor = new LayerEditor(layer, this.minecraft, Math.max(200, this.width / 4), this.height - PADDING * 2 - this.toolbarHeight - this.font.lineHeight, 0, () -> {
 			this.needsMeshRegen = true;
-		}));
+		});
+		editor.setX(PADDING);
+		editor.setY(PADDING + this.font.lineHeight);
+		this.layerEditors.add(editor);
 		this.swapToLayer(this.layers.indexOf(layer));
 		this.addLayer.active = this.layers.size() < CloudMeshGenerator.MAX_NOISE_LAYERS;
 		this.removeLayer.active = true;
@@ -392,9 +389,11 @@ public class CloudPreviewerScreen extends Screen3D
 		for (int i = 0; i < this.layers.size(); i++)
 		{
 			ModifiableNoiseSettings layer = this.layers.get(i);
-			LayerEditor list = new LayerEditor(layer, this.minecraft, PADDING, PADDING + this.font.lineHeight, Math.max(200, this.width / 4), this.height - PADDING * 2 - height - this.font.lineHeight, () -> {
+			LayerEditor list = new LayerEditor(layer, this.minecraft, Math.max(200, this.width / 4), this.height - PADDING * 2 - height - this.font.lineHeight, 0, () -> {
 				this.needsMeshRegen = true;
 			});
+			list.setX(PADDING);
+			list.setY(PADDING + this.font.lineHeight);
 			if (i == this.currentLayer)
 				this.addRenderableWidget(list);
 			this.layerEditors.add(list);
@@ -410,7 +409,6 @@ public class CloudPreviewerScreen extends Screen3D
 			SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup.set(false);
 		}
 		
-		this.renderBackground(stack);
 		super.render(stack, pMouseX, pMouseY, pPartialTick);
 		stack.drawString(this.font, Component.translatable("gui.simpleclouds.cloud_previewer.current_layer", Component.literal(this.layers.isEmpty() ? "NONE" : String.valueOf(this.currentLayer + 1)).withStyle(Style.EMPTY.withBold(true))), 10, 5, 0xFFFFFFFF);
 		
@@ -430,24 +428,23 @@ public class CloudPreviewerScreen extends Screen3D
 			this.generateMesh();
 		generator.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F);
 		
-		float radius = generator.getCloudAreaMaxRadius();
-		Tesselator tesselator = Tesselator.getInstance();
-		BufferBuilder builder = tesselator.getBuilder();
-		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-		Matrix4f pose = stack.last().pose();
-		RenderSystem.disableCull();
-		RenderSystem.enableDepthTest();
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		RenderSystem.setShader(GameRenderer::getPositionColorShader);
-		float r = 0.3F, g = 0.3F, b = 0.3F, a = 0.5F;
-		builder.vertex(pose, -radius, -32.0F, -radius).color(r, g, b, a).endVertex();
-		builder.vertex(pose, radius, -32.0F, -radius).color(r, g, b, a).endVertex();
-		builder.vertex(pose, radius, -32.0F, radius).color(r, g, b, a).endVertex();
-		builder.vertex(pose, -radius, -32.0F, radius).color(r, g, b, a).endVertex();
-		tesselator.end();
-		RenderSystem.enableCull();
-		RenderSystem.disableBlend();
+//		float radius = generator.getCloudAreaMaxRadius();
+//		Tesselator tesselator = Tesselator.getInstance();
+//		BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+//		Matrix4f pose = stack.last().pose();
+//		RenderSystem.disableCull();
+//		RenderSystem.enableDepthTest();
+//		RenderSystem.enableBlend();
+//		RenderSystem.defaultBlendFunc();
+//		RenderSystem.setShader(GameRenderer::getPositionColorShader);
+//		float r = 0.3F, g = 0.3F, b = 0.3F, a = 0.5F;
+//		builder.addVertex(pose, -radius, -32.0F, -radius).setColor(r, g, b, a);
+//		builder.addVertex(pose, radius, -32.0F, -radius).setColor(r, g, b, a);
+//		builder.addVertex(pose, radius, -32.0F, radius).setColor(r, g, b, a);
+//		builder.addVertex(pose, -radius, -32.0F, radius).setColor(r, g, b, a);
+//		BufferUploader.drawWithShader(builder.buildOrThrow());
+//		RenderSystem.enableCull();
+//		RenderSystem.disableBlend();
 	}
 	
 	@Override

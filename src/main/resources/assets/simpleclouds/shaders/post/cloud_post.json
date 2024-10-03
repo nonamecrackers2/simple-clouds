@@ -15,7 +15,7 @@
     		]
     	},
         {
-            "name": "blit",
+            "name": "simpleclouds:blit_no_blend",
             "intarget": "out",
             "outtarget": "minecraft:main"
         }

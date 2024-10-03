@@ -5,16 +5,13 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.command.CloudCommandSource;
 import dev.nonamecrackers2.simpleclouds.common.command.CloudCommands;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
-import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPacket;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.OnDatapackSyncEvent;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.PacketDistributor.PacketTarget;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPayload;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import nonamecrackers2.crackerslib.common.command.ConfigCommandBuilder;
 
 public class SimpleCloudsEvents
@@ -35,12 +32,12 @@ public class SimpleCloudsEvents
 	@SubscribeEvent
 	public static void onDataSync(OnDatapackSyncEvent event)
 	{
-		PacketTarget target;
+		CloudTypeDataManager manager = CloudTypeDataManager.getServerInstance();
+		SendCloudTypesPayload payload = new SendCloudTypesPayload(manager.getCloudTypes(), manager.getIndexedCloudTypes());
 		if (event.getPlayer() != null)
-			target = PacketDistributor.PLAYER.with(event::getPlayer);
+			PacketDistributor.sendToPlayer(event.getPlayer(), payload);
 		else
-			target = PacketDistributor.ALL.noArg();
-		SimpleCloudsPacketHandlers.MAIN.send(target, new SendCloudTypesPacket(CloudTypeDataManager.getServerInstance()));
+			PacketDistributor.sendToAllPlayers(payload);
 	}
 //	
 //	@SubscribeEvent

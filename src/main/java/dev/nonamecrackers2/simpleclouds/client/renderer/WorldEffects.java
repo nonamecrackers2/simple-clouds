@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
@@ -14,7 +15,9 @@ import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -80,7 +83,7 @@ public class WorldEffects
 		this.renderer = renderer;
 	}
 	
-	public void renderPost(PoseStack stack, float partialTick, double camX, double camY, double camZ, float scale)
+	public void renderPost(Matrix4f camMat, float partialTick, double camX, double camY, double camZ, float scale)
 	{
 		CloudManager<ClientLevel> manager = CloudManager.get(this.mc.level);
 		Pair<CloudType, Float> result = manager.getCloudTypeAtPosition((float)camX, (float)camZ);
@@ -109,7 +112,6 @@ public class WorldEffects
 	public void renderWeather(LightTexture texture, float partialTick, double camX, double camY, double camZ)
 	{
 		Tesselator tesselator = Tesselator.getInstance();
-		BufferBuilder builder = tesselator.getBuilder();
 		RenderSystem.depthMask(Minecraft.useShaderTransparency() || CompatHelper.areShadersRunning());
 		RenderSystem.colorMask(true, true, true, true);
 		RenderSystem.enableBlend();
@@ -119,10 +121,8 @@ public class WorldEffects
 		{
 			float currentFogStart = RenderSystem.getShaderFogStart();
 			RenderSystem.setShaderFogStart(Float.MAX_VALUE);
-			PoseStack modelViewStack = RenderSystem.getModelViewStack();
-			modelViewStack.pushPose();
 			RenderSystem.applyModelViewMatrix();
-			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+			BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 			RenderSystem.setShader(GameRenderer::getRendertypeLightningShader);
 			RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
 			PoseStack stack = new PoseStack();
@@ -136,8 +136,9 @@ public class WorldEffects
 				bolt.render(stack, builder, partialTick, 1.0F, 1.0F, 1.0F, this.renderer.getFadeFactorForDistance(dist));
 			}
 			stack.popPose();
-			tesselator.end();
-			modelViewStack.popPose();
+			MeshData meshData = builder.build();
+			if (meshData != null)
+				BufferUploader.drawWithShader(meshData);
 			RenderSystem.applyModelViewMatrix();
 			RenderSystem.setShaderFogStart(currentFogStart);
 		}
@@ -151,7 +152,7 @@ public class WorldEffects
 			for (var entry : this.quadsByPrecipitation.entrySet())
 			{
 				RenderSystem.setShaderTexture(0, PrecipitationQuad.TEXTURE_BY_PRECIPITATION.get(entry.getKey()));
-				builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
+				BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
 				PoseStack stack = new PoseStack();
 				stack.translate(-camX, -camY, -camZ);
 				for (PrecipitationQuad quad : entry.getValue())
@@ -161,7 +162,9 @@ public class WorldEffects
 					quad.render(stack, builder, partialTick, packedLight, camX, camY, camZ);
 					stack.popPose();
 				}
-				tesselator.end();
+				MeshData meshData = builder.build();
+				if (meshData != null)
+					BufferUploader.drawWithShader(meshData);
 			}
 			RenderSystem.enableCull();
 		}
@@ -212,10 +215,10 @@ public class WorldEffects
 			this.lightningBolts.add(new LightningBolt(random, vec, depth, branchCount, maxBranchLength, maxWidth, minimumPitch, maximumPitch, r, g, b));
 		}
 	}
-	
-	public void modifyLightMapTexture(float partialTick, int pixelX, int pixelY, Vector3f color)
-	{
-	}
+//	
+//	public void modifyLightMapTexture(float partialTick, int pixelX, int pixelY, Vector3f color)
+//	{
+//	}
 	
 	public float getStorminessAtCamera()
 	{

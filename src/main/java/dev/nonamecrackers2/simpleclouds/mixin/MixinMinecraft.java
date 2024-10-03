@@ -6,20 +6,15 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsErrorScreen;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.GeneratorInitializeResult;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import net.minecraft.CrashReport;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.network.chat.Component;
-import nonamecrackers2.crackerslib.client.gui.Popup;
 
 @Mixin(Minecraft.class)
 public abstract class MixinMinecraft
@@ -33,18 +28,15 @@ public abstract class MixinMinecraft
 		ComputeShader.fillReport(report);
 	}
 
-	@Inject(method = "setInitialScreen", at = @At("HEAD"), cancellable = true)
-	public void simpleclouds$beforeMainTitleScreen_setInitialScreen(CallbackInfo ci)
+	@Inject(method = "buildInitialScreens", at = @At("RETURN"), cancellable = true)
+	public void buildInitialScreens(CallbackInfoReturnable<Runnable> ci)
 	{
 		var renderer = SimpleCloudsRenderer.getOptionalInstance().orElse(null);
 		if (renderer != null)
 		{
 			GeneratorInitializeResult result = renderer.getInitialInitializationResult();
 			if (result != null && result.getState() == GeneratorInitializeResult.State.ERROR)
-			{
-				this.setScreen(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult()));
-				ci.cancel();
-			}
+				ci.setReturnValue(() -> this.setScreen(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult())));
 		}
 	}
 

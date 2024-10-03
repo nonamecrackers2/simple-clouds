@@ -16,17 +16,21 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.CloudRegionTextureGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
-import net.minecraftforge.client.gui.overlay.ForgeGui;
 
 public class SimpleCloudsDebugOverlayRenderer
 {
-	public static void render(ForgeGui gui, GuiGraphics stack, float partialTicks, float width, float height)
+	public static void render(GuiGraphics stack, DeltaTracker tracker)
 	{
-		if (gui.getMinecraft().options.renderDebug && SimpleCloudsRenderer.canRenderInDimension(gui.getMinecraft().level))
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.getDebugOverlay().showDebugScreen() && SimpleCloudsRenderer.canRenderInDimension(mc.level))
 		{
+			int width = stack.guiWidth();
+			int height = stack.guiHeight();
 			if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof MultiRegionCloudMeshGenerator meshGenerator)
 			{
 				int id = meshGenerator.getCloudRegionTextureId();
@@ -34,12 +38,11 @@ public class SimpleCloudsDebugOverlayRenderer
 				{
 					RenderSystem.setShader(SimpleCloudsShaders::getCloudRegionTexShader);
 					Matrix4f matrix4f = stack.pose().last().pose();
-					BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-					bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-					bufferbuilder.vertex(matrix4f, width - 100.0F, height - 50.0F, -100.0F).uv(0.0F, 0.0F).endVertex();
-					bufferbuilder.vertex(matrix4f, width - 100.0F, height, -100.0F).uv(0.0F, 1.0F).endVertex();
-					bufferbuilder.vertex(matrix4f, width - 50.0F, height, -100.0F).uv(1.0F, 1.0F).endVertex();
-					bufferbuilder.vertex(matrix4f, width - 50.0F, height - 50.0F, -100.0F).uv(1.0F, 0.0F).endVertex();
+					BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+					bufferbuilder.addVertex(matrix4f, width - 100.0F, height - 50.0F, -100.0F).setUv(0.0F, 0.0F);
+					bufferbuilder.addVertex(matrix4f, width - 100.0F, height, -100.0F).setUv(0.0F, 1.0F);
+					bufferbuilder.addVertex(matrix4f, width - 50.0F, height, -100.0F).setUv(1.0F, 1.0F);
+					bufferbuilder.addVertex(matrix4f, width - 50.0F, height - 50.0F, -100.0F).setUv(1.0F, 0.0F);
 					ShaderInstance shader = RenderSystem.getShader();
 					int lod = meshGenerator.getLodConfig().getLods().length;
 					shader.safeGetUniform("LodLevel").set(lod);
@@ -55,19 +58,18 @@ public class SimpleCloudsDebugOverlayRenderer
 					Uniform.uploadInteger(loc, 0);
 					RenderSystem.activeTexture('\u84c0' + 0);
 					GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, id);
-					BufferUploader.drawWithShader(bufferbuilder.end());
+					BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
 				}
 			}
 			RenderSystem.setShaderTexture(0, SimpleCloudsRenderer.getInstance().getShadowMapTextureId());
 			RenderSystem.setShader(GameRenderer::getPositionTexShader);
 			Matrix4f matrix4f = stack.pose().last().pose();
-			BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-			bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-			bufferbuilder.vertex(matrix4f, width - 50.0F, height - 50.0F, -100.0F).uv(0.0F, 0.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, width - 50.0F, height, -100.0F).uv(0.0F, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, width, height, -100.0F).uv(1.0F, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, width, height - 50.0F, -100.0F).uv(1.0F, 0.0F).endVertex();
-			BufferUploader.drawWithShader(bufferbuilder.end());
+			BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+			bufferbuilder.addVertex(matrix4f, width - 50.0F, height - 50.0F, -100.0F).setUv(0.0F, 0.0F);
+			bufferbuilder.addVertex(matrix4f, width - 50.0F, height, -100.0F).setUv(0.0F, 1.0F);
+			bufferbuilder.addVertex(matrix4f, width, height, -100.0F).setUv(1.0F, 1.0F);
+			bufferbuilder.addVertex(matrix4f, width, height - 50.0F, -100.0F).setUv(1.0F, 0.0F);
+			BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
 		}
 	}
 }

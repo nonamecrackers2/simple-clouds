@@ -30,7 +30,7 @@ public abstract class MixinServerLevel implements CloudManagerAccessor<ServerLev
 		this.cloudManager = new ServerCloudManager((ServerLevel)(Object)this);
 		//Do this so we hide the world seed
 		this.cloudManager.init(RandomSource.create(this.server.getWorldData().worldGenOptions().seed()).nextLong());
-		this.getDataStorage().computeIfAbsent(tag -> CloudData.load(this.cloudManager, tag), () -> new CloudData(this.cloudManager), CloudData.ID);
+		this.getDataStorage().computeIfAbsent(CloudData.factory(this.cloudManager), CloudData.ID);
 	}
 	
 	@Inject(method = "advanceWeatherCycle", at = @At("HEAD"), cancellable = true)

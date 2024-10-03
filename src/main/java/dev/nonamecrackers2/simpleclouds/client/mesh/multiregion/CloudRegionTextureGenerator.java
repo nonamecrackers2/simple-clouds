@@ -19,7 +19,6 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryUtil;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
@@ -328,7 +327,7 @@ public class CloudRegionTextureGenerator
 			this.layers = layers;
 			
 			this.bufferSize = this.textureSize * this.textureSize * this.layers * BYTES_PER_PIXEL;
-			this.textureBuffer = MemoryTracker.create(this.bufferSize);
+			this.textureBuffer = MemoryUtil.memAlloc(this.bufferSize);
 			
 			this.uploadBufferId = GlStateManager._glGenBuffers();
 			GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, this.uploadBufferId);

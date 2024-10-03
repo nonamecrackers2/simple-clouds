@@ -15,8 +15,8 @@
 		"MixinGameRendererAccessor",
 		"MixinPostChain",
 		"MixinClientLevel",
-		"MixinLightTexture",
-		"MixinMinecraft"
+		"MixinMinecraft",
+		"MixinVertexFormatElement"
 	],
 	"minVersion": "0.8"
 }
