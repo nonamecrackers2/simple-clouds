@@ -118,7 +118,7 @@ public class PrecipitationQuad
 		float pitchRadians = this.xRot - (float)Math.PI / 2.0F;
 		float pitchCos = Mth.cos(pitchRadians);
 		Vec3 end = new Vec3(Mth.sin(yawRadians) * pitchCos, Mth.sin(pitchRadians), Mth.cos(yawRadians) * pitchCos).scale(MAX_LENGTH).add(start);
-		ClipContext context = new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, (CollisionContext)null);
+		ClipContext context = new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, CollisionContext.empty());
 		BlockHitResult result = this.raycaster.apply(context);
 		Vec3 hit = result.getLocation();
 		this.length = (float)start.distanceTo(hit);
