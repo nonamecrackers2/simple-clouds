@@ -118,9 +118,13 @@ float getNoiseForLayer(NoiseLayer layer, float x, float y, float z)
 {
 	if (y < layer.HeightOffset || y > layer.HeightOffset + layer.Height)
 		return 0.0;
-	float noise = snoise((vec3(x, y, z) + Scroll) / vec3(layer.ScaleX, layer.ScaleY, layer.ScaleZ)) * layer.ValueScale + layer.ValueOffset;
-	noise -= 1.0 - clamp((y - layer.HeightOffset) / layer.FadeDistance, 0.0, 1.0);
-	noise -= 1.0 - clamp((layer.Height - (y - layer.HeightOffset)) / layer.FadeDistance, 0.0, 1.0);
+	vec3 scale = vec3(layer.ScaleX, layer.ScaleY, layer.ScaleZ);
+	vec3 scrollScaled = Scroll / scale;
+	vec3 samplePos = vec3(x, y, z) / scale + scrollScaled;
+	float noise = snoise(samplePos) * layer.ValueScale + layer.ValueOffset;
+	float heightDelta = y - layer.HeightOffset;
+	noise -= 1.0 - clamp(heightDelta / layer.FadeDistance, 0.0, 1.0);
+	noise -= 1.0 - clamp((layer.Height - heightDelta) / layer.FadeDistance, 0.0, 1.0);
 	return noise;
 }
 
@@ -134,10 +138,7 @@ float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
 			combinedNoise += getNoiseForLayer(layers.data[i + group.StartIndex], x, y, z);
 		return combinedNoise;
 	}
-	else
-	{
-		return 0.0F;
-	}
+	return 0.0F;
 }
 
 bool isPosValid(float x, float y, float z, LayerGroup group, float fade)

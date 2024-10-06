@@ -62,6 +62,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Boolean> lightningColorVariation;
 		public final ForgeConfigSpec.ConfigValue<Double> rainAngle;
 		public final ForgeConfigSpec.ConfigValue<Integer> thunderAttenuationDistance;
+		public final ForgeConfigSpec.ConfigValue<Boolean> stormFogLightningFlashes;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -114,6 +115,8 @@ public class SimpleCloudsConfig
 			this.levelOfDetail = this.createEnumValue(LevelOfDetailOptions.HIGH, "levelOfDetail", false, "Specifies the quality of the level of detail");
 			
 			this.frustumCulling = this.createValue(true, "frustumCulling", false, "Culls cloud chunks not visible to the player. Disable if facing noticeable artifacts with high cloud mesh generate times");
+			
+			this.stormFogLightningFlashes = this.createValue(true, "stormFogLightningFlashes", false, "Toggles lightning flashes that can be seen in storm fog. Disabling can lead to potential performance gains when lightning spawns");
 			
 			builder.pop();
 			

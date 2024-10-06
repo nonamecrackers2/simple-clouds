@@ -96,7 +96,7 @@ float getNearestLightningBoltColorModifier(vec3 position)
 		float dist = distance(bolt.Position.xz, position.xz);
 		if (dist < 2000.0)
 		{
-			float distMul = clamp((2000.0 - dist) / 1000.0, 0.0, 1.0);
+			float distMul = clamp(2.0 - dist * 0.001, 0.0, 1.0);
 			return 1.0 + bolt.Alpha * distMul;
 		}
 	}
@@ -141,7 +141,7 @@ void main()
 #if FOG == 1  
     if (finalCol.a > 0.0)
     {
-	    float fogFactor = 1.0 - min(max(depth - FogStart, 0.0) / (FogEnd - FogStart), 1.0);
+	    float fogFactor = 1.0 - smoothstep(FogStart, FogEnd, depth); //min(max(depth - FogStart, 0.0) / (FogEnd - FogStart), 1.0);
 	    finalCol = vec4(finalCol.rgb, finalCol.a * fogFactor);
     }
 #endif

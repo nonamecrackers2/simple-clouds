@@ -131,7 +131,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	}
 	
 	@Override
-	protected void populateChunkGenTasks(double camX, double camY, double camZ, float scale, Frustum frustum)
+	protected int populateChunkGenTasks(double camX, double camY, double camZ, float scale, Frustum frustum, int interval)
 	{
 		if (this.needsNoiseRefreshing)
 		{
@@ -145,7 +145,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.needsFadeRefreshing = false;
 		}
 		
-		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
+		return super.populateChunkGenTasks(camX, camY, camZ, scale, frustum, interval);
 	}
 	
 	@Override

@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -818,23 +819,28 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.stormFogTarget.clear(Minecraft.ON_OSX);
 			this.stormFogTarget.bindWrite(true);
 			
-			List<LightningBolt> lightningBolts = this.worldEffectsManager.getLightningBolts();
-			int size = Math.min(lightningBolts.size(), MAX_LIGHTNING_BOLTS);
-			if (size > 0)
+			MutableInt size = new MutableInt();
+			boolean flag = SimpleCloudsConfig.CLIENT.stormFogLightningFlashes.get();
+			if (flag)
 			{
-				this.lightningBoltPositions.writeData(buffer -> 
+				List<LightningBolt> lightningBolts = this.worldEffectsManager.getLightningBolts();
+				size.setValue(Math.min(lightningBolts.size(), MAX_LIGHTNING_BOLTS));
+				if (size.getValue() > 0)
 				{
-					for (int i = 0; i < size; i++)
+					this.lightningBoltPositions.writeData(buffer -> 
 					{
-						LightningBolt bolt = lightningBolts.get(i);
-						Vector3f pos = bolt.getPosition();
-						buffer.putFloat(pos.x);
-						buffer.putFloat(pos.y);
-						buffer.putFloat(pos.z);
-						buffer.putFloat(bolt.getFade(partialTick));
-					}
-					buffer.rewind();
-				}, size * BYTES_PER_LIGHTNING_BOLT);
+						for (int i = 0; i < size.getValue(); i++)
+						{
+							LightningBolt bolt = lightningBolts.get(i);
+							Vector3f pos = bolt.getPosition();
+							buffer.putFloat(pos.x);
+							buffer.putFloat(pos.y);
+							buffer.putFloat(pos.z);
+							buffer.putFloat(bolt.getFade(partialTick));
+						}
+						buffer.rewind();
+					}, size.getValue() * BYTES_PER_LIGHTNING_BOLT);
+				}
 			}
 			
 			Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
@@ -852,7 +858,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				effect.safeGetUniform("ColorModulator").set(r, g, b, 1.0F);
 				float factor = this.worldEffectsManager.getDarkenFactor(partialTick);
 				effect.safeGetUniform("CutoffDistance").set(1000.0F * factor);
-				effect.safeGetUniform("TotalLightningBolts").set(size);
+				effect.safeGetUniform("TotalLightningBolts").set(size.getValue());
 			}
 			
 			this.stormPostProcessing.process(partialTick);

@@ -252,7 +252,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	}
 	
 	@Override
-	protected void populateChunkGenTasks(double camX, double camY, double camZ, float scale, Frustum frustum)
+	protected int populateChunkGenTasks(double camX, double camY, double camZ, float scale, Frustum frustum, int interval)
 	{
 		if (this.cloudTypesModified)
 		{
@@ -286,7 +286,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.currentRegionAlignZ[i] = this.regionTextureGenerator.getTexCoordOffsetZ(i);
 		}
 		
-		super.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
+		return super.populateChunkGenTasks(camX, camY, camZ, scale, frustum, interval);
 	}
 	
 	public int getCloudRegionTextureId()
