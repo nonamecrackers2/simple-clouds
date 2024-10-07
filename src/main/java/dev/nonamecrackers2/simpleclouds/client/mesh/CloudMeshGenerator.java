@@ -302,7 +302,7 @@ public abstract class CloudMeshGenerator
 	{
 		if (this.vertexBufferId != -1 && this.indexBufferId != -1 && this.shader != null && this.shader.isValid())
 		{
-			GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
+			GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
 			
 			this.totalSides = totalSides;
 			this.totalIndices = this.totalSides * 6;
@@ -347,7 +347,7 @@ public abstract class CloudMeshGenerator
 		this.shader.dispatch(WORK_SIZE, WORK_SIZE, WORK_SIZE, false);
 	}
 	
-	protected void doMeshGenning(double camX, double camY, double camZ, float scale)
+	protected void doMeshGenning(double camX, double camY, double camZ, float scale, int tasksPerTick)
 	{
 		this.shader.forUniform("Scroll", (id, loc) -> {
 			GL41.glProgramUniform3f(id, loc, this.scrollX, this.scrollY, this.scrollZ);
@@ -359,7 +359,7 @@ public abstract class CloudMeshGenerator
 			GL41.glProgramUniform1i(id, loc, this.testFacesFacingAway ? 1 : 0);
 		});
 		
-		for (int i = 0; i < this.tasksPerTick; i++)
+		for (int i = 0; i < tasksPerTick; i++)
 		{
 			Runnable task = this.chunkGenTasks.poll();
 			if (task != null)
@@ -369,29 +369,38 @@ public abstract class CloudMeshGenerator
 		}
 	}
 	
-	public boolean tick(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)
+	public void generateMesh(float scale)
 	{
 		RenderSystem.assertOnRenderThread();
 		
 		if (this.shader == null || !this.shader.isValid())
-			return false;
+			return;
 		
-		if (this.chunkGenTasks.isEmpty())
+		if (this.lodConfigWasChanged)
 		{
-			if (this.lodConfigWasChanged)
-			{
-				this.onLodConfigChanged();
-				this.lodConfigWasChanged = false;
-			}
-			this.populateChunkGenTasks(camX, camY, camZ, scale, frustum);
-			this.currentCamX = camX;
-			this.currentCamY = camY;
-			this.currentCamZ = camZ;
-			this.currentScale = scale;
+			this.onLodConfigChanged();
+			this.lodConfigWasChanged = false;
 		}
 		
+		this.populateChunkGenTasks(0.0D, 0.0D, 0.0D, scale, null, 1);
+		
 		if (!this.chunkGenTasks.isEmpty())
-			this.doMeshGenning(this.currentCamX, this.currentCamY, this.currentCamZ, this.currentScale);
+			this.doMeshGenning(0.0D, 0.0D, 0.0D, scale, this.chunkGenTasks.size());
+		
+		MutableInt totalSides = new MutableInt();
+		this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {
+			totalSides.setValue(b.getInt(0));
+			b.putInt(0, 0);
+		}, 4);
+		this.copyDataOver(totalSides.getValue());
+	}
+	
+	public void tick(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)
+	{
+		RenderSystem.assertOnRenderThread();
+		
+		if (this.shader == null || !this.shader.isValid())
+			return;
 		
 		if (this.chunkGenTasks.isEmpty())
 		{
@@ -401,13 +410,25 @@ public abstract class CloudMeshGenerator
 				b.putInt(0, 0);
 			}, 4);
 			this.copyDataOver(totalSides.getValue());
-			return false;
+			
+			if (this.lodConfigWasChanged)
+			{
+				this.onLodConfigChanged();
+				this.lodConfigWasChanged = false;
+			}
+			this.tasksPerTick = this.populateChunkGenTasks(camX, camY, camZ, scale, frustum, this.meshGenInterval);
+			this.currentCamX = camX;
+			this.currentCamY = camY;
+			this.currentCamZ = camZ;
+			this.currentScale = scale;
 		}
 		else
 		{
 			this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {}, 4);
-			return true;
 		}
+		
+		if (!this.chunkGenTasks.isEmpty())
+			this.doMeshGenning(this.currentCamX, this.currentCamY, this.currentCamZ, this.currentScale, this.tasksPerTick);
 	}
 	
 	protected void onLodConfigChanged()
@@ -417,7 +438,7 @@ public abstract class CloudMeshGenerator
 		});
 	}
 	
-	protected void populateChunkGenTasks(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)
+	protected int populateChunkGenTasks(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum, int genInterval)
 	{
 		int chunkCount = 0;
 		float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * scale;
@@ -428,7 +449,7 @@ public abstract class CloudMeshGenerator
 			if (chunk.checkIfVisibleAndQueue(this, camX, camY, camZ, scale, globalOffsetX, globalOffsetZ, frustum))
 				chunkCount++;
 		}
-		this.tasksPerTick = Mth.ceil((float)chunkCount / (float)this.meshGenInterval);
+		return Mth.ceil((float)chunkCount / (float)genInterval);
 	}
 	
 	public void render(PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b)

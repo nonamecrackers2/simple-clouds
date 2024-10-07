@@ -49,7 +49,7 @@ import nonamecrackers2.crackerslib.client.event.impl.AddConfigEntryToMenuEvent;
 import nonamecrackers2.crackerslib.client.event.impl.ConfigMenuButtonEvent;
 import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;
 import nonamecrackers2.crackerslib.client.gui.ConfigHomeScreen;
-import nonamecrackers2.crackerslib.client.gui.title.TextTitle;
+import nonamecrackers2.crackerslib.client.gui.title.ImageTitle;
 import nonamecrackers2.crackerslib.common.command.ConfigCommandBuilder;
 import nonamecrackers2.crackerslib.common.config.preset.ConfigPreset;
 import nonamecrackers2.crackerslib.common.config.preset.RegisterConfigPresetsEvent;
@@ -74,9 +74,7 @@ public class SimpleCloudsClientEvents
 	
 	public static void registerConfigMenu(RegisterConfigScreensEvent event)
 	{
-		event.builder(ConfigHomeScreen.builder(TextTitle.ofModDisplayName(SimpleCloudsMod.MODID))
-						.crackersDefault()
-						.build(SimpleCloudsConfigScreen::new))
+		event.builder(ConfigHomeScreen.builder(ImageTitle.ofMod(SimpleCloudsMod.MODID, 192, 96, 1.0F)).crackersDefault().build(SimpleCloudsConfigScreen::new))
 				.addSpec(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC)
 				.addSpec(ModConfig.Type.COMMON, SimpleCloudsConfig.COMMON_SPEC)
 				.addSpec(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC).register();

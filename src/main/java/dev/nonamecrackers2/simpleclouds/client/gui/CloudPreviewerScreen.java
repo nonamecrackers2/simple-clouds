@@ -183,7 +183,7 @@ public class CloudPreviewerScreen extends Screen3D
 	private void generateMesh()
 	{
 		generator.setCloudType(this.cloudType);
-		while (generator.tick(0.0D, 0.0D, 0.0D, 1.0F, null)) {}
+		generator.generateMesh(1.0F);
 		this.needsMeshRegen = false;
 	}
 	

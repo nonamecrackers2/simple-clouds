@@ -1,7 +1,7 @@
 modLoader="javafml" #mandatory
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
-#issueTrackerURL="https://github.com/nonamecrackers2/simple-clouds" #optional
+issueTrackerURL="https://github.com/nonamecrackers2/simple-clouds" #optional
 
 [[mods]]
 	modId="${mod_id}"
@@ -12,15 +12,13 @@ license="${mod_license}"
 	logoFile="simpleclouds.png" #optional
 	#credits="" #optional
 	authors="${mod_authors}" #optional
+	#displayTest="NONE" # MATCH_VERSION is the default if nothing is specified (#optional)
 	description='''${mod_description}'''
 
-[[mixins]]
-    config="${mod_id}.mixins.json"
-
 [[dependencies.${mod_id}]] #optional
-    modId="neoforge"
+    modId="forge"
     mandatory=true
-    versionRange="${neo_version_range}"
+    versionRange="${forge_version_range}"
     ordering="NONE"
     side="BOTH"
     

@@ -84,6 +84,8 @@
   "gui.simpleclouds.config.singleModeFadeStartPercentage.title": "Single Mode Fade Start Percentage",
   "gui.simpleclouds.config.stormFogAngle.description": "Specifies the angle parellel to the horizon that the storm fog should be directed to.\nRange: 50.0 ~ 90.0",
   "gui.simpleclouds.config.stormFogAngle.title": "Storm Fog Angle",
+  "gui.simpleclouds.config.stormFogLightningFlashes.description": "Toggles lightning flashes that can be seen in storm fog. Disabling can lead to potential performance gains when lightning spawns.",
+  "gui.simpleclouds.config.stormFogLightningFlashes.title": "Storm Fog Lightning Flashes",
   "gui.simpleclouds.config.testSidesThatAreOccluded.description": "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of some visual artifacts.",
   "gui.simpleclouds.config.testSidesThatAreOccluded.title": "Test Sides That Are Occluded",
   "gui.simpleclouds.config.thunderAttenuationDistance.description": "Specifies the attenuation distance for thunder. The lower the value, the quieter it will be from longer distances.\nRange: 100 ~ 20000",
