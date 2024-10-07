@@ -1,7 +1,7 @@
 modLoader="javafml" #mandatory
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
-#issueTrackerURL="https://change.me.to.your.issue.tracker.example.invalid/" #optional
+issueTrackerURL="https://github.com/nonamecrackers2/simple-clouds" #optional
 
 [[mods]]
 	modId="${mod_id}"
@@ -9,7 +9,7 @@ license="${mod_license}"
 	displayName="${mod_name}"
 	#updateJSONURL="https://change.me.example.invalid/updates.json" #optional
 	#displayURL="https://change.me.to.your.mods.homepage.example.invalid/" #optional
-	#logoFile="examplemod.png" #optional
+	logoFile="simpleclouds.png" #optional
 	#credits="" #optional
 	authors="${mod_authors}" #optional
 	#displayTest="NONE" # MATCH_VERSION is the default if nothing is specified (#optional)
