@@ -70,7 +70,7 @@ body:
     id: description
     attributes:
       label: Describe the Bug
-      placeholder: Describe the bug, and explain why you believe the behavior you are experiencing is a bug. If this bug occurs with other mods installed, please pinpoint the mod(s) that are causing the issue and include them here, and their versions.
+      description: Describe the bug, and explain why you believe the behavior you are experiencing is a bug. If this bug occurs with other mods installed, please pinpoint the mod(s) that are causing the issue and include them here, and their versions.
       value: "A bug happened!"
     validations:
       required: true
