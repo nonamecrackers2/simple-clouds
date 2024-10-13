@@ -3,6 +3,7 @@ name: Bug Fix
 about: Template for creating bug fix pull requests
 title: '[Bug Fix]: '
 labels: bug
+assignees: ''
 ---
 
 # [Please read the contributor guidelines before submitting](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/docs/CONTRIBUTING.md)
