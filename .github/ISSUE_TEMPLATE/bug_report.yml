@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        # [Please read the guidelines before submitting]()
+        # !!! [Please read the guidelines before submitting](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/docs/CONTRIBUTING.md)
   - type: checkboxes
     id: read-guidelines
     attributes:
