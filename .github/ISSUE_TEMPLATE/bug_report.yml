@@ -1,0 +1,109 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug"]
+projects: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # [Please read the guidelines before submitting]()
+  - type: checkboxes
+    id: read-guidelines
+    attributes:
+      label: Guidelines
+      options:
+        - label: By checking this box, I am saying that I have read the guidelines and believe to be following them to the best of my ability
+          required: true
+  - type: dropdown
+    id: mc-version
+    attributes:
+      label: Minecraft Version
+      description: The version of Minecraft you are using
+      options:
+        - "1.21.1"
+        - "1.21"
+        - "1.20.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: mod-version
+    attributes:
+      label: Mod Version
+      description: The version of the mod you are using
+      options:
+        - "0.6.3"
+    validations:
+      required: true
+  - type: dropdown
+    id: mod-loader
+    attributes:
+      label: Mod Loader
+      description: The mod loader you are using
+      options:
+        - Forge
+        - NeoForge
+    validations:
+      required: true
+  - type: input
+    id: mod-loader-version
+    attributes:
+      label: Mod Loader Version
+      description: The version of the mod loader you are using
+      placeholder: e.x. 45.1.0
+    validations:
+      required: true
+  - type: input
+    id: graphics-card
+    attributes:
+      label: Graphics Card
+      description: Please include the vendor and model of your GPU
+      placeholder: e.x. NVIDIA GeForce RTX 3060 Ti
+  - type: input
+    id: drivers-version
+    attributes:
+      label: Drivers Version
+      description: Please include the version of your graphics drivers
+      placeholder: e.x. 31.0.15.3713
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+      placeholder: Describe the bug, and explain why you believe the behavior you are experiencing is a bug. If this bug occurs with other mods installed, please pinpoint the mod(s) that are causing the issue and include them here, and their versions.
+      value: "A bug happened!"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce
+      description: Please include precise, and concise, steps to replicate the bug. Ensure that you can replicate the bug yourself with these steps if possible. If you are not sure on how the bug was caused, investigate further to see if you can pinpoint what must be done to cause it.
+      value: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: input
+    id: crash-reports-logs
+    attributes:
+      label: Crash Reports/Logs
+      description: Crash reports / logs hosted on pastebin, gist, etc. Please include a latest.log with your bug report, located in .minecraft/logs, from when the bug occured. You can also drag and drop your crash report and latest log file here.
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenhots
+      description: If applicable, add screenshots to help explain your problem. You can drag and drop them here.
+      placeholder: Any applicable screenshot(s)
+  - type: textarea
+    id: mod-list
+    attributes:
+      label: Mod List
+      description: If applicable, include the list of mods that were enabled when the bug occurred, or NONE if there were no extras
+      placeholder: List of mods
+    validations:
+      required: true
