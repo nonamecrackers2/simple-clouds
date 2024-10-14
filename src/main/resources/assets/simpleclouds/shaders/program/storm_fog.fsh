@@ -1,3 +1,5 @@
+//Portions of this file are licensed under MIT
+
 #version 430
 
 struct Lightning {

@@ -133,6 +133,10 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+tasks.withType(Jar).configureEach {
+	from("${rootProject.projectDir}/LICENSE.md")
+}
+
 idea {
     module {
         downloadSources = true
