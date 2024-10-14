@@ -15,6 +15,7 @@ This repository is not the place for general questions/support, so do not open a
 ### Bug Reports
 
 Before opening a bug report, please do the following:
+- Read our [notes about compatibility](https://github.com/nonamecrackers2/simple-clouds/wiki/Compatibility) to make sure you aren't opening an issue we're already aware about.
 - Ensure that all mods, including Simple Clouds, **are up to date**, and that you are using a **Minecraft version that is actively supported by Simple Clouds**, unless if you consider the issue you are experiencing as a critical bug.
 - Check to see if your **graphics drivers are up to date**, and if they are not, **update them** and **see if the issue persists**.
 - While we understand this may not always be possible, **make sure you can accurately replicate your bug with precise, and concise, set of steps to reproduce the issue.**
