@@ -40,7 +40,7 @@ _Failure to follow any of these requirements will result in your issue being clo
 
 ## Pull Requests
 
-When submitting a pull request, you grant nonamecrackers2 the right to license your cotributions under [PolyForm Perimeter License 1.0.1](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/LICENSE.md).
+When submitting a pull request, you grant nonamecrackers2 the right to license your contributions under [PolyForm Perimeter License 1.0.1](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/LICENSE.md).
 
 Please follow and replicate, to the best of your ability, the primary author nonamecrackers2's code style as outlined [in this document](https://github.com/nonamecrackers2/nonamecrackers2/blob/main/CODE_STYLE.md).
 
