@@ -1,14 +1,14 @@
 modLoader="javafml" #mandatory
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
-#issueTrackerURL="https://github.com/nonamecrackers2/simple-clouds" #optional
+issueTrackerURL="https://github.com/nonamecrackers2/simple-clouds/issues" #optional
 
 [[mods]]
 	modId="${mod_id}"
 	version="${mod_version}"
 	displayName="${mod_name}"
 	#updateJSONURL="https://change.me.example.invalid/updates.json" #optional
-	#displayURL="https://change.me.to.your.mods.homepage.example.invalid/" #optional
+	displayURL="https://modrinth.com/project/simple-clouds" #optional
 	logoFile="simpleclouds.png" #optional
 	#credits="" #optional
 	authors="${mod_authors}" #optional
