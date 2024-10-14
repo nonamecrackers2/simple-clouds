@@ -9,8 +9,6 @@ Simple Clouds is a cloud rendering overhaul mod for Minecraft: Java Edition, add
 
 **Simple Clouds is currently in open BETA, and you may experience bugs, crashes, and instability.** There are still lots of features I still want to implement.
 
-Simple Clouds can either be loaded client-side only, or included on the server-side for synchronization between players on multiplayer and for local weather effects (rain/lightning under stormy clouds). Certain limitations exist when using the mod client-side only, which is when you connect to a server that does not have Simple Clouds installed:
-
 # Info
 
 Simple Clouds can work on the client-side only (connected to vanilla server or server without Simple Clouds installed), or with server-side support (singleplayer or on a server with Simple Clouds installed). There are limitiations/advantages in either case:
@@ -34,11 +32,11 @@ Despite being super fast, Simple Clouds can still have a noticeable effect on yo
 
 # Contributions
 
-If you have something that could help improve Simple Clouds (performance, features, etc.) feel free to make a pull request, or an issue in the issues tab. Please follow the contributing guide when contributing.
+If you have something that could help improve Simple Clouds (performance, features, etc.) feel free to make a pull request, or an issue in the issues tab. Please follow the [contributing guidelines](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/docs/CONTRIBUTING.md) when contributing.
 
 # License
 
-Simple Clouds is licensed under PolyForm Perimeter License 1.0.1 unless otherwise stated. The following files contain code that are subject to different licenses:
+Simple Clouds is licensed under [PolyForm Perimeter License 1.0.1](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/LICENSE.md) unless otherwise stated. The following files contain code that are subject to different licenses:
 - [/src/main/resources/assets/simpleclouds/shaders/program/storm_fog.fsh](https://github.com/nonamecrackers2/simple-clouds/blob/658c05e5e97eb21b3106ee9940f19028e98722fa/src/main/resources/assets/simpleclouds/shaders/program/storm_fog.fsh#L64C1-L89C3)
 - [/src/main/resources/assets/simpleclouds/shaders/include/random.glsl](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/src/main/resources/assets/simpleclouds/shaders/include/random.glsl)
 - [/src/main/resources/assets/simpleclouds/shaders/include/random_hash.glsl](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/src/main/resources/assets/simpleclouds/shaders/include/random_hash.glsl)
