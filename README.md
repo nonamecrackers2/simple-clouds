@@ -36,7 +36,7 @@ If you have something that could help improve Simple Clouds (performance, featur
 
 # License
 
-Simple Clouds is licensed under [PolyForm Perimeter License 1.0.1](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/LICENSE.md) unless otherwise stated. The following files contain code that are subject to different licenses:
+Simple Clouds is licensed under [PolyForm Perimeter License 1.0.1](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/LICENSE.md) by nonamecrackers2 unless otherwise stated. The following files contain code that are subject to different licenses:
 - [/src/main/resources/assets/simpleclouds/shaders/program/storm_fog.fsh](https://github.com/nonamecrackers2/simple-clouds/blob/658c05e5e97eb21b3106ee9940f19028e98722fa/src/main/resources/assets/simpleclouds/shaders/program/storm_fog.fsh#L64C1-L89C3)
 - [/src/main/resources/assets/simpleclouds/shaders/include/random.glsl](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/src/main/resources/assets/simpleclouds/shaders/include/random.glsl)
 - [/src/main/resources/assets/simpleclouds/shaders/include/random_hash.glsl](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/src/main/resources/assets/simpleclouds/shaders/include/random_hash.glsl)
