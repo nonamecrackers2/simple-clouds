@@ -16,6 +16,7 @@ This repository is not the place for general questions/support, so do not open a
 
 Before opening a bug report, please do the following:
 - Ensure that all mods, including Simple Clouds, **are up to date**, and that you are using a **Minecraft version that is actively supported by Simple Clouds**, unless if you consider the issue you are experiencing as a critical bug.
+- Check to see if your **graphics drivers are up to date**, and if they are not, **update them** and **see if the issue persists**.
 - While we understand this may not always be possible, **make sure you can accurately replicate your bug with precise, and concise, set of steps to reproduce the issue.**
 - If your issue is due to a **conflict with other mods, narrow down the mod** (or set of mods) that is causing the issue. Provide the name of the mod and the version you are using that is causing it.
 - **Include all required information** in the bug report form.
@@ -40,7 +41,6 @@ _Failure to follow any of these requirements will result in your issue being clo
 
 When submitting a pull request, you grant nonamecrackers2 the right to license your cotributions under [PolyForm Perimeter License 1.0.1](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/LICENSE.md).
 
-### Style
 Please follow and replicate, to the best of your ability, the primary author nonamecrackers2's code style as outlined [in this document](https://github.com/nonamecrackers2/nonamecrackers2/blob/main/CODE_STYLE.md).
 
 Please ensure your contributions do not negatively impact performance in a noticeable way. If your change causes FPS to lower by 30 as an example, consider ways you can optimize your code, if possible.
