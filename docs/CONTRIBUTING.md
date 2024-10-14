@@ -45,5 +45,6 @@ Please follow and replicate, to the best of your ability, the primary author non
 
 Please ensure your contributions do not negatively impact performance in a noticeable way. If your change causes FPS to lower by 30 as an example, consider ways you can optimize your code, if possible.
 
+Include an accurate and full description describing the changes include in your pull request. Also link any relevant issues, whether that is fixed bug reports or implemented features, with your pull request.
 
 This document will expand to include more terms, conditions, and clarifications where necessary.
