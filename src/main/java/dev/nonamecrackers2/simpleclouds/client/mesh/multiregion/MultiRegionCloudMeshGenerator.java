@@ -31,7 +31,7 @@ import net.minecraft.util.Mth;
 public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");
-	public static final int MAX_CLOUD_TYPES = 32;
+	public static final int MAX_CLOUD_TYPES = 64;
 	private final CloudStyle style;
 	private int requiredRegionTexSize;
 	private CloudInfo[] cloudTypes;
