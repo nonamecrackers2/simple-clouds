@@ -42,8 +42,10 @@ import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
+import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
 import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.lightning.LightningBolt;
 import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.CloudsRenderPipeline;
@@ -117,11 +119,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable CloudMode cloudMode;
 	private @Nullable CloudStyle cloudStyle;
 	private @Nullable RegionType regionGenerator;
+	private @Nullable LevelOfDetailOptions levelOfDetail;
 	private boolean needsReload;
 	private @Nullable RendererInitializeResult initialInitializationResult;
-//	private int shadowMapPixelBufferId = -1;
-//	private @Nullable ByteBuffer shadowMapPixelBuffer;
-//	private long currentShadowMapPixelFence = -1;
 	
 	private SimpleCloudsRenderer(Minecraft mc)
 	{
@@ -133,7 +133,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		this.meshGenerator.setMeshGenInterval(SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
 		this.meshGenerator.setTestFacesFacingAway(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded.get());
-		this.meshGenerator.setLodConfig(SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig());
 		if (this.mc.level != null)
 		{
 			CloudManager<ClientLevel> manager = CloudManager.get(this.mc.level);
@@ -201,6 +200,18 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		return this.regionGenerator;
 	}
 	
+	/**
+	 * The current level of detail that is set up with the renderer
+	 * <p><p>
+	 * May return {@code NULL} if the renderer has not been initialized yet
+	 * 
+	 * @return
+	 */
+	public @Nullable LevelOfDetailOptions getLevelOfDetail()
+	{
+		return this.levelOfDetail;
+	}
+	
 	public void requestReload()
 	{
 		LOGGER.debug("Requesting reload...");
@@ -243,8 +254,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		Instant started = Instant.now();
 		CloudMode mode = this.determineCloudMode(); //Determine the cloud mode we should use
 		CloudStyle style = SimpleCloudsConfig.CLIENT.cloudStyle.get();
-		LOGGER.info("Beginning mesh generator initialization for cloud mode {} and cloud style {}", mode, style);
-		if (this.cloudMode != mode || this.cloudStyle != style) //If the cloud mode and cloud style is different then what was previously initialized, recreate the mesh generators
+		LevelOfDetailOptions lod = SimpleCloudsConfig.CLIENT.levelOfDetail.get();
+		
+		LOGGER.info("Beginning mesh generator initialization for cloud mode {}, cloud style {}, and LOD {}", mode, style, lod);
+		if (this.cloudMode != mode || this.cloudStyle != style || this.levelOfDetail != lod) //If the cloud mode and cloud style is different then what was previously initialized, recreate the mesh generators
 		{
 			if (this.meshGenerator != null)
 			{
@@ -255,7 +268,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			if (mode == CloudMode.DEFAULT || mode == CloudMode.AMBIENT) //Use the multi-region generator for DEFAULT or AMBIENT cloud mode
 			{
 				//Create the generator but use a fallback cloud types array
-				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { SimpleCloudsConstants.FALLBACK }, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), RegionTypes.VORONOI_DIAGRAM.get(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
+				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(new CloudType[] { SimpleCloudsConstants.FALLBACK }, lod.getConfig(), RegionTypes.VORONOI_DIAGRAM.get(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), style);
 				if (mode == CloudMode.AMBIENT) //Enable the fade near origin when using AMBIENT
 					generator.setFadeNearOrigin(SimpleCloudsConstants.AMBIENT_MODE_FADE_START / SimpleCloudsConstants.CLOUD_SCALE, SimpleCloudsConstants.AMBIENT_MODE_FADE_END / SimpleCloudsConstants.CLOUD_SCALE);
 				this.meshGenerator = generator;
@@ -265,7 +278,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				float fadeStart = (float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F;
 				float fadeEnd = (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F;
 				//Create the generator but use a fallback single mode cloud type
-				this.meshGenerator = new SingleRegionCloudMeshGenerator(SimpleCloudsConstants.FALLBACK, SimpleCloudsConfig.CLIENT.levelOfDetail.get().getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd, style);
+				this.meshGenerator = new SingleRegionCloudMeshGenerator(SimpleCloudsConstants.FALLBACK, lod.getConfig(), SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), fadeStart, fadeEnd, style);
 			}
 			else
 			{
@@ -539,24 +552,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.lightningBoltPositions.closeAndClearBinding();
 			this.lightningBoltPositions = null;
 		}	
-//		
-//		if (this.shadowMapPixelBufferId != -1)
-//		{
-//			GL15.glDeleteBuffers(this.shadowMapPixelBufferId);
-//			this.shadowMapPixelBufferId = -1;
-//		}
-//		
-//		if (this.shadowMapPixelBuffer != null)
-//		{
-//			MemoryUtil.memFree(this.shadowMapPixelBuffer);
-//			this.shadowMapPixelBuffer = null;
-//		}
-//		
-//		if (this.currentShadowMapPixelFence != -1)
-//		{
-//			GL32.glDeleteSync(this.currentShadowMapPixelFence);
-//			this.currentShadowMapPixelFence = -1;
-//		}
 	}
 	
 	public void tick()
@@ -573,15 +568,15 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public void renderShadowMap(PoseStack stack, double camX, double camY, double camZ)
 	{
 		RenderSystem.assertOnRenderThread();
-		if (this.meshGenerator.getArrayObjectId() != -1 && this.meshGenerator.getTotalIndices() > 0)
+		
+		if (this.meshGenerator.getTotalSides() > 0)
 		{
 			BufferUploader.reset();
 			
 			RenderSystem.disableBlend();
 			RenderSystem.enableDepthTest();
 			RenderSystem.disableCull();
-			
-			GL30.glBindVertexArray(this.meshGenerator.getArrayObjectId());
+			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 			
 			GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, this.shadowMapBufferId);
 			GlStateManager._viewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
@@ -599,58 +594,31 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
 			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
 			stack.translate(-camOffsetX, -(double)CloudManager.get(this.mc.level).getCloudHeight(), -camOffsetZ);
+			
 			stack.pushPose();
 			this.translateClouds(stack, 0.0D, 0.0D, 0.0D);
+			
 			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShadowMapShader);
 			prepareShader(RenderSystem.getShader(), stack.last().pose(), this.shadowMapProjMat);
 			RenderSystem.getShader().apply();
-			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.meshGenerator.getTotalIndices(), GL11.GL_UNSIGNED_INT);
+			
+			this.meshGenerator.forRenderableMeshChunks(this.cullFrustum, chunk -> {
+				GL30.glBindVertexArray(chunk.getArrayObjectId());
+				RenderSystem.drawElements(GL11.GL_TRIANGLES, chunk.getTotalIndices(), GL11.GL_UNSIGNED_INT);
+			});
+			GL30.glBindVertexArray(0);
+			
 			RenderSystem.getShader().clear();
+			
+			RenderSystem.enableCull();
+			
 			stack.popPose();
 			
 			GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
 			
 			this.mc.getMainRenderTarget().bindWrite(true);
-			
-			GL30.glBindVertexArray(0);
-			RenderSystem.enableCull();
 		}
 		
-		//This works, but it's not faster than just directly reading the pixels for some reason
-//		if (this.currentShadowMapPixelFence == -1)
-//		{
-//			GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, this.shadowMapPixelBufferId);
-//			GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, this.shadowMapBufferId);
-//			GL11.glReadPixels(50, 50, 1, 1, GL11.GL_RGB, GL11.GL_FLOAT, 0);
-//			GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
-//			GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
-//			this.mc.getMainRenderTarget().bindWrite(true);
-//			this.currentShadowMapPixelFence = GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-//		}
-//		
-//		if (this.currentShadowMapPixelFence != -1)
-//		{
-//			int status = GL32.glGetSynci(this.currentShadowMapPixelFence, GL32.GL_SYNC_STATUS, null);
-//			if (status == GL32.GL_SIGNALED)
-//			{
-//				GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, this.shadowMapPixelBufferId);
-//				this.shadowMapPixelBuffer = GL30.glMapBufferRange(GL21.GL_PIXEL_PACK_BUFFER, 0, 12, GL30.GL_MAP_READ_BIT, this.shadowMapPixelBuffer);
-//				System.out.println("r: " + this.shadowMapPixelBuffer.getFloat(0));
-//				System.out.println("g: " + this.shadowMapPixelBuffer.getFloat(4));
-//				System.out.println("b: " + this.shadowMapPixelBuffer.getFloat(8));
-//				GL30.glUnmapBuffer(GL21.GL_PIXEL_PACK_BUFFER);
-//				GlStateManager._glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
-//				GL32.glDeleteSync(this.currentShadowMapPixelFence);
-//				this.currentShadowMapPixelFence = -1;
-//			}
-//		}
-		
-//		GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, this.shadowMapBufferId);
-//		float[] pixels = new float[3];
-//		GL11.glReadPixels(50, 50, 1, 1, GL11.GL_RGB, GL11.GL_FLOAT, pixels);
-//		GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
-//		this.mc.getMainRenderTarget().bindWrite(true);
-
 		this.shadowMapStack = stack;
 	}
 	
@@ -681,47 +649,48 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.meshGenerator.setCullDistance(this.fogEnd);
 		
 		this.mc.getProfiler().push("simple_clouds_prepare");
-		if (this.meshGenerator.getArrayObjectId() != -1)
+		
+		this.cullFrustum = new Frustum(stack.last().pose(), projMat);
+		float scale = (float)SimpleCloudsConstants.CLOUD_SCALE;
+		double originX = camX / scale;
+		double originY = (camY - (double)CloudManager.get(this.mc.level).getCloudHeight()) / scale;
+		double originZ = camZ / scale;
+		this.cullFrustum.prepare(originX, originY, originZ);
+		
+		if (SimpleCloudsConfig.CLIENT.generateMesh.get())
 		{
-			this.cullFrustum = new Frustum(stack.last().pose(), projMat);
-			
-			if (SimpleCloudsConfig.CLIENT.generateMesh.get())
-			{
-				this.mc.getProfiler().push("mesh_generation");
-				if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator generator)
-					generator.setFadeDistance((float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F, (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F);
-				this.setupMeshGenerator(partialTick);
-				this.meshGenerator.tick(camX, camY - (double)CloudManager.get(this.mc.level).getCloudHeight(), camZ, (float)SimpleCloudsConstants.CLOUD_SCALE, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
-				this.mc.getProfiler().pop();
-			}
-			
-			if (SimpleCloudsConfig.CLIENT.renderClouds.get())
-				getRenderPipeline().prepare(this.mc, this, stack, projMat, partialTick, camX, camY, camZ);
+			this.mc.getProfiler().push("mesh_generation");
+			if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator generator)
+				generator.setFadeDistance((float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F, (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F);
+			this.setupMeshGenerator(partialTick);
+			this.meshGenerator.tick(originX, originY, originZ, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
+			this.mc.getProfiler().pop();
 		}
+		
+		if (SimpleCloudsConfig.CLIENT.renderClouds.get())
+			getRenderPipeline().prepare(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
+			
 		this.mc.getProfiler().pop();
 	}
 	
 	public void renderAfterSky(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds_after_sky");
-		if (this.meshGenerator.getArrayObjectId() != -1 && SimpleCloudsConfig.CLIENT.renderClouds.get())
-			getRenderPipeline().afterSky(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ);
+		getRenderPipeline().afterSky(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
 	}
 	
 	public void renderBeforeWeather(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds_before_weather");
-		if (this.meshGenerator.getArrayObjectId() != -1 && SimpleCloudsConfig.CLIENT.renderClouds.get())
-			getRenderPipeline().beforeWeather(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ);
+		getRenderPipeline().beforeWeather(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
 	}
 	
 	public void renderAfterLevel(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds");
-		if (this.meshGenerator.getArrayObjectId() != -1 && SimpleCloudsConfig.CLIENT.renderClouds.get())
-			getRenderPipeline().afterLevel(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ);
+		getRenderPipeline().afterLevel(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
 		
 		this.mc.getProfiler().push("world_effects");

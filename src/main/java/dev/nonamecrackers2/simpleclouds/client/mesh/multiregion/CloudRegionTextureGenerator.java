@@ -23,7 +23,7 @@ import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 
@@ -32,14 +32,12 @@ public class CloudRegionTextureGenerator
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudRegionTextureGenerator");
 	private static boolean doLogging = false;
 	private static final int BYTES_PER_PIXEL = 8;
-	private final CloudMeshGenerator.LevelOfDetailConfig lodConfig;
+	private final LevelOfDetailConfig lodConfig;
 	private final CloudInfo[] cloudTypes;
 	private final CloudRegionTextureGenerator.BufferState[] swapBuffers = new CloudRegionTextureGenerator.BufferState[2];
 	private final int textureSize;
 	private final float cloudRegionScale;
 	private final RegionType regionGenerator;
-//	private @Nullable Thread thread;
-//	private @Nullable Throwable threadException;
 	private @Nullable CompletableFuture<Optional<RuntimeException>> task; 
 	private int finishedBufferIndex; 
 	private int currentlyUploadingIndex;
@@ -50,7 +48,7 @@ public class CloudRegionTextureGenerator
 	private float offsetZ;
 	private boolean isClosing;
 	
-	public CloudRegionTextureGenerator(CloudMeshGenerator.LevelOfDetailConfig lodConfig, CloudInfo[] cloudTypes, int textureSize, float cloudRegionScale, RegionType regionGenerator)
+	public CloudRegionTextureGenerator(LevelOfDetailConfig lodConfig, CloudInfo[] cloudTypes, int textureSize, float cloudRegionScale, RegionType regionGenerator)
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
 		
@@ -69,14 +67,6 @@ public class CloudRegionTextureGenerator
 		
 		for (int i = 0; i < this.swapBuffers.length; i++)
 			this.swapBuffers[i] = new CloudRegionTextureGenerator.BufferState(this.textureSize, this.lodConfig.getLods().length + 1);
-		
-//		this.thread = new Thread(() ->
-//		{
-//			while (!this.isClosing)
-//				this.asyncTick();
-//		});
-//		this.thread.setName("Cloud Region Texture Generator Thread");
-//		this.thread.setUncaughtExceptionHandler((t, e) -> this.threadException = e);
 	}
 	
 	public void doInitialGeneration()
@@ -90,7 +80,7 @@ public class CloudRegionTextureGenerator
 		this.currentlyUploadingIndex = 1;
 	}
 	
-	public CloudMeshGenerator.LevelOfDetailConfig getLodConfig()
+	public LevelOfDetailConfig getLodConfig()
 	{
 		return this.lodConfig;
 	}
@@ -109,20 +99,6 @@ public class CloudRegionTextureGenerator
 	{
 		return this.cloudRegionScale;
 	}
-//	
-//	public boolean isStarted()
-//	{
-//		return this.thread != null && this.thread.isAlive();
-//	}
-//	
-//	public void start()
-//	{
-//		if (this.thread == null)
-//			throw new IllegalStateException("This generator is no longer valid!");
-//		if (this.thread.isAlive())
-//			throw new IllegalStateException("This generator is already running!");
-//		this.thread.start();
-//	}
 	
 	public void update(float scrollX, float scrollZ, float offsetX, float offsetZ)
 	{
@@ -209,9 +185,6 @@ public class CloudRegionTextureGenerator
 			this.task = null;
 		}
 		
-//		if (this.threadException != null)
-//			throw new RuntimeException("An uncaught exception occured while generating a cloud region texture buffer", this.threadException);
-//
 		var buffer = this.swapBuffers[this.currentlyUploadingIndex];
 		
 		if (buffer.needsUploading())
@@ -263,7 +236,6 @@ public class CloudRegionTextureGenerator
 					float worldZ = ((float)y - centerOffset) * scale;
 					float posX = worldX + buffer.scrollX + buffer.offsetX;
 					float posZ = worldZ + buffer.scrollZ + buffer.offsetZ;
-//					Vector2f pos = new Vector2f((float)x, (float)y).sub((float)buffer.textureSize / 2.0F, (float)buffer.textureSize / 2.0F).mul(scale).add((float)buffer.textureSize / 2.0F, (float)buffer.textureSize / 2.0F).add(buffer.scrollX, buffer.scrollZ).add(buffer.offsetX, buffer.offsetZ);
 					RegionType.Result result = this.regionGenerator.getCloudTypeIndexAt(posX, posZ, this.cloudRegionScale, this.cloudTypes.length);
 					buffer.textureBuffer.putFloat(index, (float)result.index());
 					buffer.textureBuffer.putFloat(index + 4, result.fade());
@@ -277,14 +249,6 @@ public class CloudRegionTextureGenerator
 		RenderSystem.assertOnRenderThreadOrInit();
 		
 		this.isClosing = true;
-		
-//		try{
-//			this.thread.join(5000L);
-//		} catch (InterruptedException e) {
-//			LOGGER.error("Failed to close texture generator thread: ", e);
-//		} finally {
-//			this.thread = null;
-//		}
 		
 		if (this.task != null)
 		{
@@ -333,7 +297,6 @@ public class CloudRegionTextureGenerator
 			this.uploadBufferId = GlStateManager._glGenBuffers();
 			GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, this.uploadBufferId);
 			GL15.glBufferData(GL21.GL_PIXEL_UNPACK_BUFFER, this.textureBuffer, GL15.GL_STREAM_DRAW);
-//			GL44.glBufferStorage(GL21.GL_PIXEL_UNPACK_BUFFER, this.textureBuffer, GL30.GL_MAP_WRITE_BIT);
 			GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0);
 			
 			this.textureId = TextureUtil.generateTextureId();
@@ -380,7 +343,6 @@ public class CloudRegionTextureGenerator
 			GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, this.uploadBufferId);
 			GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, this.textureId);
 			GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 8);
-//			GL11.glPixelStorei(GL12.GL_UNPACK_IMAGE_HEIGHT, this.textureSize);
 			GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, this.textureSize);
 			GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
 			GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);

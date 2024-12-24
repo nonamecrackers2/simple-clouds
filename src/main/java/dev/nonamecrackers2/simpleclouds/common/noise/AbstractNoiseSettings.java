@@ -45,6 +45,18 @@ public abstract class AbstractNoiseSettings<T extends AbstractNoiseSettings<T>> 
 		return 1;
 	}
 	
+	@Override
+	public int getStartHeight()
+	{
+		return Mth.floor(this.getParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET));
+	}
+	
+	@Override
+	public int getEndHeight()
+	{
+		return this.getStartHeight() + Mth.ceil(this.getParam(AbstractNoiseSettings.Param.HEIGHT));
+	}
+	
 	public static enum Param
 	{
 		HEIGHT(32.0F, 1.0F, CloudMeshGenerator.LOCAL_SIZE * CloudMeshGenerator.WORK_SIZE * CloudMeshGenerator.VERTICAL_CHUNK_SPAN),

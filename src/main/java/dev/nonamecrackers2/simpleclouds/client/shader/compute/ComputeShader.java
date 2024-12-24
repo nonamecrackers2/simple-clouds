@@ -255,7 +255,7 @@ public class ComputeShader
 		if (groupX > maxGroupX || groupY > maxGroupY || groupZ > maxGroupZ)
 			throw new IllegalArgumentException("Work group count too large! Wanted: x=" + groupX + ", y=" + groupY + ", z=" + groupZ + "; Max allowed: x=" + maxGroupX + ", y=" + maxGroupY + ", z=" + maxGroupZ);
 		else if (groupX <= 0 || groupY <= 0 || groupZ <= 0)
-			throw new IllegalArgumentException("Work group count must be greater than zero!");
+			throw new IllegalArgumentException("Work group count must be smaller than or equal to zero!");
 		ProgramManager.glUseProgram(this.id);
 		GL43.glDispatchCompute(groupX, groupY, groupZ);
 		if (wait)

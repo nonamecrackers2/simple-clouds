@@ -14,6 +14,10 @@ uniform float LightPower;
 uniform float AmbientLight;
 uniform vec3 DarknessColorModifier;
 
+//out VS_OUT {
+//	vec4 vertexColor;
+//} vs_out;
+
 out vec4 vertexColor;
 
 const vec3 normals[6] = {

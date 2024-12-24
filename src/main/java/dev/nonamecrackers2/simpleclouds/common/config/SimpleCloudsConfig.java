@@ -106,7 +106,7 @@ public class SimpleCloudsConfig
 					
 			builder.comment("Performance").push("performance");
 			
-			this.framesToGenerateMesh = this.createRangedIntValue(3, 1, 32, "framesToGenerateMesh", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts");
+			this.framesToGenerateMesh = this.createRangedIntValue(5, 1, 32, "framesToGenerateMesh", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts");
 			
 			this.testSidesThatAreOccluded = this.createValue(false, "testSidesThatAreOccluded", false, "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of some visual artifacts");
 			

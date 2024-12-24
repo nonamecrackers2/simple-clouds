@@ -2,14 +2,19 @@ package dev.nonamecrackers2.simpleclouds.client.mesh;
 
 import java.io.IOException;
 
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL41;
 
 import com.google.common.collect.ImmutableMap;
 
+import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -23,12 +28,19 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	private boolean needsNoiseRefreshing;
 	private boolean needsFadeRefreshing;
 	
-	public SingleRegionCloudMeshGenerator(CloudInfo type, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval, float fadeStart, float fadeEnd, CloudStyle style)
+	public SingleRegionCloudMeshGenerator(CloudInfo type, LevelOfDetailConfig lodConfig, int meshGenInterval, float fadeStart, float fadeEnd, CloudStyle style)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
 		this.setCloudType(type);
 		this.setFadeDistance(fadeStart, fadeEnd);
 		this.style = style;
+	}
+	
+	@Override
+	protected Pair<Integer, Integer> determineMinimumAndMaximimumGenHeightsAt(float minX, float minZ, float maxX, float maxZ)
+	{
+		NoiseSettings config = this.type.noiseConfig();
+		return Pair.of(config.getStartHeight(), config.getEndHeight());
 	}
 	
 	public SingleRegionCloudMeshGenerator setFadeDistance(float fadeStart, float fadeEnd)
@@ -82,14 +94,17 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	protected void setupShader()
 	{
 		super.setupShader();
-		this.shader.bindShaderStorageBuffer("LayerGroupings", GL15.GL_STATIC_DRAW).allocateBuffer(20);
-		this.shader.bindShaderStorageBuffer("NoiseLayers", GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
+		
+		this.shader.bindShaderStorageBuffer(LAYER_GROUPINGS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(20);
+		this.shader.bindShaderStorageBuffer(NOISE_LAYERS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
+		
 		this.shader.forUniform("FadeStart", (id, loc) -> {
 			GL41.glProgramUniform1f(id, loc, this.fadeStart);
 		});
 		this.shader.forUniform("FadeEnd", (id, loc) -> {
 			GL41.glProgramUniform1f(id, loc, this.fadeEnd);
 		});
+		
 		this.uploadNoiseData();
 		this.uploadFadeData();
 		this.needsNoiseRefreshing = false;
@@ -101,13 +116,14 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 		if (this.shader == null || !this.shader.isValid())
 			return;
 		
-		this.shader.getShaderStorageBuffer("NoiseLayers").writeData(b -> 
+		this.shader.getShaderStorageBuffer(NOISE_LAYERS_NAME).writeData(b -> 
 		{
 			float[] packed = this.type.noiseConfig().packForShader();
 			for (int i = 0; i < packed.length && i < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; i++)
 				b.putFloat(i * 4, packed[i]);
 		}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
-		this.shader.getShaderStorageBuffer("LayerGroupings").writeData(b ->
+		
+		this.shader.getShaderStorageBuffer(LAYER_GROUPINGS_NAME).writeData(b ->
 		{
 			b.putInt(0, 0);
 			b.putInt(4, this.type.noiseConfig().layerCount());
@@ -131,7 +147,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	}
 	
 	@Override
-	protected int populateChunkGenTasks(double camX, double camY, double camZ, float scale, Frustum frustum, int interval)
+	protected int prepareMeshGen(double originX, double originY, double originZ, float meshGenOffsetX, float meshGenOffsetZ, @Nullable Frustum frustum, int interval)
 	{
 		if (this.needsNoiseRefreshing)
 		{
@@ -145,7 +161,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.needsFadeRefreshing = false;
 		}
 		
-		return super.populateChunkGenTasks(camX, camY, camZ, scale, frustum, interval);
+		return super.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, interval);
 	}
 	
 	@Override

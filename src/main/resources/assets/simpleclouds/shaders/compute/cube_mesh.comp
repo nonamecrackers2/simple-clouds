@@ -49,11 +49,11 @@ const uint sideIndices[6] = {
 	0, 1, 2, 0, 2, 3
 };
 
-layout(std430) restrict buffer Counter {
-	uint counter;
+layout(std430) restrict buffer TotalSides {
+	uint totalSides;
 };
 
-layout(std430) restrict writeonly buffer SideDataBuffer {
+layout(std430) restrict writeonly buffer VertexBuffer {
     Side data[];
 }
 sides;
@@ -62,6 +62,11 @@ layout(std430) restrict writeonly buffer IndexBuffer {
 	uint data[];
 }
 indices;
+
+layout(std430) restrict buffer SidesPerChunk {
+	uint data[];
+}
+sidesPerChunk;
 
 layout(std430) readonly buffer NoiseLayers {
 	NoiseLayer data[];
@@ -87,6 +92,7 @@ uniform vec3 Scroll;
 uniform vec3 Origin;
 uniform bool TestFacesFacingAway;
 uniform int DoNotOccludeSide = -1;
+uniform int ChunkIndex;
 
 #if TYPE == 0
 
@@ -195,9 +201,10 @@ bool shouldNotOcclude(int index)
 
 void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, int index, float brightness)
 {
-	uint currentFace = atomicAdd(counter, 1u);
+	uint lastChunkVertex = atomicAdd(sidesPerChunk.data[ChunkIndex], 1u) * 4;
+	uint currentFace = atomicAdd(totalSides, 1u);
 	uint lastIndex = currentFace * 6;
-	uint lastVertex = currentFace * 4;
+	//uint lastVertex = currentFace * 4;
 	Side side;
 	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, brightness, index);
 	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, brightness, index);
@@ -205,7 +212,7 @@ void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corn
 	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, brightness, index);
 	sides.data[currentFace] = side;
 	for (uint i = 0; i < sideIndices.length(); i++)
-		indices.data[lastIndex + i] = lastVertex + sideIndices[i];
+		indices.data[lastIndex + i] = lastChunkVertex + sideIndices[i];
 }
 
 void createCube(float x, float y, float z, float cubeRadius, float brightness, float fade, LayerGroup group)

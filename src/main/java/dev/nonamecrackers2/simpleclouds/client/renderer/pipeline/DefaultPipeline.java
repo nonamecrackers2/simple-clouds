@@ -14,6 +14,7 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.world.FogRenderMode;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.world.level.material.FogType;
 
 public class DefaultPipeline implements CloudsRenderPipeline
@@ -21,7 +22,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 	protected DefaultPipeline() {}
 	
 	@Override
-	public void prepare(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	public void prepare(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
 	{
 		mc.getProfiler().push("shadow_map");
 		PoseStack shadowMapStack = new PoseStack();
@@ -31,7 +32,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 	}
 
 	@Override
-	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ) 
+	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) 
 	{
 		float[] cloudCol = renderer.getCloudColor(partialTick);
 		float cloudR = (float)cloudCol[0];
@@ -62,7 +63,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
         mc.getProfiler().push("clouds");
 		stack.pushPose();
 		renderer.translateClouds(stack, camX, camY, camZ);
-		renderer.getMeshGenerator().render(stack, projMat, partialTick, cloudR, cloudG, cloudB);
+		renderer.getMeshGenerator().render(stack, projMat, partialTick, cloudR, cloudG, cloudB, frustum);
 		stack.popPose();
 		mc.getProfiler().pop();
 		
@@ -86,7 +87,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 	}
 	
 	@Override
-	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
+	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
 	{
 		if (SimpleCloudsConfig.CLIENT.fogMode.get() == FogRenderMode.SCREEN_SPACE && mc.gameRenderer.getMainCamera().getFluidInCamera() == FogType.NONE)
 		{
@@ -96,5 +97,13 @@ public class DefaultPipeline implements CloudsRenderPipeline
 	}
 
 	@Override
-	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ) {}
+	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
+	{
+//		mc.getProfiler().push("clouds_debug");
+//		stack.pushPose();
+//		renderer.translateClouds(stack, camX, camY, camZ);
+//		renderer.getMeshGenerator().renderDebug(stack, projMat, partialTick, frustum, false, true);
+//		stack.popPose();
+//		mc.getProfiler().pop();
+	}
 }

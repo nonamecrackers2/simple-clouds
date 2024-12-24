@@ -92,43 +92,7 @@ public class SimpleCloudsClientEvents
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 16)
 				.setPreset(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded, true)
 				.setPreset(SimpleCloudsConfig.CLIENT.frustumCulling, false).build());
-//		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.fast_culled_mesh"))
-//				.setDescription(Component.translatable("simpleclouds.config.preset.fast_culled_mesh.description"))
-//				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 4).build());
 	}
-//	
-//	@SubscribeEvent
-//	public static void onSingleModeCloudTypeChanged(OnConfigOptionSaved<String> event)
-//	{
-//		if (event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.singleModeCloudType))
-//		{
-//			String type = event.getNewValue();
-//			ResourceLocation loc = ResourceLocation.tryParse(type);
-//			var types = ClientSideCloudTypeManager.getInstance().getCloudTypes();
-//			if (loc == null || !types.containsKey(loc))
-//			{
-//				Component valid = Component.literal(Joiner.on(", ").join(types.keySet().stream().map(ResourceLocation::toString).iterator())).withStyle(ChatFormatting.YELLOW);
-//				Popup.createInfoPopup(null, 300, Component.translatable("gui.simpleclouds.unknown_cloud_type.info", loc == null ? type : loc.toString(), valid));
-//				event.overrideValue(SimpleCloudsConfig.CLIENT.singleModeCloudType.getDefault());
-//			}
-//			else
-//			{
-//				if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof SingleRegionCloudMeshGenerator generator)
-//					generator.setCloudType(types.get(loc));
-//			}
-//		}
-//	}
-//	
-//	@SubscribeEvent
-//	public static void onConfigChanged(OnConfigOptionSaved<?> event)
-//	{
-//		if (event.didValueChange() && (event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudMode) || event.getConfigOption().equals(SimpleCloudsConfig.CLIENT.cloudStyle)))
-//		{
-//			Popup.createYesNoPopup(null, () -> {
-//				Minecraft.getInstance().reloadResourcePacks();
-//			}, 300, Component.translatable("gui.simpleclouds.requires_reload.info"));
-//		}
-//	}
 	
 	@SubscribeEvent
 	public static void registerClientCommands(RegisterClientCommandsEvent event)
@@ -220,9 +184,10 @@ public class SimpleCloudsClientEvents
 			{
 				int totalSides = renderer.getMeshGenerator().getTotalSides();
 				int totalBytes = totalSides * CloudMeshGenerator.BYTES_PER_SIDE;
+				CloudMeshGenerator.MeshGenResult meshGenResult = renderer.getMeshGenerator().getMeshGenResult();
+				if (meshGenResult != CloudMeshGenerator.MeshGenResult.NORMAL)
+					text.add(ChatFormatting.RED + "MESH ERROR: " + meshGenResult);
 				text.add("Triangles: " + totalSides * 2 + "; Size: " + humanReadableByteCountSI(totalBytes));
-				if (totalBytes > renderer.getMeshGenerator().getSideBufferSize())
-					text.add(ChatFormatting.RED + "Triangle Count Exceeded!");
 				int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
 				text.add("Mesh gen frames: " + SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get() + "; Effective FPS: " + mc.getFps() / frames);
 				text.add("Frustum culling: " + (SimpleCloudsConfig.CLIENT.frustumCulling.get() ? "ON" : "OFF"));

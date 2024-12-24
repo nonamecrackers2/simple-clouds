@@ -23,8 +23,9 @@ public class SimpleCloudsClientConfigListeners
 	public static void registerListener()
 	{
 		ConfigListener.builder(ModConfig.Type.CLIENT, SimpleCloudsMod.MODID)
-				.addListener(SimpleCloudsConfig.CLIENT.cloudMode, (o, n) -> requestReload())
-				.addListener(SimpleCloudsConfig.CLIENT.cloudStyle, (o, n) -> requestReload())
+				.addListener(SimpleCloudsConfig.CLIENT.cloudMode, (o, n) -> requestReload(true))
+				.addListener(SimpleCloudsConfig.CLIENT.cloudStyle, (o, n) -> requestReload(false))
+				.addListener(SimpleCloudsConfig.CLIENT.levelOfDetail, (o, n) -> requestReload(false))
 				.addListener(SimpleCloudsConfig.CLIENT.singleModeCloudType, (o, n) -> onSingleModeCloudTypeUpdated(n))
 				.buildAndRegister();
 	}
@@ -84,11 +85,11 @@ public class SimpleCloudsClientConfigListeners
 		});
 	}
 	
-	public static void requestReload()
+	public static void requestReload(boolean skipIfServerAvailable)
 	{
 		Minecraft.getInstance().execute(() -> 
 		{
-			if (ClientCloudManager.isAvailableServerSide())
+			if (skipIfServerAvailable && ClientCloudManager.isAvailableServerSide())
 				return;
 			Popup.createYesNoPopup(null, () -> {
 				SimpleCloudsRenderer.getInstance().requestReload();
