@@ -1,0 +1,23 @@
+{
+	"targets": [
+		"swap",
+		"output"
+	],
+	"passes": [
+		{
+			"name": "simpleclouds:clouds_composite",
+			"intarget": "minecraft:main",
+			"outtarget": "swap"
+		},
+		{
+			"name": "simpleclouds:transparency_composite",
+			"intarget": "swap",
+			"outtarget": "output"
+		},
+		{
+			"name": "blit",
+			"intarget": "output",
+			"outtarget": "minecraft:main"
+		}
+	]
+}

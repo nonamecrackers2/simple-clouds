@@ -1,5 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.common.cloud;
 
+import java.nio.ByteBuffer;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
@@ -11,7 +13,7 @@ import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 
-public record CloudType(ResourceLocation id, WeatherType weatherType, float storminess, float stormStart, float stormFadeDistance, NoiseSettings noiseConfig) implements CloudInfo
+public record CloudType(ResourceLocation id, WeatherType weatherType, float storminess, float stormStart, float stormFadeDistance, float transparencyFade, NoiseSettings noiseConfig) implements CloudInfo
 {
 	private static float getOptionalRangedParam(JsonObject object, String name, float defaultValue, float min, float max) throws JsonSyntaxException
 	{
@@ -54,7 +56,8 @@ public record CloudType(ResourceLocation id, WeatherType weatherType, float stor
 		float storminess = getOptionalRangedParam(object, "storminess", 0.0F, 0.0F, CloudInfo.STORMINESS_MAX);
 		float stormStart = getOptionalRangedParam(object, "storm_start", 16.0F, 0.0F, CloudInfo.STORM_START_MAX);
 		float stormFadeDistance = getOptionalRangedParam(object, "storm_fade_distance", 32.0F, 0.0F, CloudInfo.STORM_FADE_DISTANCE_MAX);
+		float transparencyFade = getOptionalRangedParam(object, "transparency_fade", 0.0F, 0.0F, CloudInfo.TRANSPARENCY_FADE_MAX); //TODO: Add to cloud previewer screen
 		
-		return new CloudType(id, weatherType, storminess, stormStart, stormFadeDistance, settings);
+		return new CloudType(id, weatherType, storminess, stormStart, stormFadeDistance, transparencyFade, settings);
 	}
 }

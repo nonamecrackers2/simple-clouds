@@ -7,7 +7,7 @@ import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
 public class SimpleCloudsConstants
 {
 	//General
-	public static final CloudType FALLBACK = new CloudType(SimpleCloudsMod.id("fallback"), WeatherType.NONE, 0.0F, 16.0F, 32.0F, StaticNoiseSettings.DEFAULT);
+	public static final CloudType FALLBACK = new CloudType(SimpleCloudsMod.id("fallback"), WeatherType.NONE, 0.0F, 16.0F, 32.0F, 1.0F, StaticNoiseSettings.DEFAULT);
 	public static final int CLOUD_SCALE = 8;
 	public static final int CHUNK_SIZE = 32;
 	public static final float REGION_SCALE = 2000.0F;
@@ -24,8 +24,8 @@ public class SimpleCloudsConstants
 	public static final float LIGHTNING_FLASH_STRENGTH = 1.0F;
 	public static final float SOUND_METERS_PER_SECOND = 2000.0F;
 	//Ambient cloud mode
-	public static final float AMBIENT_MODE_FADE_START = 2400.0F;
-	public static final float AMBIENT_MODE_FADE_END = 4800.0F;
+	public static final float AMBIENT_MODE_FADE_START = 0.25F;
+	public static final float AMBIENT_MODE_FADE_END = 0.5F;
 	
 	private SimpleCloudsConstants() {}
 }

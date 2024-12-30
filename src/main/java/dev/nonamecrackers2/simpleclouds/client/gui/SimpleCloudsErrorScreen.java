@@ -8,6 +8,7 @@ import org.lwjgl.glfw.GLFW;
 import com.google.common.collect.Lists;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
+import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -97,7 +98,17 @@ public class SimpleCloudsErrorScreen extends Screen
 		
 		if (keyCode == GLFW.GLFW_KEY_R && Screen.hasControlDown())
 		{
-			this.minecraft.reloadResourcePacks();
+			this.minecraft.reloadResourcePacks().thenRunAsync(() ->
+			{
+				var renderer = SimpleCloudsRenderer.getOptionalInstance().orElse(null);
+				if (renderer == null)
+					return;
+				RendererInitializeResult result = renderer.getInitialInitializationResult();
+				if (result != null && result.getState() == RendererInitializeResult.State.ERROR)
+					this.minecraft.setScreen(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult()));
+				else
+					this.minecraft.setScreen(null);
+			}, this.minecraft);
 			return true;
 		}
 		

@@ -1,6 +1,5 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh.multiregion;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -13,47 +12,40 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL41;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetail;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
-import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.resources.ResourceLocation;
 
 public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");
 	public static final int MAX_CLOUD_TYPES = 32;
-	private final CloudStyle style;
 	private int requiredRegionTexSize;
 	private CloudInfo[] cloudTypes;
 	private RegionType regionGenerator;
 	private @Nullable CloudRegionTextureGenerator regionTextureGenerator;
 	private boolean cloudTypesModified;
 	private boolean regionGeneratorChanged;
-	private boolean fadeNearOrigin;
-	private float fadeStart;
-	private float fadeEnd;
 	private @Nullable float[] currentRegionAlignX;
 	private @Nullable float[] currentRegionAlignZ;
 	
-	public MultiRegionCloudMeshGenerator(CloudInfo[] cloudTypes, LevelOfDetailConfig lodConfig, RegionType regionGenerator, int meshGenInterval, CloudStyle style)
+	public MultiRegionCloudMeshGenerator(boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, RegionType regionGenerator, int meshGenInterval, boolean useTransparency, CloudInfo[] cloudTypes)
 	{
-		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, lodConfig, meshGenInterval);
+		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 0, fadeNearOrigin, shadedClouds, lodConfig, meshGenInterval, useTransparency);
 		this.setCloudTypes(cloudTypes);
 		this.regionGenerator = regionGenerator;
-		this.style = style;
 	}
 	
 	@Override
@@ -80,29 +72,6 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		return Pair.of(smallestStartHeight, largestEndHeight);
 	}
 
-	/**
-	 * Sets the fade start and end distances. One (1.0) unit is equivalent to one
-	 * cube in the cloud mesh.
-	 * 
-	 * @param fadeStart
-	 * @param fadeEnd
-	 */
-	public MultiRegionCloudMeshGenerator setFadeNearOrigin(float fadeStart, float fadeEnd)
-	{
-		if (fadeStart > fadeEnd)
-		{
-			this.fadeStart = fadeEnd;
-			this.fadeEnd = fadeStart;
-		}
-		else
-		{
-			this.fadeStart = fadeStart;
-			this.fadeEnd = fadeEnd;
-		}
-		this.fadeNearOrigin = true;
-		return this;
-	}
-	
 	public CloudInfo[] getCloudTypes()
 	{
 		return this.cloudTypes;
@@ -148,29 +117,12 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	}
 	
 	@Override
-	protected ComputeShader createShader(ResourceManager manager) throws IOException
-	{
-		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, ImmutableMap.of("${TYPE}", "0", "${FADE_NEAR_ORIGIN}", this.fadeNearOrigin ? "1" : "0", "${STYLE}", String.valueOf(this.style.getIndex())));
-	}
-	
-	@Override
 	protected void setupShader()
 	{
 		super.setupShader();
 		
-		this.shader.forUniform("FadeStart", (id, loc) -> {
-			GL41.glProgramUniform1f(id, loc, this.fadeStart);
-		});
-		
 		this.shader.bindShaderStorageBuffer(NOISE_LAYERS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * MAX_CLOUD_TYPES);
-		this.shader.bindShaderStorageBuffer(LAYER_GROUPINGS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(20 * MAX_CLOUD_TYPES);
-		
-		if (this.fadeNearOrigin)
-		{
-			this.shader.forUniform("FadeEnd", (id, loc) -> {
-				GL41.glProgramUniform1f(id, loc, this.fadeEnd);
-			});
-		}
+		this.shader.bindShaderStorageBuffer(LAYER_GROUPINGS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(CloudInfo.BYTES_PER_TYPE * MAX_CLOUD_TYPES);
 		
 		this.uploadNoiseData();
 		this.cloudTypesModified = false;
@@ -241,39 +193,25 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			LOGGER.debug("Uploading noise data to main mesh compute shader...");
 			this.shader.getShaderStorageBuffer(LAYER_GROUPINGS_NAME).writeData(b -> 
 			{
-				int currentIndex = 0;
 				int previousLayerIndex = 0;
 				for (int i = 0; i < this.cloudTypes.length; i++)
 				{
 					CloudInfo type = this.cloudTypes[i];
-					int layerCount = type.noiseConfig().layerCount();
-					b.putInt(currentIndex, previousLayerIndex);
-					currentIndex += 4;
-					b.putInt(currentIndex, previousLayerIndex + layerCount);
-					currentIndex += 4;
-					b.putFloat(currentIndex, type.storminess());
-					currentIndex += 4;
-					b.putFloat(currentIndex, type.stormStart());
-					currentIndex += 4;
-					b.putFloat(currentIndex, type.stormFadeDistance());
-					currentIndex += 4;
-					previousLayerIndex += layerCount;
+					previousLayerIndex = type.packToBuffer(b, previousLayerIndex);
 				}
-			}, 20 * this.cloudTypes.length);
+				b.rewind();
+			}, CloudInfo.BYTES_PER_TYPE * this.cloudTypes.length);
 			
 			this.shader.getShaderStorageBuffer(NOISE_LAYERS_NAME).writeData(b -> 
 			{
-				int index = 0;
 				for (int i = 0; i < this.cloudTypes.length; i++)
 				{
 					NoiseSettings settings = this.cloudTypes[i].noiseConfig();
 					float[] packed = settings.packForShader();
 					for (int j = 0; j < packed.length && j < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; j++)
-					{
-						b.putFloat(index, packed[j]);
-						index += 4;
-					}
+						b.putFloat(packed[j]);
 				}
+				b.rewind();
 			}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * this.cloudTypes.length);
 		}
 	}
@@ -327,7 +265,13 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	public void fillReport(CrashReportCategory category)
 	{
 		category.setDetail("Cloud Types", "(" + this.cloudTypes.length + ") " + Joiner.on(", ").join(this.cloudTypes));
-		category.setDetail("Fade Near Origin", this.fadeNearOrigin);
+		category.setDetail("Region Generator", () -> {
+			ResourceLocation key = SimpleCloudsRegistries.getRegionTypeRegistry().getKey(this.regionGenerator);
+			if (key == null)
+				return "UNKNOWN";
+			else
+				return key.toString();
+		});
 		super.fillReport(category);
 	}
 }

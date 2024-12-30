@@ -5,9 +5,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
@@ -125,6 +127,11 @@ public class CloudPreviewerScreen extends Screen3D
 			else
 				return CloudPreviewerScreen.this.layers.get(0);
 		}
+		
+		public float transparencyFade()
+		{
+			return 0.0F;
+		}
 	};
 	private final File directory;
 	private int toolbarHeight;
@@ -155,7 +162,7 @@ public class CloudPreviewerScreen extends Screen3D
 		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.25F, 5000.0F);
 		if (generator == null)
 		{
-			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(SimpleCloudsConstants.FALLBACK, LevelOfDetailOptions.HIGH.getConfig(), 3, 0.5F, 1.0F, CloudStyle.DEFAULT).setTestFacesFacingAway(true);
+			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(false, LevelOfDetailOptions.HIGH.getConfig(), 3, true, SimpleCloudsConstants.FALLBACK).setTestFacesFacingAway(true);
 			generator.init(Minecraft.getInstance().getResourceManager());
 		}
 		this.prev = prev;
@@ -414,7 +421,8 @@ public class CloudPreviewerScreen extends Screen3D
 		super.render(stack, pMouseX, pMouseY, pPartialTick);
 		stack.drawString(this.font, Component.translatable("gui.simpleclouds.cloud_previewer.current_layer", Component.literal(this.layers.isEmpty() ? "NONE" : String.valueOf(this.currentLayer + 1)).withStyle(Style.EMPTY.withBold(true))), 10, 5, 0xFFFFFFFF);
 		
-		if (generator.getMeshGenResult() == CloudMeshGenerator.MeshGenResult.TOO_MANY_VERTICES)
+		Pair<CloudMeshGenerator.MeshGenStatus, CloudMeshGenerator.MeshGenStatus> status = generator.getMeshGenStatus();
+		if (Stream.of(status.getLeft(), status.getRight()).anyMatch(s -> s == CloudMeshGenerator.MeshGenStatus.TOO_MANY_VERTICES || s == CloudMeshGenerator.MeshGenStatus.CHUNK_OVERFLOW))
 			stack.drawString(this.font, WARNING_TOO_MANY_CUBES, this.width - this.font.width(WARNING_TOO_MANY_CUBES) - 5, this.height - this.font.lineHeight - 5, 0xFFFFFFFF);
 		
 		stack.drawString(this.font, WEATHER_TYPE_TITLE, this.weatherTypeButton.getX(), this.weatherTypeButton.getY() - this.font.lineHeight - 2, 0xFFFFFFFF);

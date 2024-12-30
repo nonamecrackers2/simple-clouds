@@ -1,7 +1,9 @@
-#version 330
+#version 430
 
 uniform sampler2D DiffuseSampler;
-uniform sampler2D DiffuseDepthSampler;
+uniform sampler2D CloudsTexture;
+uniform sampler2D CloudsDepthTexture;
+
 uniform mat4 InverseWorldProjMat;
 uniform mat4 InverseModelViewMat;
 uniform float FogStart;
@@ -22,17 +24,16 @@ vec3 screenToWorldPos(vec2 coord, float depth)
 
 void main() 
 {
-	vec4 col = texture(DiffuseSampler, texCoord);
-	vec3 pos = screenToWorldPos(texCoord, texture(DiffuseDepthSampler, texCoord).x * 2.0 - 1.0);
+	vec4 col = texture(CloudsTexture, texCoord);
+	vec3 pos = screenToWorldPos(texCoord, texture(CloudsDepthTexture, texCoord).x * 2.0 - 1.0);
 	float depth = length(pos.xz);
 	
 	if (col.a > 0.0)
 	{
 		float fogFactor = 1.0 - min(max(depth - FogStart, 0.0) / (FogEnd - FogStart), 1.0);
-		fragColor = vec4(col.rgb, col.a * fogFactor);
+		col = vec4(col.rgb, col.a * fogFactor);
 	}
-	else
-	{
-		fragColor = vec4(0.0);
-	}
+	
+	vec3 bg = texture(DiffuseSampler, texCoord).rgb;
+	fragColor = vec4(col.rgb * col.a + bg * (1.0 - col.a), 1.0);
 }

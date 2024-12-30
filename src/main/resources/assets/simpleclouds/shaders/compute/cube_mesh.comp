@@ -3,6 +3,7 @@
 #define TYPE ${TYPE}    //0 for multi-region, 1 for single cloud type
 #define FADE_NEAR_ORIGIN ${FADE_NEAR_ORIGIN}    //0 to disable, 1 to enable
 #define STYLE ${STYLE}     //0 for default, 1 for shaded
+#define TRANSPARENCY ${TRANSPARENCY}     //0 for no transparency, 1 for transparency
 
 #define SHADE_DIRECTION normalize(vec3(0.5, 0.5, 0.5))
 
@@ -17,6 +18,7 @@ struct LayerGroup {
 	float Storminess;
 	float StormStart;
 	float StormFadeDistance;
+	float TransparencyFade;
 };
 
 struct NoiseLayer {
@@ -29,6 +31,8 @@ struct NoiseLayer {
 	float HeightOffset;
 	float ValueScale;
 };
+
+// ----- Opaque -----
 
 struct Vertex {
 	float x;
@@ -45,9 +49,59 @@ struct Side {
 	Vertex d;
 };
 
+// ----- Transparent -----
+
+#if TRANSPARENCY == 1
+
+struct TransparentVertex {
+	float x;
+	float y;
+	float z;
+	float brightness;
+	float alpha;
+};
+
+struct TransparentCube {
+	TransparentVertex a;
+	TransparentVertex b;
+	TransparentVertex c;
+	TransparentVertex d;
+	TransparentVertex e;
+	TransparentVertex f;
+	TransparentVertex g;
+	TransparentVertex h;
+};
+
+#endif
+
+// -----------------------
+
+//Faces:
+//-X = 0
+//+X = 1
+//-Y = 2
+//+Y = 3
+//-Z = 4
+//+Z = 5
+
 const uint sideIndices[6] = {
 	0, 1, 2, 0, 2, 3
 };
+
+#if TRANSPARENCY == 1
+
+const uint transparentCubeIndices[36] = {
+	0, 1, 2, 0, 2, 3, //-z
+	4, 7, 6, 4, 6, 5, //+z
+	7, 0, 3, 7, 3, 6, //-x
+	1, 4, 5, 1, 5, 2, //+x
+	1, 0, 7, 1, 7, 4, //-y
+	5, 6, 3, 5, 3, 2 //+y
+};
+
+#endif
+
+// ----- Opaque Buffers -----
 
 layout(std430) restrict buffer TotalSides {
 	uint totalSides;
@@ -68,6 +122,33 @@ layout(std430) restrict buffer SidesPerChunk {
 }
 sidesPerChunk;
 
+// ----- Transparency Buffers -----
+
+#if TRANSPARENCY == 1
+
+layout(std430) restrict buffer TotalTransparentCubes {
+	uint totalTransparentCubes;
+};
+
+layout(std430) restrict writeonly buffer VertexBufferTransparent {
+    TransparentCube data[];
+}
+cubesTransparent;
+
+layout(std430) restrict writeonly buffer IndexBufferTransparent {
+	uint data[];
+}
+indicesTransparent;
+
+layout(std430) restrict buffer TransparentCubesPerChunk {
+	uint data[];
+}
+transparentCubesPerChunk;
+
+#endif
+
+// ----------------------------------
+
 layout(std430) readonly buffer NoiseLayers {
 	NoiseLayer data[];
 }
@@ -79,7 +160,6 @@ layout(std430) readonly buffer LayerGroupings {
 layerGroupings;
 
 #if TYPE == 0
-//layout(rg32f) uniform image3D regions;
 uniform sampler2DArray RegionsSampler;
 uniform int RegionsTexSize;
 #endif
@@ -94,31 +174,21 @@ uniform bool TestFacesFacingAway;
 uniform int DoNotOccludeSide = -1;
 uniform int ChunkIndex;
 
+#if TRANSPARENCY == 1
+uniform int TransparencyDistance = 300;
+#endif
+
 #if TYPE == 0
-
 uniform vec2 RegionSampleOffset;
-
 #elif TYPE == 1
-
 uniform float FadeStart;
 uniform float FadeEnd;
-
 #endif
 
 #if FADE_NEAR_ORIGIN == 1
-
 uniform float FadeStart;
 uniform float FadeEnd;
-
 #endif
-
-//Faces:
-//-X = 0
-//+X = 1
-//-Y = 2
-//+Y = 3
-//-Z = 4
-//+Z = 5
 
 float getNoiseForLayer(NoiseLayer layer, float x, float y, float z)
 {
@@ -199,6 +269,8 @@ bool shouldNotOcclude(int index)
 	}
 }
 
+// ----- Opaque -----
+
 void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, int index, float brightness)
 {
 	uint lastChunkVertex = atomicAdd(sidesPerChunk.data[ChunkIndex], 1u) * 4;
@@ -239,6 +311,35 @@ void createCube(float x, float y, float z, float cubeRadius, float brightness, f
 		createFace(offset, vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), 5, brightness);
 }
 
+// ----- Transparent -----
+
+#if TRANSPARENCY == 1
+
+void createTransparentCube(float x, float y, float z, float cubeRadius, float brightness, float alpha)
+{
+	uint lastChunkVertex = atomicAdd(transparentCubesPerChunk.data[ChunkIndex], 1u) * 8;
+	uint currentCube = atomicAdd(totalTransparentCubes, 1u);
+	uint lastIndex = currentCube * 36;
+	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
+	TransparentCube cube;
+	cube.a = TransparentVertex(offset.x - cubeRadius, offset.y - cubeRadius, offset.z - cubeRadius, brightness, alpha);
+	cube.b = TransparentVertex(offset.x + cubeRadius, offset.y - cubeRadius, offset.z - cubeRadius, brightness, alpha);
+	cube.c = TransparentVertex(offset.x + cubeRadius, offset.y + cubeRadius, offset.z - cubeRadius, brightness, alpha);
+	cube.d = TransparentVertex(offset.x - cubeRadius, offset.y + cubeRadius, offset.z - cubeRadius, brightness, alpha);
+	cube.e = TransparentVertex(offset.x + cubeRadius, offset.y - cubeRadius, offset.z + cubeRadius, brightness, alpha);
+	cube.f = TransparentVertex(offset.x + cubeRadius, offset.y + cubeRadius, offset.z + cubeRadius, brightness, alpha);
+	cube.g = TransparentVertex(offset.x - cubeRadius, offset.y + cubeRadius, offset.z + cubeRadius, brightness, alpha);
+	cube.h = TransparentVertex(offset.x - cubeRadius, offset.y - cubeRadius, offset.z + cubeRadius, brightness, alpha);
+	cubesTransparent.data[currentCube] = cube;
+	for (uint i = 0; i < transparentCubeIndices.length(); i++)
+		indicesTransparent.data[lastIndex + i] = lastChunkVertex + transparentCubeIndices[i];
+	
+}
+
+#endif
+
+// -----------------------
+
 void main() 
 {
     vec3 id = gl_GlobalInvocationID;
@@ -262,10 +363,10 @@ void main()
 	float fade = -5.0 * min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0);
 #endif
 	float noise = getNoiseForLayerGroup(group, x, y, z) + fade;
+	float storminess = clamp(group.Storminess + fade * 0.1, 0.0, 1.0);
+	float brightness = clamp(1.0 - storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
     if (noise > 0.0)
     {
-    	float storminess = clamp(group.Storminess + fade * 0.1, 0.0, 1.0);
-    	float brightness = clamp(1.0 - storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
 #if STYLE == 1
 	    float px = getNoiseForLayerGroup(group, x - 0.1, y, z) + fade;
 		float py = getNoiseForLayerGroup(group, x, y - 0.1, z) + fade;
@@ -279,4 +380,15 @@ void main()
 #endif
     	createCube(x, y, z, Scale / 2.0, brightness, fade, group);
     }
+    #if TRANSPARENCY == 1
+    else if (group.TransparencyFade > 0.01 && noise > -group.TransparencyFade && noise < 0.0)
+    {
+   		float length = distance(vec2(x, z), Origin.xz);
+   		if (length < TransparencyDistance)
+   		{
+   			float alpha = 1.0 / group.TransparencyFade * (noise + group.TransparencyFade);
+    		createTransparentCube(x, y, z, Scale / 2.0, brightness, alpha);
+   		}
+    }
+    #endif
 }

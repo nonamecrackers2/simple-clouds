@@ -40,10 +40,12 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 				splitted[i] = StringUtils.capitalize(splitted[i]);
 			this.add(key, StringUtils.join(splitted, " "));
 		}
-		this.add("simpleclouds.config.preset.optimal_mesh", "Optimal Mesh");
-		this.add("simpleclouds.config.preset.optimal_mesh.description", "A more complete cloud mesh that fairs better with storm fog. Removes the small delay for chunks to appear that can be seen when using frustum culling, however at the cost of more vertices. Clouds may appear to move with a slight stutter when moving fast.");
-		this.add("simpleclouds.config.preset.fast_culled_mesh", "Fast Culled Mesh");
-		this.add("simpleclouds.config.preset.fast_culled_mesh.description", "Heavily lowers the total vertex count by applying culling. Generates the cloud mesh much faster. A small delay for chunks to appear is present when turning fast.");
+		this.add("simpleclouds.config.preset.medium", "Medium");
+		this.add("simpleclouds.config.preset.medium.description", "For more medium-end systems that can't handle high. Lowers the level of detail and makes the cloud mesh generate a bit slower.");
+		this.add("simpleclouds.config.preset.low", "Low");
+		this.add("simpleclouds.config.preset.low.description", "For systems that are struggling a bit running this mod. Sets the level of detail to the lowest, disables transparency, and makes the cloud mesh generate a bit slower.");
+		this.add("simpleclouds.config.preset.ultra_low", "Ultra Low");
+		this.add("simpleclouds.config.preset.ultra_low.description", "If your system is REALLY struggling. Lowest level of detail, no transparency, and disables storm fog.");
 		this.add("gui.simpleclouds.noise_settings.param.range", "Range: %s - %s");
 		this.add("gui.simpleclouds.cloud_previewer.button.previous_layer.title", "Previous layer");
 		this.add("gui.simpleclouds.cloud_previewer.button.next_layer.title", "Next layer");

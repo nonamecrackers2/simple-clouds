@@ -17,7 +17,8 @@
 		"MixinClientLevel",
 		"MixinLightTexture",
 		"MixinMinecraft",
-		"MixinFrustumAccessor"
+		"MixinFrustumAccessor",
+		"MixinPostPass"
 	],
 	"minVersion": "0.8"
 }

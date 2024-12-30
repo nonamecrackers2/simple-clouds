@@ -99,7 +99,8 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 		mc.getProfiler().pop();
 
 		mc.getProfiler().push("clouds_post");
-		renderer.doCloudPostProcessing(stack, partialTick, projMat);
+		//TODO Fix
+		//renderer.doCloudPostProcessing(stack, partialTick, projMat);
 		mc.getProfiler().pop();
 		
 		mc.getMainRenderTarget().bindWrite(false);

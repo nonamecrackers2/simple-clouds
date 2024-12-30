@@ -8,8 +8,5 @@ out vec4 fragColor;
 
 void main() 
 {
-    vec4 color = ColorModulator * vertexColor;
-    if (color.a < 0.1)
-        discard;
-    fragColor = color;
+    fragColor = ColorModulator * vertexColor;
 }

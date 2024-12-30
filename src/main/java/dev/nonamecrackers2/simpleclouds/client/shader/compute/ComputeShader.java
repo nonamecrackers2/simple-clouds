@@ -344,11 +344,13 @@ public class ComputeShader
 					@Override
 					public List<String> process(String file)
 					{
-						file = LOCAL_GROUP_REPLACER.matcher(file).replaceAll(result -> {
+						file = LOCAL_GROUP_REPLACER.matcher(file).replaceAll(result -> 
+						{
 							String group = result.group();
 							for (var entry : parameters.entrySet())
 							{
-								if (entry.getKey().equals(group))
+								String param = "${" + entry.getKey() + "}";
+								if (param.equals(group))
 									return entry.getValue();
 							}
 							switch (group)

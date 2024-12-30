@@ -1,6 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh.chunk;
 
 import java.nio.ByteBuffer;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 
@@ -19,15 +20,8 @@ import net.minecraft.world.phys.AABB;
 public class MeshChunk
 {
 	private final PreparedChunk preparedChunk;
-	private int arrayObjectId = -1;
-	private int vertexBufferId = -1;
-	private int indexBufferId = -1;
-	private @Nullable ByteBuffer vertexBuffer;
-	private @Nullable ByteBuffer indexBuffer;
-	private int totalIndices;
-	private int totalSides;
-	private final int vertexBufferSize;
-	private final int indexBufferSize;
+	private final MeshChunk.BufferSet opaqueBuffers;
+	private final Optional<MeshChunk.BufferSet> transparentBuffers;
 	private float boundsMinX;
 	private float boundsMinY;
 	private float boundsMinZ;
@@ -37,28 +31,15 @@ public class MeshChunk
 	private float minHeight;
 	private float maxHeight;
 	
-	public MeshChunk(PreparedChunk preparedChunk, int vertexBufferSize, int indexBufferSize)
+	public MeshChunk(PreparedChunk preparedChunk, int vertexBufferSize, int indexBufferSize, int transparentVertexBufferSize, int transparentIndexBufferSize, boolean useTransparency)
 	{
 		this.preparedChunk = preparedChunk;
 		
-		this.arrayObjectId = GL30.glGenVertexArrays();
-		this.vertexBufferId = GL15.glGenBuffers();
-		this.indexBufferId = GL15.glGenBuffers();
-		
-		GL30.glBindVertexArray(this.arrayObjectId);
-		
-		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
-		this.vertexBuffer = MemoryTracker.create(vertexBufferSize);
-		GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_DYNAMIC_DRAW);
-		SimpleCloudsShaders.POSITION_BRIGHTNESS_NORMAL_INDEX.setupBufferState();
-		GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
-		this.indexBuffer = MemoryTracker.create(indexBufferSize);
-		GlStateManager._glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_DYNAMIC_DRAW);
-		
-		GL30.glBindVertexArray(0);
-		
-		this.vertexBufferSize = vertexBufferSize;
-		this.indexBufferSize = indexBufferSize;
+		this.opaqueBuffers = new MeshChunk.BufferSet(vertexBufferSize, indexBufferSize);
+		if (useTransparency)
+			this.transparentBuffers = Optional.of(new MeshChunk.BufferSet(transparentVertexBufferSize, transparentIndexBufferSize));
+		else
+			this.transparentBuffers = Optional.empty();
 		
 		AABB bounds = preparedChunk.bounds();
 		this.boundsMinX = (float)bounds.minX;
@@ -76,45 +57,14 @@ public class MeshChunk
 		return this.preparedChunk;
 	}
 	
-	public void setTotalSides(int totalSides)
+	public MeshChunk.BufferSet getOpaqueBuffers()
 	{
-		this.totalSides = totalSides;
-		this.totalIndices = totalSides * 6;
+		return this.opaqueBuffers;
 	}
 	
-	public int getTotalSides()
+	public Optional<MeshChunk.BufferSet> getTransparentBuffers()
 	{
-		return this.totalSides;
-	}
-	
-	public int getVertexBufferSize()
-	{
-		return this.vertexBufferSize;
-	}
-	
-	public int getTotalIndices()
-	{
-		return this.totalIndices;
-	}
-	
-	public int getIndexBufferSize()
-	{
-		return this.indexBufferSize;
-	}
-	
-	public int getArrayObjectId()
-	{
-		return this.arrayObjectId;
-	}
-	
-	public int getVertexBufferId()
-	{
-		return this.vertexBufferId;
-	}
-	
-	public int getIndexBufferId()
-	{
-		return this.indexBufferId;
+		return this.transparentBuffers;
 	}
 	
 	public void setBounds(float minX, float minY, float minZ, float maxX, float maxY, float maxZ)
@@ -175,37 +125,123 @@ public class MeshChunk
 
 	public void destroy()
 	{
-		this.totalIndices = 0;
-		this.totalSides = 0;
+		this.opaqueBuffers.destroy();
+		this.transparentBuffers.ifPresent(MeshChunk.BufferSet::destroy);
+	}
+	
+	public static class BufferSet
+	{
+		private int arrayObjectId = -1;
+		private int vertexBufferId = -1;
+		private int indexBufferId = -1;
+		private @Nullable ByteBuffer vertexBuffer;
+		private @Nullable ByteBuffer indexBuffer;
+		private int totalIndices;
+		private int totalVertices;
+		private final int vertexBufferSize;
+		private final int indexBufferSize;
 		
-		if (this.arrayObjectId >= 0)
+		public BufferSet(int vertexBufferSize, int indexBufferSize)
 		{
-			RenderSystem.glDeleteVertexArrays(this.arrayObjectId);
-			this.arrayObjectId = -1;
+			this.arrayObjectId = GL30.glGenVertexArrays();
+			this.vertexBufferId = GL15.glGenBuffers();
+			this.indexBufferId = GL15.glGenBuffers();
+			
+			GL30.glBindVertexArray(this.arrayObjectId);
+			
+			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
+			this.vertexBuffer = MemoryTracker.create(vertexBufferSize);
+			GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_DYNAMIC_DRAW);
+			SimpleCloudsShaders.POSITION_BRIGHTNESS_NORMAL_INDEX.setupBufferState();
+			GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
+			this.indexBuffer = MemoryTracker.create(indexBufferSize);
+			GlStateManager._glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_DYNAMIC_DRAW);
+			
+			GL30.glBindVertexArray(0);
+			
+			this.vertexBufferSize = vertexBufferSize;
+			this.indexBufferSize = indexBufferSize;
 		}
 		
-		if (this.vertexBufferId >= 0)
+		public void setTotalVertices(int totalVertices)
 		{
-			RenderSystem.glDeleteBuffers(this.vertexBufferId);
-			this.vertexBufferId = -1;
+			this.totalVertices = totalVertices;
 		}
 		
-		if (this.vertexBuffer != null)
+		public int getTotalVertices()
 		{
-			MemoryUtil.memFree(this.vertexBuffer);
-			this.vertexBuffer = null;
+			return this.totalVertices;
 		}
 		
-		if (this.indexBufferId >= 0)
+		public int getVertexBufferSize()
 		{
-			RenderSystem.glDeleteBuffers(this.indexBufferId);
-			this.indexBufferId = -1;
+			return this.vertexBufferSize;
 		}
 		
-		if (this.indexBuffer != null)
+		public void setTotalIndices(int totalIndices)
 		{
-			MemoryUtil.memFree(this.indexBuffer);
-			this.indexBuffer = null;
+			this.totalIndices = totalIndices;
+		}
+		
+		public int getTotalIndices()
+		{
+			return this.totalIndices;
+		}
+		
+		public int getIndexBufferSize()
+		{
+			return this.indexBufferSize;
+		}
+		
+		public int getArrayObjectId()
+		{
+			return this.arrayObjectId;
+		}
+		
+		public int getVertexBufferId()
+		{
+			return this.vertexBufferId;
+		}
+		
+		public int getIndexBufferId()
+		{
+			return this.indexBufferId;
+		}
+		
+		public void destroy()
+		{
+			this.totalIndices = 0;
+			this.totalVertices = 0;
+			
+			if (this.arrayObjectId >= 0)
+			{
+				RenderSystem.glDeleteVertexArrays(this.arrayObjectId);
+				this.arrayObjectId = -1;
+			}
+			
+			if (this.vertexBufferId >= 0)
+			{
+				RenderSystem.glDeleteBuffers(this.vertexBufferId);
+				this.vertexBufferId = -1;
+			}
+			
+			if (this.vertexBuffer != null)
+			{
+				MemoryUtil.memFree(this.vertexBuffer);
+				this.vertexBuffer = null;
+			}
+			
+			if (this.indexBufferId >= 0)
+			{
+				RenderSystem.glDeleteBuffers(this.indexBufferId);
+				this.indexBufferId = -1;
+			}
+			
+			if (this.indexBuffer != null)
+			{
+				MemoryUtil.memFree(this.indexBuffer);
+				this.indexBuffer = null;
+			}
 		}
 	}
 }

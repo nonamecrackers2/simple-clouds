@@ -1,5 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh;
 
+@Deprecated
 public enum CloudStyle
 {
 	DEFAULT(0),

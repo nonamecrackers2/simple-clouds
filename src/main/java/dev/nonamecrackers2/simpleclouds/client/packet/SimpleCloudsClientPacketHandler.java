@@ -53,7 +53,7 @@ public class SimpleCloudsClientPacketHandler
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
 		if (SimpleCloudsConfig.SERVER_SPEC.isLoaded())
 		{
-			if (SimpleCloudsConfig.SERVER.cloudMode.get() != renderer.getCloudMode() || packet.type != renderer.getRegionGenerator())
+			if (renderer.needsReinitialization())
 			{
 				LOGGER.debug("Looks like the server cloud mode or region generator does not match with the client. Requesting a reload...");
 				renderer.requestReload();

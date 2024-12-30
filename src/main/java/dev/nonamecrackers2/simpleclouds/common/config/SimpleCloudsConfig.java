@@ -53,7 +53,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<String> singleModeCloudType;
 		public final ForgeConfigSpec.ConfigValue<Integer> singleModeFadeStartPercentage;
 		public final ForgeConfigSpec.ConfigValue<Integer> singleModeFadeEndPercentage;
-		public final ForgeConfigSpec.ConfigValue<CloudStyle> cloudStyle;
+//		public final ForgeConfigSpec.ConfigValue<CloudStyle> cloudStyle;
 		public final ForgeConfigSpec.ConfigValue<Long> cloudSeed;
 		public final ForgeConfigSpec.ConfigValue<Boolean> useSpecificSeed;
 		public final ForgeConfigSpec.ConfigValue<List<? extends String>> dimensionWhitelist;
@@ -63,6 +63,10 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Double> rainAngle;
 		public final ForgeConfigSpec.ConfigValue<Integer> thunderAttenuationDistance;
 		public final ForgeConfigSpec.ConfigValue<Boolean> stormFogLightningFlashes;
+		//Cloud Visuals
+		public final ForgeConfigSpec.ConfigValue<Boolean> cubeNormals;
+		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds;
+		public final ForgeConfigSpec.ConfigValue<Boolean> transparency;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -70,15 +74,11 @@ public class SimpleCloudsConfig
 			
 			this.cloudMode = this.createEnumValue(CloudMode.AMBIENT, "clientSideCloudMode", false, "Specifies how the clouds should behave in a client-side only context. SINGLE uses only a single cloud type. AMBIENT carves clouds around the player, keeping them at a distance. Due to be on a client-side only context, DEFAULT can not be picked and the vanilla weather system will be used. If Simple Clouds is installed on a server, this option will be ignored and the client will instead use the option set by the server", CloudMode.AMBIENT, CloudMode.SINGLE);
 			
-			this.cloudStyle = this.createEnumValue(CloudStyle.DEFAULT, "cloudStyle", false, "Specifies the visual style of the cloud. DEFAULT is the default style. SHADED adds minimal shading to clouds, making them appear more defined");
-			
 			this.showCloudPreviewerInfoPopup = this.createValue(true, "showCloudPreviewerInfoPopup", false, "Specifies if the info pop-up should appear when opening the cloud previewer menu");
 			
 			this.speedModifier = this.createRangedDoubleValue(1.0D, 0.1D, 32.0D, "clientSideSpeedModifier", false, "Specifies the movement speed of the clouds");
 			
 			this.cloudHeight = this.createRangedIntValue(128, CloudManager.CLOUD_HEIGHT_MIN, CloudManager.CLOUD_HEIGHT_MAX, "clientSideCloudHeight", false, "Specifies the render Y offset for the clouds");
-			
-			this.stormFogAngle = this.createRangedDoubleValue(80.0D, 50.0D, 90.0D, "stormFogAngle", false, "Specifies the angle parellel to the horizon that the storm fog should be directed to");
 			
 			this.dimensionWhitelist = this.createListValue(String.class, () -> {
 				return Lists.newArrayList("minecraft:overworld");
@@ -88,13 +88,31 @@ public class SimpleCloudsConfig
 			
 			this.whitelistAsBlacklist = this.createValue(false, "whitelistAsBlacklist", false, "Specifies if the dimension whitelist should instead be use as a blacklist");
 			
-			this.fogMode = this.createEnumValue(FogRenderMode.SCREEN_SPACE, "fogMode", false, "Specifies the type of world fog that should be used. Each has their own advantages and disadvantages, ranging from visual discrepancies to possible compatibility issues");
+			builder.comment("Preference").push("preference");
 			
-			this.lightningColorVariation = this.createValue(true, "lightningColorVariation", false, "Specifies if lightning should have slight random color variation");
+			this.fogMode = this.createEnumValue(FogRenderMode.SCREEN_SPACE, "fogMode", false, "Specifies the type of world fog that should be used. Each has their own advantages and disadvantages, ranging from visual discrepancies to possible compatibility issues");
 			
 			this.rainAngle = this.createRangedDoubleValue(15.0D, 0.0D, 45.0D, "rainAngle", false, "Specifies the angle of the rain, perpendicular to the ground. Higher values makes it more horizontal");
 			
+			this.stormFogAngle = this.createRangedDoubleValue(80.0D, 50.0D, 90.0D, "stormFogAngle", false, "Specifies the angle parellel to the horizon that the storm fog should be directed to");
+			
+			this.lightningColorVariation = this.createValue(true, "lightningColorVariation", false, "Specifies if lightning should have slight random color variation");
+			
 			this.thunderAttenuationDistance = this.createRangedIntValue(2000, 100, 20000, "thunderAttenuationDistance", false, "Specifies the attenuation distance for thunder. The lower the value, the quieter it will be from longer distances");
+			
+			builder.pop();
+			
+			builder.comment("Cloud Visuals").push("cloud_visuals");
+			
+			//this.cloudStyle = this.createEnumValue(CloudStyle.DEFAULT, "cloudStyle", false, "Specifies the visual style of the cloud. DEFAULT is the default style. SHADED adds minimal shading to clouds, making them appear more defined");
+			
+			this.cubeNormals = this.createValue(true, "cubeNormals", false, "Specifies if normals should be applied to each individual cube in the cloud which applies a bit of shading per cube face. Helps distinguish each individual cube in a cloud");
+			
+			this.shadedClouds = this.createValue(false, "shadedClouds", false, "Specifies if minimal shading should be applied to clouds. May cause performance drops");
+			
+			this.transparency = this.createValue(true, "transparency", false, "Specifies if transparent cubes should be generated for supported cloud types. May cause performance drops");
+			
+			builder.pop();
 			
 			builder.comment("Seed").push("seed");
 			
