@@ -96,7 +96,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 		
 		// Renders the clouds on to the cloud frame buffer
 		CloudMeshGenerator generator = renderer.getMeshGenerator();
-		generator.render(stack, projMat, partialTick, cloudR, cloudG, cloudB, frustum);
+		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, projMat, partialTick, cloudR, cloudG, cloudB, frustum);
 		
 		// Here we copy the depth from the cloud frame buffer to the main one, so we can have correct depth information with the
 		// rest of the Minecraft world
@@ -112,12 +112,11 @@ public class DefaultPipeline implements CloudsRenderPipeline
 		{
 			// We use weighted order independent transparency as we cannot easily sort the cloud mesh
 			// More info here https://jcgt.org/published/0002/02/09/paper.pdf and http://casual-effects.blogspot.com/2015/03/implemented-weighted-blended-order.html
-			//TODO Put this link more places
 			renderer.copyDepthFromCloudsToTransparency(); // Copy the depth data from the cloud framebuffer so we don't get weird depth issues
 			transparencyTarget.bindWrite(false);
 			
 			// Render the transparent geometry to the transparency framebuffer
-			generator.renderTransparency(stack, projMat, partialTick, cloudR, cloudG, cloudB, frustum);
+			SimpleCloudsRenderer.renderCloudsTransparency(generator, stack, projMat, partialTick, cloudR, cloudG, cloudB, frustum, renderer.getFogStart(), renderer.getFogEnd());
 		}
 		
 		p.pop();
@@ -151,7 +150,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 //		mc.getProfiler().push("clouds_debug");
 //		stack.pushPose();
 //		renderer.translateClouds(stack, camX, camY, camZ);
-//		renderer.getMeshGenerator().renderDebug(stack, projMat, partialTick, frustum, false, true);
+//		SimpleCloudsRenderer.renderCloudsDebug(renderer.getMeshGenerator(), stack, projMat, partialTick, frustum, false, true);
 //		stack.popPose();
 //		mc.getProfiler().pop();
 	}

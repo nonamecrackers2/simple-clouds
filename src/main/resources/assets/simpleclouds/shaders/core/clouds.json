@@ -1,9 +1,4 @@
 {
-    "blend": {
-        "func": "add",
-        "srcrgb": "srcalpha",
-        "dstrgb": "1-srcalpha"
-    },
     "vertex": "simpleclouds:clouds",
     "fragment": "simpleclouds:clouds",
     "attributes": [
@@ -19,6 +14,7 @@
         { "name": "Light1_Direction", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] },
         { "name": "LightPower", "type": "float", "count": 1, "values": [0.4] },
         { "name": "AmbientLight", "type": "float", "count": 1, "values": [0.9] },
-       	{ "name": "DarknessColorModifier", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.1 ] }
+       	{ "name": "DarknessColorModifier", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.1 ] },
+		{ "name": "UseNormals", "type": "int", "count": 1, "values": [ 1.0 ]}
     ]
 }

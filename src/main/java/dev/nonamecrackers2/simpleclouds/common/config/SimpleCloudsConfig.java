@@ -63,9 +63,10 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Double> rainAngle;
 		public final ForgeConfigSpec.ConfigValue<Integer> thunderAttenuationDistance;
 		public final ForgeConfigSpec.ConfigValue<Boolean> stormFogLightningFlashes;
+//		public final ForgeConfigSpec.ConfigValue<Integer> transparencyRenderDistancePercentage;
 		//Cloud Visuals
 		public final ForgeConfigSpec.ConfigValue<Boolean> cubeNormals;
-		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds;
+//		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds; //TODO: Reintroduce in the future
 		public final ForgeConfigSpec.ConfigValue<Boolean> transparency;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
@@ -102,13 +103,13 @@ public class SimpleCloudsConfig
 			
 			builder.pop();
 			
-			builder.comment("Cloud Visuals").push("cloud_visuals");
+			builder.comment("Visual").push("visual");
 			
 			//this.cloudStyle = this.createEnumValue(CloudStyle.DEFAULT, "cloudStyle", false, "Specifies the visual style of the cloud. DEFAULT is the default style. SHADED adds minimal shading to clouds, making them appear more defined");
 			
-			this.cubeNormals = this.createValue(true, "cubeNormals", false, "Specifies if normals should be applied to each individual cube in the cloud which applies a bit of shading per cube face. Helps distinguish each individual cube in a cloud");
+			this.cubeNormals = this.createValue(false, "cubeNormals", false, "Specifies if normals should be applied to each individual cube in the cloud which applies a bit of shading per cube face. Helps distinguish each individual cube in a cloud");
 			
-			this.shadedClouds = this.createValue(false, "shadedClouds", false, "Specifies if minimal shading should be applied to clouds. May cause performance drops");
+//			this.shadedClouds = this.createValue(false, "shadedClouds", false, "Specifies if minimal shading should be applied to clouds. May cause performance drops");
 			
 			this.transparency = this.createValue(true, "transparency", false, "Specifies if transparent cubes should be generated for supported cloud types. May cause performance drops");
 			
@@ -135,6 +136,8 @@ public class SimpleCloudsConfig
 			this.frustumCulling = this.createValue(true, "frustumCulling", false, "Culls cloud chunks not visible to the player. Disable if facing noticeable artifacts with high cloud mesh generate times");
 			
 			this.stormFogLightningFlashes = this.createValue(true, "stormFogLightningFlashes", false, "Toggles lightning flashes that can be seen in storm fog. Disabling can lead to potential performance gains when lightning spawns");
+			
+//			this.transparencyRenderDistancePercentage = this.createRangedIntValue(50, 1, 100, "transparencyRenderDistancePercentage", false, "Specifies the maximum percentage of the total viewable distance transparent cubes can be generated in");
 			
 			builder.pop();
 			

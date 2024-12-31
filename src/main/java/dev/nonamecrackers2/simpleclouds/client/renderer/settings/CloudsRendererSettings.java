@@ -33,7 +33,7 @@ public abstract class CloudsRendererSettings
 		@Override
 		public boolean shadedClouds()
 		{
-			return SimpleCloudsConfig.CLIENT.shadedClouds.get();
+			return false;//SimpleCloudsConfig.CLIENT.shadedClouds.get();
 		}
 		
 		@Override

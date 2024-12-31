@@ -90,6 +90,7 @@ public class SimpleCloudsClientEvents
 	
 	public static void registerClientPresets(RegisterConfigPresetsEvent event)
 	{
+		//TODO: Presets don't seem to work very well in the config menu, probably something with CrackersLib
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.medium"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.medium.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 10)
@@ -105,6 +106,10 @@ public class SimpleCloudsClientEvents
 				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.LOW)
 				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)
 				.setPreset(SimpleCloudsConfig.CLIENT.renderStormFog, false).build());
+		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.classic_style"))
+				.setDescription(Component.translatable("simpleclouds.config.preset.classic_style.description"))
+				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)
+				.setPreset(SimpleCloudsConfig.CLIENT.cubeNormals, true).build());
 	}
 	
 	@SubscribeEvent
@@ -200,15 +205,14 @@ public class SimpleCloudsClientEvents
 				
 				var meshGenResult = generator.getMeshGenStatus();
 				CloudMeshGenerator.MeshGenStatus opaqueStatus = meshGenResult.getLeft();
-				CloudMeshGenerator.MeshGenStatus transparentStatus = meshGenResult.getLeft();
+				CloudMeshGenerator.MeshGenStatus transparentStatus = meshGenResult.getRight();
 				if (opaqueStatus.isErroneous())
 					text.add(ChatFormatting.RED + "MESH ERROR OPAQUE: " + opaqueStatus);
 				if (transparentStatus.isErroneous())
-					text.add(ChatFormatting.RED + "MESH ERROR OPAQUE: " + transparentStatus);
+					text.add(ChatFormatting.RED + "MESH ERROR TRANSPARENT: " + transparentStatus);
 				
-//				int totalSides = renderer.getMeshGenerator().getTotalSides();
-//				int totalBytes = totalSides * CloudMeshGenerator.BYTES_PER_SIDE;
-//				text.add("Triangles: " + totalSides * 2 + "; Size: " + humanReadableByteCountSI(totalBytes));
+				text.add("Opaque geometry: " + humanReadableByteCountSI(generator.getOpaqueBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getOpaqueBufferSize()));
+				text.add("Transparent geometry: " + humanReadableByteCountSI(generator.getTransparentBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getTransparentBufferSize()));
 				
 				int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
 				text.add("Mesh gen frames: " + frames + "; Effective FPS: " + mc.getFps() / frames);

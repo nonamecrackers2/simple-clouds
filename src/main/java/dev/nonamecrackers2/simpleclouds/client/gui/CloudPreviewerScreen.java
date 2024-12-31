@@ -27,11 +27,12 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
+import dev.nonamecrackers2.simpleclouds.client.framebuffer.WeightedBlendingTarget;
 import dev.nonamecrackers2.simpleclouds.client.gui.widget.LayerEditor;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -436,7 +437,7 @@ public class CloudPreviewerScreen extends Screen3D
 	{
 		if (this.needsMeshRegen)
 			this.generateMesh();
-		generator.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F, null);
+		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F, null);
 		
 		float radius = generator.getCloudAreaMaxRadius();
 		Tesselator tesselator = Tesselator.getInstance();

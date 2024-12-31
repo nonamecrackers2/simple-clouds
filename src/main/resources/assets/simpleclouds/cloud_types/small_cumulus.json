@@ -8,5 +8,6 @@
 		"fade_distance": 10.0,
 		"height_offset": 0.0,
 		"value_scale": 1.0
-	}
+	},
+	"transparency_fade": 0.1
 }

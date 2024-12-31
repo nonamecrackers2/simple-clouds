@@ -1,5 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.nio.IntBuffer;
 import java.time.Duration;
@@ -25,6 +26,8 @@ import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL40;
+import org.lwjgl.opengl.GL43;
 
 import com.google.common.collect.Maps;
 import com.google.gson.JsonSyntaxException;
@@ -34,8 +37,13 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Axis;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
@@ -46,11 +54,13 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.chunk.MeshChunk;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
+import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
 import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.lightning.LightningBolt;
 import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.CloudsRenderPipeline;
 import dev.nonamecrackers2.simpleclouds.client.renderer.settings.CloudsRendererSettings;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
+import dev.nonamecrackers2.simpleclouds.client.shader.SingleSSBOShaderInstance;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
@@ -65,6 +75,8 @@ import net.minecraft.CrashReportCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.EffectInstance;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.ShaderInstance;
@@ -72,19 +84,15 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.fml.loading.ImmediateWindowHandler;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
-//TODO: Config for transparency
-//TODO: Config option for enabling/disabling normals
-//TODO: Test shaded style still working?
-//TODO: Pass near and far plane to transparency shader
-//TODO: mesh gen shader params system refactor
-//TODO: Test cloud previewer screen
-//TODO: Test height mesh gen culling in cloud mesh generator since it doesn't seem to be working properly?
-//TODO: World fog not working
+//TODO: Pass near and far plane to transparency shader for a fog effect
+//TODO: Configurable transparency render distance
+//TODO: Transparency render distance uniform in clouds_transparency.fsh to adjust weight function
 public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/SimpleCloudsRenderer");
@@ -199,6 +207,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	private void prepareMeshGenerator(float partialTicks)
 	{
+		if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator generator)
+			generator.setFadeDistances((float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F, (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F);
+		//this.meshGenerator.setTransparencyRenderDistance((float)SimpleCloudsConfig.CLIENT.transparencyRenderDistancePercentage.get() / 100.0F);
 		this.meshGenerator.setMeshGenInterval(SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
 		this.meshGenerator.setTestFacesFacingAway(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded.get());
 		if (this.mc.level != null)
@@ -583,10 +594,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void tick()
 	{
-		Matrix4f test = new Matrix4f().identity();
-		test.rotate((float)-Math.PI / 2.0F, new Vector3f(0.0F, 1.0F, 0.0F)); 
-		System.out.println(test);
-		
 		if (this.needsReload)
 		{
 			this.onResourceManagerReload(this.mc.getResourceManager());
@@ -596,19 +603,93 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.worldEffectsManager.tick();
 	}
 	
-	public void renderShadowMap(PoseStack stack, double camX, double camY, double camZ)
+	public static void renderCloudsOpaque(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b, @Nullable Frustum frustum)
 	{
 		RenderSystem.assertOnRenderThread();
 		
-		//TODO Bring back?
-//		if (this.meshGenerator.getTotalSides() > 0)
-//		{
+		if (!generator.canRender())
+			return;
+		
 		BufferUploader.reset();
 		
 		RenderSystem.disableBlend();
 		RenderSystem.enableDepthTest();
+		RenderSystem.setShaderColor(r, g, b, 1.0F);
 		RenderSystem.disableCull();
+		
+		SingleSSBOShaderInstance shader = SimpleCloudsShaders.getCloudsShader();
+		RenderSystem.setShader(() -> shader);
+		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
+		shader.apply();
+		
+		generator.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
+		{
+			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), opaqueBuffers.getBufferId());
+			generator.getSideMesh().drawInstanced(opaqueBuffers.getElementCount());
+		});
+		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), 0);
+		
+		shader.clear();
+		
+		GL30.glBindVertexArray(0);
+		
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.enableCull();
+	}
+	
+	public static void renderCloudsTransparency(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b, @Nullable Frustum frustum, float fadeStart, float fadeEnd)
+	{
+		RenderSystem.assertOnRenderThread();
+		
+		if (!generator.canRender() || !generator.transparencyEnabled())
+			return;
+		
+		BufferUploader.reset();
+		
+		RenderSystem.enableDepthTest();
+		RenderSystem.depthMask(false);
+		RenderSystem.setShaderColor(r, g, b, 1.0F);
+		
+		SingleSSBOShaderInstance shader = SimpleCloudsShaders.getCloudsTransparencyShader();
+		RenderSystem.setShader(() -> shader);
+		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
+		shader.safeGetUniform("FogStart").set(fadeStart);
+		shader.safeGetUniform("FogEnd").set(fadeEnd);
+		shader.apply();
+		
+		GL14.glBlendEquation(GL14.GL_FUNC_ADD);
+		GL30.glEnablei(GL11.GL_BLEND, 0);
+		GL30.glEnablei(GL11.GL_BLEND, 1);
+		GL40.glBlendFunci(0, GL11.GL_ONE, GL11.GL_ONE);
+		GL40.glBlendFunci(1, GL11.GL_ZERO, GL11.GL_ONE_MINUS_SRC_COLOR);
+		
+		generator.forRenderableMeshChunks(frustum, c -> c.getTransparentBuffers().get(), (chunk, transparentBuffers) -> 
+		{
+			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), transparentBuffers.getBufferId());
+			generator.getCubeMesh().drawInstanced(transparentBuffers.getElementCount());
+		});
+		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), 0);
+		
+		shader.clear();
+		
+		GL30.glDisablei(GL11.GL_BLEND, 0);
+		GL30.glDisablei(GL11.GL_BLEND, 1);
+		
+		GL30.glBindVertexArray(0);
+		
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+	}
+	
+	public void renderShadowMap(PoseStack stack, double camX, double camY, double camZ)
+	{
+		RenderSystem.assertOnRenderThread();
+		
+		BufferUploader.reset();
+		
+		RenderSystem.disableBlend();
+		RenderSystem.enableDepthTest();
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.disableCull();
 		
 		GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, this.shadowMapBufferId);
 		GlStateManager._viewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
@@ -630,19 +711,21 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		stack.pushPose();
 		this.translateClouds(stack, 0.0D, 0.0D, 0.0D);
 		
-		RenderSystem.setShader(SimpleCloudsShaders::getCloudsShadowMapShader);
-		prepareShader(RenderSystem.getShader(), stack.last().pose(), this.shadowMapProjMat);
-		RenderSystem.getShader().apply();
+		SingleSSBOShaderInstance shader = SimpleCloudsShaders.getCloudsShadowMapShader();
+		RenderSystem.setShader(() -> shader);
+		prepareShader(shader, stack.last().pose(), this.shadowMapProjMat);
+		shader.apply();
 		
-		this.meshGenerator.forRenderableMeshChunks(this.cullFrustum, MeshChunk::getOpaqueBuffers, (chunk, bufferSet) -> 
+		this.meshGenerator.forRenderableMeshChunks(this.cullFrustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
 		{
-			//TODO: Bring back
-//			GL30.glBindVertexArray(bufferSet.getArrayObjectId());
-//			RenderSystem.drawElements(GL11.GL_TRIANGLES, bufferSet.getTotalIndices(), GL11.GL_UNSIGNED_INT);
+			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), opaqueBuffers.getBufferId());
+			this.meshGenerator.getSideMesh().drawInstanced(opaqueBuffers.getElementCount());
 		});
+		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), 0);
+		
 		GL30.glBindVertexArray(0);
 		
-		RenderSystem.getShader().clear();
+		shader.clear();
 		
 		RenderSystem.enableCull();
 		
@@ -651,9 +734,82 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
 		
 		this.mc.getMainRenderTarget().bindWrite(true);
-//		}
 		
 		this.shadowMapStack = stack;
+	}
+	
+	public static void renderCloudsDebug(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, @Nullable Frustum frustum, boolean chunkBoundaries, boolean noiseBoundaries)
+	{
+		RenderSystem.assertOnRenderThread();
+		
+		if (!generator.canRender())
+			return;
+		
+		BufferUploader.reset();
+		
+		RenderSystem.disableBlend();
+		RenderSystem.enableDepthTest();
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.disableCull();
+		
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder builder = tesselator.getBuilder();
+		builder.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+		
+		generator.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, bufferSet) -> 
+		{
+			PreparedChunk preparedChunk = chunk.getChunkInfo();
+			if (chunkBoundaries)
+			{
+				int color = Color.HSBtoRGB((float)preparedChunk.lodLevel() / ((float)generator.getLodConfig().getLods().length + 1), 1.0F, 1.0F);
+				float r = (float)FastColor.ARGB32.red(color) / 255.0F;
+				float g = (float)FastColor.ARGB32.green(color) / 255.0F;
+				float b = (float)FastColor.ARGB32.blue(color) / 255.0F;
+				LevelRenderer.renderLineBox(builder, chunk.getBoundsMinX() + 1.0F, chunk.getBoundsMinY() + 1.0F, chunk.getBoundsMinZ() + 1.0F, chunk.getBoundsMaxX() - 1.0F, chunk.getBoundsMaxY() - 1.0F, chunk.getBoundsMaxZ() - 1.0F, r, g, b, 1.0F);
+			}
+			if (noiseBoundaries)
+				LevelRenderer.renderLineBox(builder, chunk.getBoundsMinX() + 1.0F, chunk.getMinHeight() + 1.0F, chunk.getBoundsMinZ() + 1.0F, chunk.getBoundsMaxX() - 1.0F, chunk.getMaxHeight() - 1.0F, chunk.getBoundsMaxZ() - 1.0F, 1.0F, 1.0F, 0.0F, 1.0F);
+		});
+		
+		RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
+		ShaderInstance shader = RenderSystem.getShader();
+		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
+		shader.LINE_WIDTH.set(2.5F);
+		shader.FOG_START.set(Float.MAX_VALUE);
+		shader.apply();
+		BufferUploader.draw(builder.end());
+		shader.clear();
+		
+		RenderSystem.enableCull();
+		
+		RenderSystem.defaultBlendFunc();
+		RenderSystem.enableBlend();
+		
+		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+		
+		generator.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, bufferSet) -> 
+		{
+			PreparedChunk preparedChunk = chunk.getChunkInfo();
+			if (chunkBoundaries)
+			{
+				int color = Color.HSBtoRGB((float)preparedChunk.lodLevel() / ((float)generator.getLodConfig().getLods().length + 1), 1.0F, 1.0F);
+				float r = (float)FastColor.ARGB32.red(color) / 255.0F;
+				float g = (float)FastColor.ARGB32.green(color) / 255.0F;
+				float b = (float)FastColor.ARGB32.blue(color) / 255.0F;
+				renderChunkBox(builder, chunk.getBoundsMinX() + 1.0F, chunk.getBoundsMinY() + 1.0F, chunk.getBoundsMinZ() + 1.0F, chunk.getBoundsMaxX() - 1.0F, chunk.getBoundsMaxY() - 1.0F, chunk.getBoundsMaxZ() - 1.0F, r, g, b, 0.4F);
+			}
+			if (noiseBoundaries)
+				renderChunkBox(builder, chunk.getBoundsMinX() + 1.0F, chunk.getMinHeight() + 1.0F, chunk.getBoundsMinZ() + 1.0F, chunk.getBoundsMaxX() - 1.0F, chunk.getMaxHeight() - 1.0F, chunk.getBoundsMaxZ() - 1.0F, 1.0F, 1.0F, 0.0F, 0.4F);
+		});
+		
+		RenderSystem.setShader(GameRenderer::getPositionColorShader);
+		shader = RenderSystem.getShader();
+		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
+		shader.apply();
+		BufferUploader.draw(builder.end());
+		shader.clear();
+		
+		RenderSystem.disableBlend();
 	}
 	
 	public float[] getCloudColor(float partialTick)
@@ -680,7 +836,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		float renderDistance = (float)this.meshGenerator.getCloudAreaMaxRadius() * (float)SimpleCloudsConstants.CLOUD_SCALE * factor;
 		this.fogStart = renderDistance / 4.0F;
 		this.fogEnd = renderDistance;
-		this.meshGenerator.setCullDistance(this.fogEnd);
+		this.meshGenerator.setCullDistance(this.fogEnd / (float)SimpleCloudsConstants.CLOUD_SCALE);
 		
 		this.mc.getProfiler().push("simple_clouds_prepare");
 		
@@ -694,8 +850,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (SimpleCloudsConfig.CLIENT.generateMesh.get())
 		{
 			this.mc.getProfiler().push("mesh_generation");
-			if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator generator)
-				generator.setFadeDistances((float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F, (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F);
 			this.prepareMeshGenerator(partialTick);
 			this.meshGenerator.tick(originX, originY, originZ, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
 			this.mc.getProfiler().pop();
@@ -957,6 +1111,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			shader.SCREEN_SIZE.set((float) window.getWidth(), (float) window.getHeight());
 		}
 		
+		shader.safeGetUniform("UseNormals").set(SimpleCloudsConfig.CLIENT.cubeNormals.get() ? 1 : 0);
+		
 		RenderSystem.setShaderLights(DIFFUSE_LIGHT_0, DIFFUSE_LIGHT_1);
 		RenderSystem.setupShaderLights(shader);
 	}
@@ -1116,5 +1272,44 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		});
 		
 		return useAsBlacklist ? !flag : flag;
+	}
+	
+	private static void renderChunkBox(VertexConsumer consumer, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, float r, float g, float b, float a)
+	{
+		//-X
+		consumer.vertex(minX, minY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(minX, maxY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(minX, maxY, minZ).color(r, g, b, a).endVertex();
+		consumer.vertex(minX, minY, minZ).color(r, g, b, a).endVertex();
+		
+		//+X
+		consumer.vertex(maxX, minY, minZ).color(r, g, b, a).endVertex();
+		consumer.vertex(maxX, maxY, minZ).color(r, g, b, a).endVertex();
+		consumer.vertex(maxX, maxY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(maxX, minY, maxZ).color(r, g, b, a).endVertex();
+		
+		//-Y
+		consumer.vertex(maxX, minY, minZ).color(r, g, b, a).endVertex();
+		consumer.vertex(maxX, minY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(minX, minY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(minX, minY, minZ).color(r, g, b, a).endVertex();
+		
+		//+Y
+		consumer.vertex(minX, maxY, minZ).color(r, g, b, a).endVertex();
+		consumer.vertex(minX, maxY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(maxX, maxY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(maxX, maxY, minZ).color(r, g, b, a).endVertex();
+		
+		//-Z
+		consumer.vertex(minX, minY, minZ).color(r, g, b, a).endVertex();
+		consumer.vertex(minX, maxY, minZ).color(r, g, b, a).endVertex();
+		consumer.vertex(maxX, maxY, minZ).color(r, g, b, a).endVertex();
+		consumer.vertex(maxX, minY, minZ).color(r, g, b, a).endVertex();
+		
+		//+Z
+		consumer.vertex(maxX, minY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(maxX, maxY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(minX, maxY, maxZ).color(r, g, b, a).endVertex();
+		consumer.vertex(minX, minY, maxZ).color(r, g, b, a).endVertex();
 	}
 }

@@ -1,10 +1,20 @@
 #version 430
 
-#define SHADE vec3(0.6, 0.7, 0.8)
-
 in vec3 Position;
-in float Brightness;
-in float Alpha;
+
+struct TransparentCubeInfo {
+	float x;
+	float y;
+	float z;
+	float brightness;
+	float alpha;
+	float radius;
+};
+
+layout(std430) restrict readonly buffer TransparentCubeInfoBuffer {
+    TransparentCubeInfo data[];
+}
+cubesTransparent;
 
 uniform mat4 ModelViewMat;
 uniform mat4 ProjMat;
@@ -14,6 +24,9 @@ out vec4 vertexColor;
 
 void main() 
 {
-    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
-	vertexColor = vec4(mix(DarknessColorModifier, vec3(1.0), Brightness), Alpha);
+	TransparentCubeInfo info = cubesTransparent.data[gl_InstanceID];
+	vec3 cubeOffset = vec3(info.x, info.y, info.z);
+	vec4 finalPos = vec4(Position * info.radius + cubeOffset, 1.0);
+    gl_Position = ProjMat * ModelViewMat * finalPos;
+	vertexColor = vec4(mix(DarknessColorModifier, vec3(1.0), info.brightness), info.alpha);
 }

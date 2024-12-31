@@ -1,3 +1,5 @@
+// https://jcgt.org/published/0002/02/09/paper.pdf and http://casual-effects.blogspot.com/2015/03/implemented-weighted-blended-order.html
+
 #version 430
 
 #define EPSILON 0.00001

@@ -14,7 +14,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-// http://casual-effects.blogspot.com/2015/03/implemented-weighted-blended-order.html
+// https://jcgt.org/published/0002/02/09/paper.pdf and http://casual-effects.blogspot.com/2015/03/implemented-weighted-blended-order.html
 public class WeightedBlendingTarget extends RenderTarget
 {
 	protected int revealageTextureId;
@@ -147,8 +147,7 @@ public class WeightedBlendingTarget extends RenderTarget
 		GL30.glClearBufferfv(GL11.GL_COLOR, 0, new float[] {0.0F, 0.0F, 0.0F, 0.0F});
 		GL30.glClearBufferfv(GL11.GL_COLOR, 1, new float[] {1.0F, 0.0F, 0.0F, 0.0F});
 		
-		GlStateManager._clearDepth(1.0D); //TODO: Does this work/is necessary?
-		GlStateManager._clear(GL11.GL_DEPTH_BUFFER_BIT, clearErrors);
+		GL30.glClearBufferfv(GL11.GL_DEPTH, 0, new float[] {1.0F});
 		
 		this.unbindWrite();
 	}

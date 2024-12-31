@@ -32,7 +32,7 @@
     }
   ],
   "weather_type": "thunderstorm",
-  "storminess": 0.6,
+  "storminess": 0.7,
   "storm_start": 16.0,
   "storm_fade_distance": 128.0
 }

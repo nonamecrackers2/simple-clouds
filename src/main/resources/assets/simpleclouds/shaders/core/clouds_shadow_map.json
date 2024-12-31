@@ -1,15 +1,8 @@
 {
-    "blend": {
-        "func": "add",
-        "srcrgb": "srcalpha",
-        "dstrgb": "1-srcalpha"
-    },
     "vertex": "simpleclouds:clouds_shadow_map",
     "fragment": "simpleclouds:clouds_shadow_map",
     "attributes": [
-        "Position",
-        "Darkness",
-        "Index"
+        "Position"
     ],
     "samplers": [
     ],

@@ -14,12 +14,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
-import org.lwjgl.opengl.GL40;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
@@ -40,12 +36,10 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.mesh.chunk.MeshChunk;
-import dev.nonamecrackers2.simpleclouds.client.mesh.instancing.PreparedMesh;
+import dev.nonamecrackers2.simpleclouds.client.mesh.instancing.InstanceableMesh;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
-import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
-import dev.nonamecrackers2.simpleclouds.client.shader.SingleSSBOShaderInstance;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -87,20 +81,14 @@ public abstract class CloudMeshGenerator
 	public static final int WORK_SIZE = SimpleCloudsConstants.CHUNK_SIZE / LOCAL_SIZE;
 	
 	//Opaque
-//	public static final int BYTES_PER_VERTEX = 20;
-//	public static final int VERTICES_PER_SIDE = 4;
-//	public static final int INDICES_PER_SIDE = 6;
 	public static final int BYTES_PER_SIDE_INFO = 24;
-	public static final int MAX_SIDE_INFO_BUFFER_SIZE = 335544320;
+	public static final int MAX_SIDE_INFO_BUFFER_SIZE = 100663296;
 	public static final String SIDE_INFO_BUFFER_NAME = "SideInfoBuffer";
 	public static final String TOTAL_SIDES_NAME = "TotalSides";
 	public static final String SIDES_PER_CHUNK_NAME = "SidesPerChunk";
 	//Transparent
-//	public static final int BYTES_PER_TRANSPARENT_VERTEX = 20;
-//	public static final int VERTICES_PER_TRANSPARENT_CUBE = 8;
-//	public static final int INDICES_PER_TRANSPARENT_CUBE = 36;
 	public static final int BYTES_PER_CUBE_INFO = 24;
-	public static final int MAX_TRANSPARENT_CUBE_INFO_BUFFER_SIZE = 335544320;
+	public static final int MAX_TRANSPARENT_CUBE_INFO_BUFFER_SIZE = 100663296;
 	public static final String TRANSPARENT_CUBE_INFO_BUFFER_NAME = "TransparentCubeInfoBuffer";
 	public static final String TRANSPARENT_TOTAL_CUBES_NAME = "TotalTransparentCubes";
 	public static final String TRANSPARENT_CUBES_PER_CHUNK_NAME = "TransparentCubesPerChunk";
@@ -121,8 +109,8 @@ public abstract class CloudMeshGenerator
 	protected int tasksPerTick;
 	protected @Nullable ComputeShader shader;
 	
-	protected @Nullable PreparedMesh sideMesh;
-	protected @Nullable PreparedMesh cubeMesh;
+	protected @Nullable InstanceableMesh sideMesh;
+	protected @Nullable InstanceableMesh cubeMesh;
 	
 	// Left is for opaque geometry, right is for transparent
 	protected Pair<CloudMeshGenerator.MeshGenStatus, CloudMeshGenerator.MeshGenStatus> meshGenStatus = Pair.of(CloudMeshGenerator.MeshGenStatus.NOT_INITIALIZED, CloudMeshGenerator.MeshGenStatus.NOT_INITIALIZED);
@@ -130,12 +118,15 @@ public abstract class CloudMeshGenerator
 	protected float scrollY;
 	protected float scrollZ;
 	protected boolean testFacesFacingAway;
-	private float fadeStart = 0.0F;
-	private float fadeEnd = 100.0F;
+	private float fadeStart;
+	private float fadeEnd;
 	private float cullDistance;
-	private int opaqueSideBufferSize;
-	private int transparentCubeBufferSize;
-	private boolean needsFadeRefreshing;
+	private int transparencyDistance;
+	
+	private int opaqueBufferSize;
+	private int opaqueBufferBytesUsed;
+	private int transparentBufferSize;
+	private int transparentBufferBytesUsed;
 	
 	/**
 	 * Creates a cloud mesh generator, <b>but does not initialize it for generating</b> (use {@link CloudMeshGenerator#init})
@@ -157,6 +148,11 @@ public abstract class CloudMeshGenerator
 		this.lodConfig = lodConfig;
 		this.setMeshGenInterval(meshGenInterval);
 		this.useTransparency = useTransparency;
+		
+		float maxRadius = this.getCloudAreaMaxRadius();
+		this.fadeStart = 0.9F * maxRadius;
+		this.fadeEnd = maxRadius;
+		this.transparencyDistance = (int)maxRadius / 2;
 	}
 	
 	public boolean fadeNearOriginEnabled()
@@ -229,14 +225,14 @@ public abstract class CloudMeshGenerator
 			fs = fadeEnd;
 			fe = fadeStart;
 		}
-		float newFs = fs * (float)this.getCloudAreaMaxRadius();
-		float newFe = fe * (float)this.getCloudAreaMaxRadius();
-		if (newFs != this.fadeStart)
-			this.needsFadeRefreshing = true;
-		this.fadeStart = newFs;
-		if (newFe != this.fadeEnd)
-			this.needsFadeRefreshing = true;
-		this.fadeEnd = newFe;
+		this.fadeStart = fs * (float)this.getCloudAreaMaxRadius();
+		this.fadeEnd = fe * (float)this.getCloudAreaMaxRadius();
+		return this;
+	}
+	
+	public CloudMeshGenerator setTransparencyRenderDistance(float percentage)
+	{
+		this.transparencyDistance = Mth.floor(percentage * (float)this.getCloudAreaMaxRadius());
 		return this;
 	}
 	
@@ -279,6 +275,36 @@ public abstract class CloudMeshGenerator
 		return this.meshGenStatus;
 	}
 	
+	public @Nullable InstanceableMesh getSideMesh()
+	{
+		return this.sideMesh;
+	}
+	
+	public @Nullable InstanceableMesh getCubeMesh()
+	{
+		return this.cubeMesh;
+	}
+	
+	public int getOpaqueBufferSize()
+	{
+		return this.opaqueBufferSize;
+	}
+	
+	public int getOpaqueBufferBytesUsed()
+	{
+		return this.opaqueBufferBytesUsed;
+	}
+	
+	public int getTransparentBufferSize()
+	{
+		return this.transparentBufferSize;
+	}
+	
+	public int getTransparentBufferBytesUsed()
+	{
+		return this.transparentBufferBytesUsed;
+	}
+	
 	public void close()
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
@@ -309,6 +335,11 @@ public abstract class CloudMeshGenerator
 			this.cubeMesh.destroy();
 			this.cubeMesh = null;
 		}
+	}
+	
+	public boolean canRender()
+	{
+		return this.chunks != null;
 	}
 	
 	public final RendererInitializeResult init(ResourceManager manager)
@@ -363,28 +394,24 @@ public abstract class CloudMeshGenerator
 			builder.errorRecommendations(e, "Mesh Generator; Compute Shader");
 		}
 		
-		//TODO Sort out better memory distribution a bit better?
 		List<PreparedChunk> preparedChunks = this.getLodConfig().getPreparedChunks();
 		ImmutableList.Builder<MeshChunk> meshChunks = ImmutableList.builder();
 		int totalPreparedChunks = preparedChunks.size();
-		int opaqueBufferSizePerChunk = Mth.ceil(this.opaqueSideBufferSize / totalPreparedChunks);
-		int transparentBufferSizePerChunk = Mth.ceil(this.transparentCubeBufferSize / totalPreparedChunks);
+		int opaqueBufferSizePerChunk = Mth.ceil(this.opaqueBufferSize / totalPreparedChunks);
+		int transparentBufferSizePerChunk = Mth.ceil(this.transparentBufferSize / totalPreparedChunks);
 		for (PreparedChunk chunk : preparedChunks)
 			meshChunks.add(new MeshChunk(chunk, opaqueBufferSizePerChunk, transparentBufferSizePerChunk, this.useTransparency));
 		this.chunks = meshChunks.build();
-		//TODO: Redo logs
-//		LOGGER.debug("Initialized {} chunk mesh buffers with sizes: OPAQUE[vertex={},index={}], TRANSPARENT[vertex={},index={}]", this.chunks.size(), vertexBufferSizePerChunk, indexBufferSizePerChunk, transparentVertexBufferSizePerChunk, transparentIndexBufferSizePerChunk);
 		
-//		LOGGER.debug("Allocated {} bytes for opaque vertices and {} for indices", this.vertexBufferSize, this.indexBufferSize);
-//		LOGGER.debug("Allocated {} bytes for transparent vertices and {} for indices", this.transparentVertexBufferSize, this.transparentIndexBufferSize);
+		LOGGER.debug("Opaque buffer size: {} bytes, transparent buffer size: {} bytes", this.opaqueBufferSize, this.transparentBufferSize);
 		
 		if (this.sideMesh != null)
 			this.sideMesh.destroy();
-		this.sideMesh = PreparedMesh.defaultSide();
+		this.sideMesh = InstanceableMesh.defaultSide();
 		
 		if (this.cubeMesh != null)
 			this.cubeMesh.destroy();
-		this.cubeMesh = PreparedMesh.defaultCube();
+		this.cubeMesh = InstanceableMesh.defaultCube();
 		
 		ComputeShader.printDebug();
 		
@@ -406,7 +433,7 @@ public abstract class CloudMeshGenerator
 	
 	protected void setupShader()
 	{
-		this.opaqueSideBufferSize = this.createBuffers(
+		this.opaqueBufferSize = this.createBuffers(
 				TOTAL_SIDES_NAME, 
 				SIDES_PER_CHUNK_NAME, 
 				SIDE_INFO_BUFFER_NAME,
@@ -415,7 +442,7 @@ public abstract class CloudMeshGenerator
 		
 		if (this.useTransparency)
 		{
-			this.transparentCubeBufferSize = this.createBuffers(
+			this.transparentBufferSize = this.createBuffers(
 					TRANSPARENT_TOTAL_CUBES_NAME, 
 					TRANSPARENT_CUBES_PER_CHUNK_NAME,
 					TRANSPARENT_CUBE_INFO_BUFFER_NAME,
@@ -428,7 +455,6 @@ public abstract class CloudMeshGenerator
 		});
 		
 		this.uploadFadeData();
-		this.needsFadeRefreshing = false;
 	}
 	
 	private void uploadFadeData()
@@ -436,6 +462,9 @@ public abstract class CloudMeshGenerator
 		if (this.shader == null || !this.shader.isValid())
 			return;
 		
+		this.shader.forUniform("TransparencyDistance", (id, loc) -> {
+			GL41.glProgramUniform1i(id, loc, this.transparencyDistance);
+		});
 		this.shader.forUniform("FadeStart", (id, loc) -> {
 			GL41.glProgramUniform1f(id, loc, this.fadeStart);
 		});
@@ -485,13 +514,6 @@ public abstract class CloudMeshGenerator
 		if (!this.chunkGenTasks.isEmpty())
 			this.doMeshGenning(this.chunkGenTasks.size());
 		
-//		this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> 
-//		{
-//			this.totalSides = b.getInt(0);
-//			this.totalIndices = this.totalSides * 6;
-//			b.putInt(0, 0);
-//		}, 4);
-//		
 		this.meshGenStatus = this.finalizeMeshGen();
 		this.completedGenTasks.clear();
 	}
@@ -523,18 +545,18 @@ public abstract class CloudMeshGenerator
 			//Prepare the next batch of chunks to generate meshes for
 			this.tasksPerTick = this.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, this.meshGenInterval);
 		}
-		else
-		{
+//		else
+//		{
+			//TODO: Make sure this is okay to remove now
 			//We read the counter here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
-			//TODO: Better way of doing this?
-			this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4); // TODO: Test removing these
-			this.shader.getShaderStorageBuffer(SIDES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
-			if (this.useTransparency)
-			{
-				this.shader.getShaderStorageBuffer(TRANSPARENT_TOTAL_CUBES_NAME).readWriteData(b -> {}, 4);
-				this.shader.getShaderStorageBuffer(TRANSPARENT_CUBES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
-			}
-		}
+//			this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4);
+//			this.shader.getShaderStorageBuffer(SIDES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
+//			if (this.useTransparency)
+//			{
+//				this.shader.getShaderStorageBuffer(TRANSPARENT_TOTAL_CUBES_NAME).readWriteData(b -> {}, 4);
+//				this.shader.getShaderStorageBuffer(TRANSPARENT_CUBES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
+//			}
+//		}
 		
 		//If there are mesh gen tasks, we do mesh genning
 		if (!this.chunkGenTasks.isEmpty())
@@ -603,7 +625,7 @@ public abstract class CloudMeshGenerator
 				SIDE_INFO_BUFFER_NAME, 
 				MeshChunk::getOpaqueBuffers,
 				BYTES_PER_SIDE_INFO,
-				this.opaqueSideBufferSize
+				this.opaqueBufferSize
 		);
 		
 		if (this.useTransparency)
@@ -614,8 +636,18 @@ public abstract class CloudMeshGenerator
 					TRANSPARENT_CUBE_INFO_BUFFER_NAME, 
 					c -> c.getTransparentBuffers().get(),
 					BYTES_PER_CUBE_INFO,
-					this.transparentCubeBufferSize
+					this.transparentBufferSize
 			);
+		}
+		
+		this.opaqueBufferBytesUsed = 0;
+		this.transparentBufferBytesUsed = 0;
+		for (MeshChunk chunk : this.chunks)
+		{
+			this.opaqueBufferBytesUsed += chunk.getOpaqueBuffers().getElementCount() * BYTES_PER_SIDE_INFO;
+			chunk.getTransparentBuffers().ifPresent(bufferSet -> {
+				this.transparentBufferBytesUsed += bufferSet.getElementCount() * BYTES_PER_CUBE_INFO;
+			});
 		}
 		
 		return Pair.of(opaqueResult, transparentResult);
@@ -625,7 +657,6 @@ public abstract class CloudMeshGenerator
 	{
 		CloudMeshGenerator.MeshGenStatus status = CloudMeshGenerator.MeshGenStatus.NORMAL;
 		
-		//TODO: maybe read write?
 		//Get the total amount of sides and indices across all chunks and reset
 		this.shader.getShaderStorageBuffer(totalCountBufferName).writeData(b -> {
 			b.putInt(0, 0);
@@ -677,16 +708,7 @@ public abstract class CloudMeshGenerator
 		this.shader.forUniform("TestFacesFacingAway", (id, loc) -> {
 			GL41.glProgramUniform1i(id, loc, this.testFacesFacingAway ? 1 : 0);
 		});
-		//TODO: Move this if it isn't going to be constantly updated
-		this.shader.forUniform("TransparencyDistance", (id, loc) -> {
-			GL41.glProgramUniform1i(id, loc, 300);
-		});
-		
-		if (this.needsFadeRefreshing)
-		{
-			this.uploadFadeData(); //TODO Test
-			this.needsFadeRefreshing = false;
-		}
+		this.uploadFadeData();
 		
 		int chunkCount = 0;
 		for (int i = 0; i < this.chunks.size(); i++)
@@ -806,212 +828,6 @@ public abstract class CloudMeshGenerator
 		}
 	}
 	
-	/**
-	 * Renders the currently generated cloud mesh using the cloud shader, and sets other relevant GL states
-	 * <p><p>
-	 * This method is safe to call in conjunction with {@link CloudMeshGenerator#tick}. What is currently
-	 * being generated will not affect what is to be rendered.
-	 * 
-	 * @param stack
-	 * The transformation matrix to render the clouds with
-	 * @param projMat
-	 * The projection matrix to render with
-	 * @param partialTick
-	 * @param r
-	 * @param g
-	 * @param b
-	 * @param frustum
-	 * Culling frustum, or null for no culling
-	 */
-	public void render(PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b, @Nullable Frustum frustum)
-	{
-		RenderSystem.assertOnRenderThread();
-	
-		if (this.chunks != null)
-		{
-			BufferUploader.reset();
-			
-			RenderSystem.disableBlend();
-			RenderSystem.enableDepthTest();
-			RenderSystem.setShaderColor(r, g, b, 1.0F);
-			RenderSystem.disableCull();
-			
-			SingleSSBOShaderInstance shader = SimpleCloudsShaders.getCloudsShader();
-			RenderSystem.setShader(() -> shader);
-			SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
-			shader.apply();
-			
-			this.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
-			{
-				GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), opaqueBuffers.getBufferId());
-				this.sideMesh.drawInstanced(opaqueBuffers.getElementCount());
-			});
-			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), 0);
-			
-			shader.clear();
-
-			GL30.glBindVertexArray(0);
-			
-			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-			RenderSystem.enableCull();
-		}
-	}
-	
-	public void renderTransparency(PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b, @Nullable Frustum frustum)
-	{
-		RenderSystem.assertOnRenderThread();
-		
-		if (this.chunks != null && this.useTransparency)
-		{
-			BufferUploader.reset();
-			
-			RenderSystem.enableDepthTest();
-			RenderSystem.depthMask(false);
-			RenderSystem.setShaderColor(r, g, b, 1.0F);
-			
-			RenderSystem.setShader(SimpleCloudsShaders::getCloudsTransparencyShader);
-			ShaderInstance shader = RenderSystem.getShader();
-			SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
-			shader.apply();
-			
-			GL14.glBlendEquation(GL14.GL_FUNC_ADD);
-			GL30.glEnablei(GL11.GL_BLEND, 0);
-			GL30.glEnablei(GL11.GL_BLEND, 1);
-			GL40.glBlendFunci(0, GL11.GL_ONE, GL11.GL_ONE);
-			GL40.glBlendFunci(1, GL11.GL_ZERO, GL11.GL_ONE_MINUS_SRC_COLOR);
-			
-			this.forRenderableMeshChunks(frustum, c -> c.getTransparentBuffers().get(), (chunk, transparentBuffers) -> 
-			{
-				//TODO: Bring back
-//				GL30.glBindVertexArray(transparentBuffers.getArrayObjectId());
-//				RenderSystem.drawElements(GL11.GL_TRIANGLES, transparentBuffers.getTotalIndices(), GL11.GL_UNSIGNED_INT);
-			});
-			
-			shader.clear();
-			
-			GL30.glDisablei(GL11.GL_BLEND, 0);
-			GL30.glDisablei(GL11.GL_BLEND, 1);
-			
-			GL30.glBindVertexArray(0);
-			
-			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-		}
-
-	}
-	
-	public void renderDebug(PoseStack stack, Matrix4f projMat, float partialTick, @Nullable Frustum frustum, boolean chunkBoundaries, boolean noiseBoundaries)
-	{
-		RenderSystem.assertOnRenderThread();
-		
-		if (this.chunks != null)
-		{
-			BufferUploader.reset();
-			
-			RenderSystem.disableBlend();
-			RenderSystem.enableDepthTest();
-			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-			RenderSystem.disableCull();
-			
-			Tesselator tesselator = Tesselator.getInstance();
-			BufferBuilder builder = tesselator.getBuilder();
-			builder.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
-			
-			this.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, bufferSet) -> 
-			{
-				PreparedChunk preparedChunk = chunk.getChunkInfo();
-				if (chunkBoundaries)
-				{
-					int color = Color.HSBtoRGB((float)preparedChunk.lodLevel() / ((float)this.lodConfig.getLods().length + 1), 1.0F, 1.0F);
-					float r = (float)FastColor.ARGB32.red(color) / 255.0F;
-					float g = (float)FastColor.ARGB32.green(color) / 255.0F;
-					float b = (float)FastColor.ARGB32.blue(color) / 255.0F;
-					LevelRenderer.renderLineBox(builder, chunk.getBoundsMinX() + 1.0F, chunk.getBoundsMinY() + 1.0F, chunk.getBoundsMinZ() + 1.0F, chunk.getBoundsMaxX() - 1.0F, chunk.getBoundsMaxY() - 1.0F, chunk.getBoundsMaxZ() - 1.0F, r, g, b, 1.0F);
-				}
-				if (noiseBoundaries)
-					LevelRenderer.renderLineBox(builder, chunk.getBoundsMinX() + 1.0F, chunk.getMinHeight() + 1.0F, chunk.getBoundsMinZ() + 1.0F, chunk.getBoundsMaxX() - 1.0F, chunk.getMaxHeight() - 1.0F, chunk.getBoundsMaxZ() - 1.0F, 1.0F, 1.0F, 0.0F, 1.0F);
-			});
-			
-			RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
-			ShaderInstance shader = RenderSystem.getShader();
-			SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
-			shader.LINE_WIDTH.set(2.5F);
-			shader.FOG_START.set(Float.MAX_VALUE);
-			shader.apply();
-			BufferUploader.draw(builder.end());
-			shader.clear();
-			
-			RenderSystem.enableCull();
-			
-			RenderSystem.defaultBlendFunc();
-			RenderSystem.enableBlend();
-			
-			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-			
-			this.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, bufferSet) -> 
-			{
-				PreparedChunk preparedChunk = chunk.getChunkInfo();
-				if (chunkBoundaries)
-				{
-					int color = Color.HSBtoRGB((float)preparedChunk.lodLevel() / ((float)this.lodConfig.getLods().length + 1), 1.0F, 1.0F);
-					float r = (float)FastColor.ARGB32.red(color) / 255.0F;
-					float g = (float)FastColor.ARGB32.green(color) / 255.0F;
-					float b = (float)FastColor.ARGB32.blue(color) / 255.0F;
-					renderChunkBox(builder, chunk.getBoundsMinX() + 1.0F, chunk.getBoundsMinY() + 1.0F, chunk.getBoundsMinZ() + 1.0F, chunk.getBoundsMaxX() - 1.0F, chunk.getBoundsMaxY() - 1.0F, chunk.getBoundsMaxZ() - 1.0F, r, g, b, 0.4F);
-				}
-				if (noiseBoundaries)
-					renderChunkBox(builder, chunk.getBoundsMinX() + 1.0F, chunk.getMinHeight() + 1.0F, chunk.getBoundsMinZ() + 1.0F, chunk.getBoundsMaxX() - 1.0F, chunk.getMaxHeight() - 1.0F, chunk.getBoundsMaxZ() - 1.0F, 1.0F, 1.0F, 0.0F, 0.4F);
-			});
-			
-			RenderSystem.setShader(GameRenderer::getPositionColorShader);
-			shader = RenderSystem.getShader();
-			SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
-			shader.apply();
-			BufferUploader.draw(builder.end());
-			shader.clear();
-			
-			RenderSystem.disableBlend();
-		}
-	}
-	
-	private static void renderChunkBox(VertexConsumer consumer, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, float r, float g, float b, float a)
-	{
-		//-X
-		consumer.vertex(minX, minY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(minX, maxY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(minX, maxY, minZ).color(r, g, b, a).endVertex();
-		consumer.vertex(minX, minY, minZ).color(r, g, b, a).endVertex();
-		
-		//+X
-		consumer.vertex(maxX, minY, minZ).color(r, g, b, a).endVertex();
-		consumer.vertex(maxX, maxY, minZ).color(r, g, b, a).endVertex();
-		consumer.vertex(maxX, maxY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(maxX, minY, maxZ).color(r, g, b, a).endVertex();
-		
-		//-Y
-		consumer.vertex(maxX, minY, minZ).color(r, g, b, a).endVertex();
-		consumer.vertex(maxX, minY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(minX, minY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(minX, minY, minZ).color(r, g, b, a).endVertex();
-		
-		//+Y
-		consumer.vertex(minX, maxY, minZ).color(r, g, b, a).endVertex();
-		consumer.vertex(minX, maxY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(maxX, maxY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(maxX, maxY, minZ).color(r, g, b, a).endVertex();
-		
-		//-Z
-		consumer.vertex(minX, minY, minZ).color(r, g, b, a).endVertex();
-		consumer.vertex(minX, maxY, minZ).color(r, g, b, a).endVertex();
-		consumer.vertex(maxX, maxY, minZ).color(r, g, b, a).endVertex();
-		consumer.vertex(maxX, minY, minZ).color(r, g, b, a).endVertex();
-		
-		//+Z
-		consumer.vertex(maxX, minY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(maxX, maxY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(minX, maxY, maxZ).color(r, g, b, a).endVertex();
-		consumer.vertex(minX, minY, maxZ).color(r, g, b, a).endVertex();
-	}
-	
 	public void forRenderableMeshChunks(@Nullable Frustum frustum, Function<MeshChunk, MeshChunk.BufferSet> bufferSetFunction, BiConsumer<MeshChunk, MeshChunk.BufferSet> function)
 	{
 		for (MeshChunk chunk : this.chunks)
@@ -1023,7 +839,15 @@ public abstract class CloudMeshGenerator
 				if (frustum != null)
 					render = ((MixinFrustumAccessor)frustum).simpleclouds$cubeInFrustum(chunk.getBoundsMinX(), chunk.getBoundsMinY(), chunk.getBoundsMinZ(), chunk.getBoundsMaxX(), chunk.getBoundsMaxY(), chunk.getBoundsMaxZ());
 				if (render)
-					function.accept(chunk, bufferSet);
+				{
+					PreparedChunk chunkInfo = chunk.getChunkInfo();
+					AABB bounds = chunkInfo.bounds();
+					double nearestCornerX = Math.max(Math.max(bounds.minX, -bounds.maxX), 0.0D);
+					double nearestCornerZ = Math.max(Math.max(bounds.minZ, -bounds.maxZ), 0.0D);
+					double dist =  Math.sqrt(nearestCornerX * nearestCornerX + nearestCornerZ * nearestCornerZ);
+					if (this.cullDistance <= 0.0F || this.cullDistance > dist)
+						function.accept(chunk, bufferSet);
+				}
 			}
 		}
 	}

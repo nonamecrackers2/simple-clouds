@@ -129,7 +129,6 @@ public class MeshChunk
 	
 	public static class BufferSet
 	{
-//		private int arrayObjectId = -1;
 		private int bufferId = -1;
 		private @Nullable ByteBuffer buffer;
 		private int elementCount;
@@ -143,26 +142,6 @@ public class MeshChunk
 			GL15.glBufferData(GL43.GL_SHADER_STORAGE_BUFFER, this.buffer, GL15.GL_DYNAMIC_DRAW);
 			GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, 0);
 			this.bufferSize = bufferSize;
-			
-			//TODO: Remove comments
-//			this.arrayObjectId = GL30.glGenVertexArrays();
-//			this.vertexBufferId = GL15.glGenBuffers();
-//			this.indexBufferId = GL15.glGenBuffers();
-//			
-//			GL30.glBindVertexArray(this.arrayObjectId);
-//			
-//			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
-//			this.vertexBuffer = MemoryTracker.create(vertexBufferSize);
-//			GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_DYNAMIC_DRAW);
-//			SimpleCloudsShaders.POSITION_BRIGHTNESS_NORMAL_INDEX.setupBufferState();
-//			GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
-//			this.indexBuffer = MemoryTracker.create(indexBufferSize);
-//			GlStateManager._glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_DYNAMIC_DRAW);
-//			
-//			GL30.glBindVertexArray(0);
-//			
-//			this.vertexBufferSize = vertexBufferSize;
-//			this.indexBufferSize = indexBufferSize;
 		}
 		
 		public void setTotalElementCount(int count)

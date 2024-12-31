@@ -46,6 +46,8 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("simpleclouds.config.preset.low.description", "For systems that are struggling a bit running this mod. Sets the level of detail to the lowest, disables transparency, and makes the cloud mesh generate a bit slower.");
 		this.add("simpleclouds.config.preset.ultra_low", "Ultra Low");
 		this.add("simpleclouds.config.preset.ultra_low.description", "If your system is REALLY struggling. Lowest level of detail, no transparency, and disables storm fog.");
+		this.add("simpleclouds.config.preset.classic_style", "Classic Style");
+		this.add("simpleclouds.config.preset.classic_style.description", "The classic Simple Clouds style");
 		this.add("gui.simpleclouds.noise_settings.param.range", "Range: %s - %s");
 		this.add("gui.simpleclouds.cloud_previewer.button.previous_layer.title", "Previous layer");
 		this.add("gui.simpleclouds.cloud_previewer.button.next_layer.title", "Next layer");

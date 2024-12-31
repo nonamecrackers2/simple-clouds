@@ -146,7 +146,6 @@ public class ComputeShader
 		this.shaderStorageBuffers.values().forEach(buffer -> 
 		{
 			buffer.close();
-			//TODO Remember this if stuff is not working
 			ALL_SHADER_STORAGE_BINDINGS.remove((Object)buffer.getBinding());
 		});
 		this.shaderStorageBuffers.clear();
