@@ -34,42 +34,26 @@ struct NoiseLayer {
 
 // ----- Opaque -----
 
-struct Vertex {
+struct SideInfo {
+	int side;
 	float x;
 	float y;
 	float z;
 	float brightness;
-	int index;
-};
-
-struct Side {
-	Vertex a;
-	Vertex b;
-	Vertex c;
-	Vertex d;
+	float radius;
 };
 
 // ----- Transparent -----
 
 #if TRANSPARENCY == 1
 
-struct TransparentVertex {
+struct TransparentCubeInfo {
 	float x;
 	float y;
 	float z;
 	float brightness;
 	float alpha;
-};
-
-struct TransparentCube {
-	TransparentVertex a;
-	TransparentVertex b;
-	TransparentVertex c;
-	TransparentVertex d;
-	TransparentVertex e;
-	TransparentVertex f;
-	TransparentVertex g;
-	TransparentVertex h;
+	float radius;
 };
 
 #endif
@@ -84,22 +68,22 @@ struct TransparentCube {
 //-Z = 4
 //+Z = 5
 
-const uint sideIndices[6] = {
-	0, 1, 2, 0, 2, 3
-};
-
-#if TRANSPARENCY == 1
-
-const uint transparentCubeIndices[36] = {
-	0, 1, 2, 0, 2, 3, //-z
-	4, 7, 6, 4, 6, 5, //+z
-	7, 0, 3, 7, 3, 6, //-x
-	1, 4, 5, 1, 5, 2, //+x
-	1, 0, 7, 1, 7, 4, //-y
-	5, 6, 3, 5, 3, 2 //+y
-};
-
-#endif
+//const uint sideIndices[6] = {
+//	0, 1, 2, 0, 2, 3
+//};
+//
+//#if TRANSPARENCY == 1
+//
+//const uint transparentCubeIndices[36] = {
+//	0, 1, 2, 0, 2, 3, //-z
+//	4, 7, 6, 4, 6, 5, //+z
+//	7, 0, 3, 7, 3, 6, //-x
+//	1, 4, 5, 1, 5, 2, //+x
+//	1, 0, 7, 1, 7, 4, //-y
+//	5, 6, 3, 5, 3, 2 //+y
+//};
+//
+//#endif
 
 // ----- Opaque Buffers -----
 
@@ -107,15 +91,10 @@ layout(std430) restrict buffer TotalSides {
 	uint totalSides;
 };
 
-layout(std430) restrict writeonly buffer VertexBuffer {
-    Side data[];
+layout(std430) restrict writeonly buffer SideInfoBuffer {
+    SideInfo data[];
 }
 sides;
-
-layout(std430) restrict writeonly buffer IndexBuffer {
-	uint data[];
-}
-indices;
 
 layout(std430) restrict buffer SidesPerChunk {
 	uint data[];
@@ -130,15 +109,10 @@ layout(std430) restrict buffer TotalTransparentCubes {
 	uint totalTransparentCubes;
 };
 
-layout(std430) restrict writeonly buffer VertexBufferTransparent {
-    TransparentCube data[];
+layout(std430) restrict writeonly buffer TransparentCubeInfoBuffer {
+    TransparentCubeInfo data[];
 }
 cubesTransparent;
-
-layout(std430) restrict writeonly buffer IndexBufferTransparent {
-	uint data[];
-}
-indicesTransparent;
 
 layout(std430) restrict buffer TransparentCubesPerChunk {
 	uint data[];
@@ -271,44 +245,43 @@ bool shouldNotOcclude(int index)
 
 // ----- Opaque -----
 
-void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, int index, float brightness)
+void createFace(vec3 center, float cubeRadius, int index, float brightness)
 {
-	uint lastChunkVertex = atomicAdd(sidesPerChunk.data[ChunkIndex], 1u) * 4;
+	atomicAdd(sidesPerChunk.data[ChunkIndex], 1u);
 	uint currentFace = atomicAdd(totalSides, 1u);
-	uint lastIndex = currentFace * 6;
-	//uint lastVertex = currentFace * 4;
-	Side side;
-	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, brightness, index);
-	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, brightness, index);
-	side.c = Vertex(offset.x + corner3.x, offset.y + corner3.y, offset.z + corner3.z, brightness, index);
-	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, brightness, index);
+	SideInfo side;
+	side.side = index;
+	side.x = center.x;
+	side.y = center.y;
+	side.z = center.z;
+	side.brightness = brightness;
+	side.radius = cubeRadius;
 	sides.data[currentFace] = side;
-	for (uint i = 0; i < sideIndices.length(); i++)
-		indices.data[lastIndex + i] = lastChunkVertex + sideIndices[i];
 }
 
 void createCube(float x, float y, float z, float cubeRadius, float brightness, float fade, LayerGroup group)
 {
-	vec3 norm = normalize(vec3(x, y, z) - Origin);
-	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
+	vec3 pos = vec3(x, y, z);
+	vec3 norm = normalize(pos - Origin);
+	vec3 center = pos + cubeRadius;
 	//-Y
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, -1.0, 0.0)) <= 0.0) && (!isPosValid(x, y - Scale, z, group, fade) || shouldNotOcclude(2)))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), 2, brightness);
+		createFace(center, cubeRadius, 2, brightness);
 	//+Y
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 1.0, 0.0)) <= 0.0) && (!isPosValid(x, y + Scale, z, group, fade) || shouldNotOcclude(3)))
-		createFace(offset, vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), 3, brightness);
+		createFace(center, cubeRadius, 3, brightness);
 	//-X
 	if ((TestFacesFacingAway || dot(norm, vec3(-1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x - Scale, y, z, -1, 0) || shouldNotOcclude(0)))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, -cubeRadius, -cubeRadius), 0, brightness);
+		createFace(center, cubeRadius, 0, brightness);
 	//+X
 	if ((TestFacesFacingAway || dot(norm, vec3(1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x + Scale, y, z, 1, 0) || shouldNotOcclude(1)))
-		createFace(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), 1, brightness);
+		createFace(center, cubeRadius, 1, brightness);
 	//-Z
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, -1.0)) <= 0.0) && (!isPosValid(x, y, z - Scale, 0, -1) || shouldNotOcclude(4)))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), 4, brightness);
+		createFace(center, cubeRadius, 4, brightness);
 	//+Z
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, 1.0)) <= 0.0) && (!isPosValid(x, y, z + Scale, 0, 1) || shouldNotOcclude(5)))
-		createFace(offset, vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), 5, brightness);
+		createFace(center, cubeRadius, 5, brightness);
 }
 
 // ----- Transparent -----
@@ -317,23 +290,17 @@ void createCube(float x, float y, float z, float cubeRadius, float brightness, f
 
 void createTransparentCube(float x, float y, float z, float cubeRadius, float brightness, float alpha)
 {
-	uint lastChunkVertex = atomicAdd(transparentCubesPerChunk.data[ChunkIndex], 1u) * 8;
+	atomicAdd(transparentCubesPerChunk.data[ChunkIndex], 1u);
 	uint currentCube = atomicAdd(totalTransparentCubes, 1u);
-	uint lastIndex = currentCube * 36;
-	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
-	TransparentCube cube;
-	cube.a = TransparentVertex(offset.x - cubeRadius, offset.y - cubeRadius, offset.z - cubeRadius, brightness, alpha);
-	cube.b = TransparentVertex(offset.x + cubeRadius, offset.y - cubeRadius, offset.z - cubeRadius, brightness, alpha);
-	cube.c = TransparentVertex(offset.x + cubeRadius, offset.y + cubeRadius, offset.z - cubeRadius, brightness, alpha);
-	cube.d = TransparentVertex(offset.x - cubeRadius, offset.y + cubeRadius, offset.z - cubeRadius, brightness, alpha);
-	cube.e = TransparentVertex(offset.x + cubeRadius, offset.y - cubeRadius, offset.z + cubeRadius, brightness, alpha);
-	cube.f = TransparentVertex(offset.x + cubeRadius, offset.y + cubeRadius, offset.z + cubeRadius, brightness, alpha);
-	cube.g = TransparentVertex(offset.x - cubeRadius, offset.y + cubeRadius, offset.z + cubeRadius, brightness, alpha);
-	cube.h = TransparentVertex(offset.x - cubeRadius, offset.y - cubeRadius, offset.z + cubeRadius, brightness, alpha);
+	vec3 center = vec3(x, y, z) + cubeRadius;
+	TransparentCubeInfo cube;
+	cube.x = x + cubeRadius;
+	cube.y = y + cubeRadius;
+	cube.z = z + cubeRadius;
+	cube.brightness = brightness;
+	cube.alpha = alpha;
+	cube.radius = cubeRadius;
 	cubesTransparent.data[currentCube] = cube;
-	for (uint i = 0; i < transparentCubeIndices.length(); i++)
-		indicesTransparent.data[lastIndex + i] = lastChunkVertex + transparentCubeIndices[i];
-	
 }
 
 #endif

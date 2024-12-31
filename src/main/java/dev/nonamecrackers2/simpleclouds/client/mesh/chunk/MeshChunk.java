@@ -6,15 +6,13 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL43;
 import org.lwjgl.system.MemoryUtil;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
-import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import net.minecraft.world.phys.AABB;
 
 public class MeshChunk
@@ -31,13 +29,13 @@ public class MeshChunk
 	private float minHeight;
 	private float maxHeight;
 	
-	public MeshChunk(PreparedChunk preparedChunk, int vertexBufferSize, int indexBufferSize, int transparentVertexBufferSize, int transparentIndexBufferSize, boolean useTransparency)
+	public MeshChunk(PreparedChunk preparedChunk, int opaqueBufferSize, int transparentBufferSize, boolean useTransparency)
 	{
 		this.preparedChunk = preparedChunk;
 		
-		this.opaqueBuffers = new MeshChunk.BufferSet(vertexBufferSize, indexBufferSize);
+		this.opaqueBuffers = new MeshChunk.BufferSet(opaqueBufferSize);
 		if (useTransparency)
-			this.transparentBuffers = Optional.of(new MeshChunk.BufferSet(transparentVertexBufferSize, transparentIndexBufferSize));
+			this.transparentBuffers = Optional.of(new MeshChunk.BufferSet(transparentBufferSize));
 		else
 			this.transparentBuffers = Optional.empty();
 		
@@ -131,116 +129,76 @@ public class MeshChunk
 	
 	public static class BufferSet
 	{
-		private int arrayObjectId = -1;
-		private int vertexBufferId = -1;
-		private int indexBufferId = -1;
-		private @Nullable ByteBuffer vertexBuffer;
-		private @Nullable ByteBuffer indexBuffer;
-		private int totalIndices;
-		private int totalVertices;
-		private final int vertexBufferSize;
-		private final int indexBufferSize;
+//		private int arrayObjectId = -1;
+		private int bufferId = -1;
+		private @Nullable ByteBuffer buffer;
+		private int elementCount;
+		private final int bufferSize;
 		
-		public BufferSet(int vertexBufferSize, int indexBufferSize)
+		public BufferSet(int bufferSize)
 		{
-			this.arrayObjectId = GL30.glGenVertexArrays();
-			this.vertexBufferId = GL15.glGenBuffers();
-			this.indexBufferId = GL15.glGenBuffers();
+			this.bufferId = GL15.glGenBuffers();
+			this.buffer = MemoryTracker.create(bufferSize);
+			GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.bufferId);
+			GL15.glBufferData(GL43.GL_SHADER_STORAGE_BUFFER, this.buffer, GL15.GL_DYNAMIC_DRAW);
+			GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, 0);
+			this.bufferSize = bufferSize;
 			
-			GL30.glBindVertexArray(this.arrayObjectId);
-			
-			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
-			this.vertexBuffer = MemoryTracker.create(vertexBufferSize);
-			GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_DYNAMIC_DRAW);
-			SimpleCloudsShaders.POSITION_BRIGHTNESS_NORMAL_INDEX.setupBufferState();
-			GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
-			this.indexBuffer = MemoryTracker.create(indexBufferSize);
-			GlStateManager._glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_DYNAMIC_DRAW);
-			
-			GL30.glBindVertexArray(0);
-			
-			this.vertexBufferSize = vertexBufferSize;
-			this.indexBufferSize = indexBufferSize;
+			//TODO: Remove comments
+//			this.arrayObjectId = GL30.glGenVertexArrays();
+//			this.vertexBufferId = GL15.glGenBuffers();
+//			this.indexBufferId = GL15.glGenBuffers();
+//			
+//			GL30.glBindVertexArray(this.arrayObjectId);
+//			
+//			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
+//			this.vertexBuffer = MemoryTracker.create(vertexBufferSize);
+//			GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_DYNAMIC_DRAW);
+//			SimpleCloudsShaders.POSITION_BRIGHTNESS_NORMAL_INDEX.setupBufferState();
+//			GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
+//			this.indexBuffer = MemoryTracker.create(indexBufferSize);
+//			GlStateManager._glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_DYNAMIC_DRAW);
+//			
+//			GL30.glBindVertexArray(0);
+//			
+//			this.vertexBufferSize = vertexBufferSize;
+//			this.indexBufferSize = indexBufferSize;
 		}
 		
-		public void setTotalVertices(int totalVertices)
+		public void setTotalElementCount(int count)
 		{
-			this.totalVertices = totalVertices;
+			this.elementCount = count;
 		}
 		
-		public int getTotalVertices()
+		public int getElementCount()
 		{
-			return this.totalVertices;
+			return this.elementCount;
 		}
 		
-		public int getVertexBufferSize()
+		public int getBufferSize()
 		{
-			return this.vertexBufferSize;
+			return this.bufferSize;
 		}
 		
-		public void setTotalIndices(int totalIndices)
+		public int getBufferId()
 		{
-			this.totalIndices = totalIndices;
-		}
-		
-		public int getTotalIndices()
-		{
-			return this.totalIndices;
-		}
-		
-		public int getIndexBufferSize()
-		{
-			return this.indexBufferSize;
-		}
-		
-		public int getArrayObjectId()
-		{
-			return this.arrayObjectId;
-		}
-		
-		public int getVertexBufferId()
-		{
-			return this.vertexBufferId;
-		}
-		
-		public int getIndexBufferId()
-		{
-			return this.indexBufferId;
+			return this.bufferId;
 		}
 		
 		public void destroy()
 		{
-			this.totalIndices = 0;
-			this.totalVertices = 0;
+			this.elementCount = 0;
 			
-			if (this.arrayObjectId >= 0)
+			if (this.bufferId >= 0)
 			{
-				RenderSystem.glDeleteVertexArrays(this.arrayObjectId);
-				this.arrayObjectId = -1;
+				RenderSystem.glDeleteBuffers(this.bufferId);
+				this.bufferId = -1;
 			}
 			
-			if (this.vertexBufferId >= 0)
+			if (this.buffer != null)
 			{
-				RenderSystem.glDeleteBuffers(this.vertexBufferId);
-				this.vertexBufferId = -1;
-			}
-			
-			if (this.vertexBuffer != null)
-			{
-				MemoryUtil.memFree(this.vertexBuffer);
-				this.vertexBuffer = null;
-			}
-			
-			if (this.indexBufferId >= 0)
-			{
-				RenderSystem.glDeleteBuffers(this.indexBufferId);
-				this.indexBufferId = -1;
-			}
-			
-			if (this.indexBuffer != null)
-			{
-				MemoryUtil.memFree(this.indexBuffer);
-				this.indexBuffer = null;
+				MemoryUtil.memFree(this.buffer);
+				this.buffer = null;
 			}
 		}
 	}

@@ -7,9 +7,7 @@
     "vertex": "simpleclouds:clouds",
     "fragment": "simpleclouds:clouds",
     "attributes": [
-        "Position",
-        "Brightness",
-        "Index"
+        "Position"
     ],
     "samplers": [
     ],

@@ -583,6 +583,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void tick()
 	{
+		Matrix4f test = new Matrix4f().identity();
+		test.rotate((float)-Math.PI / 2.0F, new Vector3f(0.0F, 1.0F, 0.0F)); 
+		System.out.println(test);
+		
 		if (this.needsReload)
 		{
 			this.onResourceManagerReload(this.mc.getResourceManager());
@@ -632,8 +636,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		this.meshGenerator.forRenderableMeshChunks(this.cullFrustum, MeshChunk::getOpaqueBuffers, (chunk, bufferSet) -> 
 		{
-			GL30.glBindVertexArray(bufferSet.getArrayObjectId());
-			RenderSystem.drawElements(GL11.GL_TRIANGLES, bufferSet.getTotalIndices(), GL11.GL_UNSIGNED_INT);
+			//TODO: Bring back
+//			GL30.glBindVertexArray(bufferSet.getArrayObjectId());
+//			RenderSystem.drawElements(GL11.GL_TRIANGLES, bufferSet.getTotalIndices(), GL11.GL_UNSIGNED_INT);
 		});
 		GL30.glBindVertexArray(0);
 		

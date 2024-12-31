@@ -34,8 +34,6 @@ import com.mojang.blaze3d.shaders.ProgramManager;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.CrashReport;
@@ -51,7 +49,7 @@ public class ComputeShader
 	protected static final Logger LOGGER = LogManager.getLogger("simpleclouds/ComputeShader");
 	private static final Pattern LOCAL_GROUP_REPLACER = Pattern.compile("\\$\\{.*?\\}");
 	private static final Map<String, ComputeShader.CompiledShader> COMPILED_PROGRAMS = Maps.newHashMap();
-	protected static final Int2ObjectMap<ShaderStorageBufferObject> ALL_SHADER_STORAGE_BUFFERS = new Int2ObjectOpenHashMap<>();
+	protected static final IntList ALL_SHADER_STORAGE_BINDINGS = new IntArrayList();
 	private static final IntList ALL_IMAGE_BINDINGS = new IntArrayList();
 	private static int maxGroupX = -1;
 	private static int maxGroupY = -1;
@@ -78,14 +76,14 @@ public class ComputeShader
 	
 	public static void printDebug()
 	{
-		LOGGER.debug("Binded SSBOs: {}", ALL_SHADER_STORAGE_BUFFERS);
+		LOGGER.debug("Binded SSBOs: {}", ALL_SHADER_STORAGE_BINDINGS);
 		LOGGER.debug("Binded image units: {}", ALL_IMAGE_BINDINGS);
 	}
 	
 	public static void fillReport(CrashReport report)
 	{
 		CrashReportCategory category = report.addCategory("Simple Clouds Compute Shaders");
-		category.setDetail("Binded SSBOS", ALL_SHADER_STORAGE_BUFFERS);
+		category.setDetail("Binded SSBOS", ALL_SHADER_STORAGE_BINDINGS);
 		category.setDetail("Binded Image Units", ALL_IMAGE_BINDINGS);
 	}
 	
@@ -95,10 +93,23 @@ public class ComputeShader
 			maxSSBOBindings = GL11.glGetInteger(GL43.GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS);
 		for (int i = maxSSBOBindings - 1; i > 0; i--)
 		{
-			if (!ALL_SHADER_STORAGE_BUFFERS.containsKey(i))
+			if (!ALL_SHADER_STORAGE_BINDINGS.contains(i))
 				return i;
 		}
-		throw new NullPointerException("No available buffer binding. Total available buffer bindings: " + maxSSBOBindings);
+		throw new NullPointerException("No available buffer binding. Total available buffer bindings: " + maxSSBOBindings + ", used: " + ALL_SHADER_STORAGE_BINDINGS.size());
+	}
+	
+	public static void useShaderStorageBinding(int binding)
+	{
+		if (ALL_SHADER_STORAGE_BINDINGS.contains(binding))
+			throw new IllegalArgumentException("Binding " + binding + " is already in use");
+		ALL_SHADER_STORAGE_BINDINGS.add(binding);
+	}
+	
+	@SuppressWarnings("deprecation")
+	public static void freeShaderStorageBinding(int binding)
+	{
+		ALL_SHADER_STORAGE_BINDINGS.remove((Object)binding);
 	}
 	
 	public static int getAvailableImageUnit()
@@ -127,6 +138,7 @@ public class ComputeShader
 		ALL_IMAGE_BINDINGS.remove((Object)unit);
 	}
 	
+	@SuppressWarnings("deprecation")
 	public void close()
 	{
 		RenderSystem.assertOnRenderThread();
@@ -134,7 +146,8 @@ public class ComputeShader
 		this.shaderStorageBuffers.values().forEach(buffer -> 
 		{
 			buffer.close();
-			ALL_SHADER_STORAGE_BUFFERS.remove(buffer.getBinding());
+			//TODO Remember this if stuff is not working
+			ALL_SHADER_STORAGE_BINDINGS.remove((Object)buffer.getBinding());
 		});
 		this.shaderStorageBuffers.clear();
 		if (this.id != -1)
@@ -220,7 +233,7 @@ public class ComputeShader
 		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, binding, bufferId);
 		ShaderStorageBufferObject buffer = new ShaderStorageBufferObject(bufferId, binding, usage);
 		this.shaderStorageBuffers.put(name, buffer);
-		ALL_SHADER_STORAGE_BUFFERS.put(binding, buffer);
+		ALL_SHADER_STORAGE_BINDINGS.add(binding);
 		return buffer;
 	}
 	

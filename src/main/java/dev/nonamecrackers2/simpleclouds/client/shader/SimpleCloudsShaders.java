@@ -20,7 +20,7 @@ public class SimpleCloudsShaders
 	public static final VertexFormatElement ELEMENT_NORMAL_INDEX = new VertexFormatElement(0, VertexFormatElement.Type.INT, VertexFormatElement.Usage.UV, 1);
 	public static final VertexFormat POSITION_BRIGHTNESS_NORMAL_INDEX = new VertexFormat(ImmutableMap.<String, VertexFormatElement>builder().put("Position", DefaultVertexFormat.ELEMENT_POSITION).put("Brightness", ELEMENT_BRIGHTNESS).put("Index", ELEMENT_NORMAL_INDEX).build());
 	public static final VertexFormat POSITION_BRIGHTNESS_ALPHA = new VertexFormat(ImmutableMap.<String, VertexFormatElement>builder().put("Position", DefaultVertexFormat.ELEMENT_POSITION).put("Brightness", ELEMENT_BRIGHTNESS).put("Alpha", ELEMENT_ALPHA).build());
-	private static ShaderInstance clouds;
+	private static SingleSSBOShaderInstance clouds;
 	private static ShaderInstance cloudsTransparency;
 	private static ShaderInstance cloudsShadowMap;
 	private static ShaderInstance cloudRegionTex;
@@ -28,8 +28,8 @@ public class SimpleCloudsShaders
 	@SubscribeEvent
 	public static void registerShaders(RegisterShadersEvent event) throws IOException
 	{
-		event.registerShader(new ShaderInstance(event.getResourceProvider(), SimpleCloudsMod.id("clouds"), POSITION_BRIGHTNESS_NORMAL_INDEX), s -> {
-			clouds = s;
+		event.registerShader(new SingleSSBOShaderInstance(event.getResourceProvider(), SimpleCloudsMod.id("clouds"), DefaultVertexFormat.POSITION, "SideInfoBuffer"), s -> {
+			clouds = (SingleSSBOShaderInstance)s;
 		});
 		event.registerShader(new ShaderInstance(event.getResourceProvider(), SimpleCloudsMod.id("clouds_transparency"), POSITION_BRIGHTNESS_ALPHA), s -> {
 			cloudsTransparency = s;
@@ -42,7 +42,7 @@ public class SimpleCloudsShaders
 		});
 	}
 	
-	public static ShaderInstance getCloudsShader()
+	public static SingleSSBOShaderInstance getCloudsShader()
 	{
 		return Objects.requireNonNull(clouds, "Clouds shader not initialized yet");
 	}
