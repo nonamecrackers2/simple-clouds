@@ -545,18 +545,18 @@ public abstract class CloudMeshGenerator
 			//Prepare the next batch of chunks to generate meshes for
 			this.tasksPerTick = this.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, this.meshGenInterval);
 		}
-//		else
-//		{
-			//TODO: Make sure this is okay to remove now
-			//We read the counter here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
-//			this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4);
-//			this.shader.getShaderStorageBuffer(SIDES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
-//			if (this.useTransparency)
-//			{
-//				this.shader.getShaderStorageBuffer(TRANSPARENT_TOTAL_CUBES_NAME).readWriteData(b -> {}, 4);
-//				this.shader.getShaderStorageBuffer(TRANSPARENT_CUBES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
-//			}
-//		}
+		else
+		{
+//			TODO: Make sure this is okay to remove now
+//			We read the counter here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
+			this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4);
+			this.shader.getShaderStorageBuffer(SIDES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
+			if (this.useTransparency)
+			{
+				this.shader.getShaderStorageBuffer(TRANSPARENT_TOTAL_CUBES_NAME).readWriteData(b -> {}, 4);
+				this.shader.getShaderStorageBuffer(TRANSPARENT_CUBES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
+			}
+		}
 		
 		//If there are mesh gen tasks, we do mesh genning
 		if (!this.chunkGenTasks.isEmpty())
