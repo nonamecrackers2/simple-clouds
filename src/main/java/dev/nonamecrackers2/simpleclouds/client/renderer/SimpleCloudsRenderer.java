@@ -209,7 +209,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator generator)
 			generator.setFadeDistances((float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F, (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F);
-		//this.meshGenerator.setTransparencyRenderDistance((float)SimpleCloudsConfig.CLIENT.transparencyRenderDistancePercentage.get() / 100.0F);
+		this.meshGenerator.setTransparencyRenderDistance((float)SimpleCloudsConfig.CLIENT.transparencyRenderDistancePercentage.get() / 100.0F);
 		this.meshGenerator.setMeshGenInterval(SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
 		this.meshGenerator.setTestFacesFacingAway(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded.get());
 		if (this.mc.level != null)

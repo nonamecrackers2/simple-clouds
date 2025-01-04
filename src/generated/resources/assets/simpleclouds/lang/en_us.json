@@ -94,6 +94,8 @@
   "gui.simpleclouds.config.thunderAttenuationDistance.title": "Thunder Attenuation Distance",
   "gui.simpleclouds.config.transparency.description": "Specifies if transparent cubes should be generated for supported cloud types. May cause performance drops.",
   "gui.simpleclouds.config.transparency.title": "Transparency",
+  "gui.simpleclouds.config.transparencyRenderDistancePercentage.description": "Specifies the maximum percentage of the total viewable distance transparent cubes can be generated in.\nRange: 1 ~ 100",
+  "gui.simpleclouds.config.transparencyRenderDistancePercentage.title": "Transparency Render Distance Percentage",
   "gui.simpleclouds.config.useSpecificSeed.description": "Specifies if the seed set by the 'Cloud Seed' option should be used or not.",
   "gui.simpleclouds.config.useSpecificSeed.title": "Use Specific Seed",
   "gui.simpleclouds.config.whitelistAsBlacklist.description": "Specifies if the dimension whitelist should instead be use as a blacklist",

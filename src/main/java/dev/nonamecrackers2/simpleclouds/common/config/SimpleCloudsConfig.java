@@ -63,7 +63,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Double> rainAngle;
 		public final ForgeConfigSpec.ConfigValue<Integer> thunderAttenuationDistance;
 		public final ForgeConfigSpec.ConfigValue<Boolean> stormFogLightningFlashes;
-//		public final ForgeConfigSpec.ConfigValue<Integer> transparencyRenderDistancePercentage;
+		public final ForgeConfigSpec.ConfigValue<Integer> transparencyRenderDistancePercentage;
 		//Cloud Visuals
 		public final ForgeConfigSpec.ConfigValue<Boolean> cubeNormals;
 //		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds; //TODO: Reintroduce in the future
@@ -137,7 +137,7 @@ public class SimpleCloudsConfig
 			
 			this.stormFogLightningFlashes = this.createValue(true, "stormFogLightningFlashes", false, "Toggles lightning flashes that can be seen in storm fog. Disabling can lead to potential performance gains when lightning spawns");
 			
-//			this.transparencyRenderDistancePercentage = this.createRangedIntValue(50, 1, 100, "transparencyRenderDistancePercentage", false, "Specifies the maximum percentage of the total viewable distance transparent cubes can be generated in");
+			this.transparencyRenderDistancePercentage = this.createRangedIntValue(50, 1, 100, "transparencyRenderDistancePercentage", false, "Specifies the maximum percentage of the total viewable distance transparent cubes can be generated in");
 			
 			builder.pop();
 			
