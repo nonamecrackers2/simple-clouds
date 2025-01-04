@@ -23,5 +23,5 @@
   ],
   "storminess": 0.6,
   "storm_start": 64.0,
-  "storm_fade_distance": 32.0
+  "storm_fade_distance": 64.0
 }
