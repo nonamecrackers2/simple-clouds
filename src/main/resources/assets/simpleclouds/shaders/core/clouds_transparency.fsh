@@ -2,7 +2,10 @@
 
 #version 430
 
+uniform sampler2D BayerMatrixSampler;
+
 uniform vec4 ColorModulator;
+uniform float DitherScale;
 
 in vec4 vertexColor;
 
@@ -11,7 +14,12 @@ layout(location = 1) out float revealage;
 
 void main() 
 {
-	vec4 color = ColorModulator * vertexColor;
+	float fade = ColorModulator.a;
+	float r = texture(BayerMatrixSampler, gl_FragCoord.xy * DitherScale).r;
+	if (fade < r)
+		discard;
+	
+	vec4 color = vec4(ColorModulator.rgb, 1.0) * vertexColor;
 	vec4 premul = vec4(color.r * color.a, color.g * color.a, color.b * color.a, color.a);
 
 	float weight = premul.a * max(0.1, 1000.0 * pow((1.0 - gl_FragCoord.z), 3.0));

@@ -13,6 +13,8 @@ import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
+import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 
 public class MeshChunk
@@ -28,6 +30,10 @@ public class MeshChunk
 	private float boundsMaxZ;
 	private float minHeight;
 	private float maxHeight;
+	private int ticksSinceLastGen;
+	private boolean fadeEnabled;
+	private float alpha;
+	private float alphaO;
 	
 	public MeshChunk(PreparedChunk preparedChunk, int opaqueBufferSize, int transparentBufferSize, boolean useTransparency)
 	{
@@ -48,6 +54,30 @@ public class MeshChunk
 		this.boundsMaxZ = (float)bounds.maxZ;
 		this.minHeight = this.boundsMinY;
 		this.maxHeight = this.boundsMaxY;
+	}
+	
+	public void tick()
+	{
+		this.ticksSinceLastGen++;
+		
+		this.alphaO = this.alpha;
+		if (this.fadeEnabled && this.alpha < 1.0F)
+		{
+			this.alpha += SimpleCloudsRenderer.CHUNK_FADE_IN_ALPHA_PER_TICK;
+			if (this.alpha > 1.0F)
+				this.alpha = 1.0F;
+		}
+	}
+	
+	public void setFadeEnabled(boolean flag)
+	{
+		this.fadeEnabled = flag;
+	}
+	
+	public void resetAlpha()
+	{
+		this.alpha = 0.0F;
+		this.alphaO = 0.0F;
 	}
 	
 	public PreparedChunk getChunkInfo()
@@ -79,6 +109,16 @@ public class MeshChunk
 	{
 		this.minHeight = minHeight;
 		this.maxHeight = maxHeight;
+	}
+	
+	public void resetLastGenTime()
+	{
+		this.ticksSinceLastGen = 0;
+	}
+	
+	public int getTicksSinceLastGen()
+	{
+		return this.ticksSinceLastGen;
 	}
 	
 	public float getBoundsMinX()
@@ -119,6 +159,11 @@ public class MeshChunk
 	public float getMaxHeight()
 	{
 		return this.maxHeight;
+	}
+	
+	public float getAlpha(float partialTick)
+	{
+		return Mth.lerp(partialTick, this.alphaO, this.alpha);
 	}
 
 	public void destroy()

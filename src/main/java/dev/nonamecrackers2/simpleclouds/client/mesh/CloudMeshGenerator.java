@@ -1,6 +1,5 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh;
 
-import java.awt.Color;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -13,7 +12,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL41;
@@ -26,32 +24,20 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.mesh.chunk.MeshChunk;
 import dev.nonamecrackers2.simpleclouds.client.mesh.instancing.InstanceableMesh;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
-import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinFrustumAccessor;
 import net.minecraft.CrashReportCategory;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 
@@ -79,6 +65,7 @@ public abstract class CloudMeshGenerator
 	public static final int VERTICAL_CHUNK_SPAN = 8;
 	public static final int LOCAL_SIZE = 8;
 	public static final int WORK_SIZE = SimpleCloudsConstants.CHUNK_SIZE / LOCAL_SIZE;
+	public static final int TICKS_UNTIL_FADE_RESET = 120;
 	
 	//Opaque
 	public static final int BYTES_PER_SIDE_INFO = 24;
@@ -518,6 +505,12 @@ public abstract class CloudMeshGenerator
 		this.completedGenTasks.clear();
 	}
 	
+	public void worldTick()
+	{
+		if (this.chunks != null)
+			this.chunks.forEach(MeshChunk::tick);
+	}
+	
 	/**
 	 * Generates the cloud mesh on a per-frame basis
 	 * 
@@ -526,7 +519,7 @@ public abstract class CloudMeshGenerator
 	 * @param originZ
 	 * @param frustum
 	 */
-	public void tick(double originX, double originY, double originZ, @Nullable Frustum frustum)
+	public void genTick(double originX, double originY, double originZ, @Nullable Frustum frustum)
 	{
 		RenderSystem.assertOnRenderThread();
 		
@@ -786,6 +779,7 @@ public abstract class CloudMeshGenerator
 	{
 		chunk.setBounds(task.minX(), task.minY(), task.minZ(), task.maxX(), task.maxY(), task.maxZ());
 		chunk.setHeights(task.startY(), task.endY());
+		chunk.resetLastGenTime();
 	}
 	
 	/**
@@ -830,14 +824,26 @@ public abstract class CloudMeshGenerator
 	
 	public void forRenderableMeshChunks(@Nullable Frustum frustum, Function<MeshChunk, MeshChunk.BufferSet> bufferSetFunction, BiConsumer<MeshChunk, MeshChunk.BufferSet> function)
 	{
+		this.forRenderableMeshChunks(frustum, bufferSetFunction, function, false);
+	}
+	
+	public void forRenderableMeshChunks(@Nullable Frustum frustum, Function<MeshChunk, MeshChunk.BufferSet> bufferSetFunction, BiConsumer<MeshChunk, MeshChunk.BufferSet> function, boolean updateFade)
+	{
 		for (MeshChunk chunk : this.chunks)
 		{
 			MeshChunk.BufferSet bufferSet = bufferSetFunction.apply(chunk);
 			if (bufferSet.getElementCount() > 0)
 			{
+				if (updateFade && chunk.getTicksSinceLastGen() > TICKS_UNTIL_FADE_RESET)
+				{
+					chunk.resetAlpha();
+					chunk.setFadeEnabled(false);
+				}
+				
 				boolean render = true;
 				if (frustum != null)
 					render = ((MixinFrustumAccessor)frustum).simpleclouds$cubeInFrustum(chunk.getBoundsMinX(), chunk.getBoundsMinY(), chunk.getBoundsMinZ(), chunk.getBoundsMaxX(), chunk.getBoundsMaxY(), chunk.getBoundsMaxZ());
+				
 				if (render)
 				{
 					PreparedChunk chunkInfo = chunk.getChunkInfo();
@@ -846,7 +852,11 @@ public abstract class CloudMeshGenerator
 					double nearestCornerZ = Math.max(Math.max(bounds.minZ, -bounds.maxZ), 0.0D);
 					double dist =  Math.sqrt(nearestCornerX * nearestCornerX + nearestCornerZ * nearestCornerZ);
 					if (this.cullDistance <= 0.0F || this.cullDistance > dist)
+					{
+						if (updateFade)
+							chunk.setFadeEnabled(true);
 						function.accept(chunk, bufferSet);
+					}
 				}
 			}
 		}

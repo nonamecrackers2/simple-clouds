@@ -81,6 +81,8 @@ import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -104,10 +106,13 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private static final ResourceLocation SCREEN_SPACE_WORLD_FOG_LOC = SimpleCloudsMod.id("shaders/post/screen_space_world_fog.json");
 	private static final ResourceLocation FINAL_COMPOSITE_LOC = SimpleCloudsMod.id("shaders/post/final_composite.json");
 	private static final ResourceLocation FINAL_COMPOSITE_NO_TRANSPARENCY_LOC = SimpleCloudsMod.id("shaders/post/final_composite_no_transparency.json");
+	private static final ResourceLocation DITHER_TEXTURE = SimpleCloudsMod.id("textures/shader/bayer_matrix.png");
 	private static final ArtifactVersion REQUIRED_OPENGL_VERSION = new DefaultArtifactVersion("4.3");
 	public static final int SHADOW_MAP_SIZE = 1024;
 	public static final int MAX_LIGHTNING_BOLTS = 16;
 	public static final int BYTES_PER_LIGHTNING_BOLT = 16;
+	public static final float CHUNK_FADE_IN_ALPHA_PER_TICK = 0.2F;
+	public static final float DITHER_SCALE = 0.05F;
 	private static @Nullable SimpleCloudsRenderer instance;
 	private final CloudsRendererSettings settings;
 	private final Minecraft mc;
@@ -601,6 +606,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		}
 		
 		this.worldEffectsManager.tick();
+		
+		if (this.meshGenerator != null)
+			this.meshGenerator.worldTick();
 	}
 	
 	public static void renderCloudsOpaque(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b, @Nullable Frustum frustum)
@@ -614,19 +622,28 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		RenderSystem.disableBlend();
 		RenderSystem.enableDepthTest();
-		RenderSystem.setShaderColor(r, g, b, 1.0F);
 		RenderSystem.disableCull();
 		
 		SingleSSBOShaderInstance shader = SimpleCloudsShaders.getCloudsShader();
 		RenderSystem.setShader(() -> shader);
+		
+		TextureManager manager = Minecraft.getInstance().getTextureManager();
+		AbstractTexture ditherTexture = manager.getTexture(DITHER_TEXTURE);
+		shader.setSampler("BayerMatrixSampler", ditherTexture);
+		shader.safeGetUniform("DitherScale").set(DITHER_SCALE);
+		
 		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
 		shader.apply();
 		
 		generator.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
 		{
+			RenderSystem.setShaderColor(r, g, b, chunk.getAlpha(partialTick));
+			shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
+			shader.COLOR_MODULATOR.upload();
+			
 			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), opaqueBuffers.getBufferId());
 			generator.getSideMesh().drawInstanced(opaqueBuffers.getElementCount());
-		});
+		}, true);
 		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), 0);
 		
 		shader.clear();
@@ -648,13 +665,20 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		RenderSystem.enableDepthTest();
 		RenderSystem.depthMask(false);
-		RenderSystem.setShaderColor(r, g, b, 1.0F);
 		
 		SingleSSBOShaderInstance shader = SimpleCloudsShaders.getCloudsTransparencyShader();
 		RenderSystem.setShader(() -> shader);
+		
+		TextureManager manager = Minecraft.getInstance().getTextureManager();
+		AbstractTexture ditherTexture = manager.getTexture(DITHER_TEXTURE);
+		shader.setSampler("BayerMatrixSampler", ditherTexture);
+		shader.safeGetUniform("DitherScale").set(DITHER_SCALE);
+		
 		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
+		
 		shader.safeGetUniform("FogStart").set(fadeStart);
 		shader.safeGetUniform("FogEnd").set(fadeEnd);
+		
 		shader.apply();
 		
 		GL14.glBlendEquation(GL14.GL_FUNC_ADD);
@@ -665,6 +689,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		generator.forRenderableMeshChunks(frustum, c -> c.getTransparentBuffers().get(), (chunk, transparentBuffers) -> 
 		{
+			RenderSystem.setShaderColor(r, g, b, chunk.getAlpha(partialTick));
+			shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
+			shader.COLOR_MODULATOR.upload();
+			
 			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), transparentBuffers.getBufferId());
 			generator.getCubeMesh().drawInstanced(transparentBuffers.getElementCount());
 		});
@@ -851,7 +879,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			this.mc.getProfiler().push("mesh_generation");
 			this.prepareMeshGenerator(partialTick);
-			this.meshGenerator.tick(originX, originY, originZ, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
+			this.meshGenerator.genTick(originX, originY, originZ, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
 			this.mc.getProfiler().pop();
 		}
 		
