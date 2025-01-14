@@ -69,13 +69,13 @@ public abstract class CloudMeshGenerator
 	
 	//Opaque
 	public static final int BYTES_PER_SIDE_INFO = 24;
-	public static final int MAX_SIDE_INFO_BUFFER_SIZE = 100663296;
+	public static final int MAX_SIDE_INFO_BUFFER_SIZE = 50331648;
 	public static final String SIDE_INFO_BUFFER_NAME = "SideInfoBuffer";
 	public static final String TOTAL_SIDES_NAME = "TotalSides";
 	public static final String SIDES_PER_CHUNK_NAME = "SidesPerChunk";
 	//Transparent
 	public static final int BYTES_PER_CUBE_INFO = 24;
-	public static final int MAX_TRANSPARENT_CUBE_INFO_BUFFER_SIZE = 100663296;
+	public static final int MAX_TRANSPARENT_CUBE_INFO_BUFFER_SIZE = 50331648;
 	public static final String TRANSPARENT_CUBE_INFO_BUFFER_NAME = "TransparentCubeInfoBuffer";
 	public static final String TRANSPARENT_TOTAL_CUBES_NAME = "TotalTransparentCubes";
 	public static final String TRANSPARENT_CUBES_PER_CHUNK_NAME = "TransparentCubesPerChunk";
@@ -114,6 +114,8 @@ public abstract class CloudMeshGenerator
 	private int opaqueBufferBytesUsed;
 	private int transparentBufferSize;
 	private int transparentBufferBytesUsed;
+	private int opaqueBytesPerChunk;
+	private int transparentBytesPerChunk;
 	
 	/**
 	 * Creates a cloud mesh generator, <b>but does not initialize it for generating</b> (use {@link CloudMeshGenerator#init})
@@ -292,9 +294,33 @@ public abstract class CloudMeshGenerator
 		return this.transparentBufferBytesUsed;
 	}
 	
+	public int getOpaqueBytesPerChunk()
+	{
+		return this.opaqueBytesPerChunk;
+	}
+	
+	public int getTransparentBytesPerChunk()
+	{
+		return this.transparentBytesPerChunk;
+	}
+	
+	public int getTotalMeshChunks()
+	{
+		if (this.chunks == null)
+			return 0;
+		return this.chunks.size();
+	}
+	
 	public void close()
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
+		
+		this.opaqueBufferBytesUsed = 0;
+		this.opaqueBufferSize = 0;
+		this.opaqueBytesPerChunk = 0;
+		this.transparentBufferBytesUsed = 0;
+		this.transparentBufferSize = 0;
+		this.transparentBytesPerChunk = 0;
 		
 		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
 		this.chunkGenTasks.clear();
@@ -335,6 +361,13 @@ public abstract class CloudMeshGenerator
 				
 		if (!RenderSystem.isOnRenderThreadOrInit())
 			return builder.errorUnknown(new IllegalStateException("Init not called on render thread"), "Mesh Generator; Head").build();
+		
+		this.opaqueBufferBytesUsed = 0;
+		this.opaqueBufferSize = 0;
+		this.opaqueBytesPerChunk = 0;
+		this.transparentBufferBytesUsed = 0;
+		this.transparentBufferSize = 0;
+		this.transparentBytesPerChunk = 0;
 		
 		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
 		this.chunkGenTasks.clear();
@@ -384,10 +417,10 @@ public abstract class CloudMeshGenerator
 		List<PreparedChunk> preparedChunks = this.getLodConfig().getPreparedChunks();
 		ImmutableList.Builder<MeshChunk> meshChunks = ImmutableList.builder();
 		int totalPreparedChunks = preparedChunks.size();
-		int opaqueBufferSizePerChunk = Mth.ceil(this.opaqueBufferSize / totalPreparedChunks);
-		int transparentBufferSizePerChunk = Mth.ceil(this.transparentBufferSize / totalPreparedChunks);
+		this.opaqueBytesPerChunk = Mth.ceil(this.opaqueBufferSize / totalPreparedChunks) * 4;
+		this.transparentBytesPerChunk = Mth.ceil(this.transparentBufferSize / totalPreparedChunks) * 4;
 		for (PreparedChunk chunk : preparedChunks)
-			meshChunks.add(new MeshChunk(chunk, opaqueBufferSizePerChunk, transparentBufferSizePerChunk, this.useTransparency));
+			meshChunks.add(new MeshChunk(chunk, this.opaqueBytesPerChunk, this.transparentBytesPerChunk, this.useTransparency));
 		this.chunks = meshChunks.build();
 		
 		LOGGER.debug("Opaque buffer size: {} bytes, transparent buffer size: {} bytes", this.opaqueBufferSize, this.transparentBufferSize);

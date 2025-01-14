@@ -211,8 +211,14 @@ public class SimpleCloudsClientEvents
 				if (transparentStatus.isErroneous())
 					text.add(ChatFormatting.RED + "MESH ERROR TRANSPARENT: " + transparentStatus);
 				
-				text.add("Opaque geometry: " + humanReadableByteCountSI(generator.getOpaqueBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getOpaqueBufferSize()));
-				text.add("Transparent geometry: " + humanReadableByteCountSI(generator.getTransparentBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getTransparentBufferSize()));
+				String opaqueGeomInfo = humanReadableByteCountSI(generator.getOpaqueBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getOpaqueBufferSize());
+				String transparentGeomInfo = humanReadableByteCountSI(generator.getTransparentBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getTransparentBufferSize());
+//				text.add("Compute Geom Pool");
+				text.add("O: " + opaqueGeomInfo + " | T: " + transparentGeomInfo);
+//				String opaqueChunkInfo = humanReadableByteCountSI(generator.getOpaqueBytesPerChunk()) + "; " + humanReadableByteCountSI(generator.getOpaqueBytesPerChunk() * generator.getTotalMeshChunks());
+//				String transparentChunkInfo = humanReadableByteCountSI(generator.getTransparentBytesPerChunk()) + "; " + humanReadableByteCountSI(generator.getTransparentBytesPerChunk() * generator.getTotalMeshChunks());
+//				text.add("Chunk Mesh Geom Buffers");
+//				text.add("O: " + opaqueChunkInfo + " | T: " + transparentChunkInfo);
 				
 				int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
 				text.add("Mesh gen frames: " + frames + "; Effective FPS: " + mc.getFps() / frames);
