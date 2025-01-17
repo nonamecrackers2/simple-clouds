@@ -294,6 +294,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		// --- Post Processing Shaders ---
 		
+		this.destroyPostChains();
+		
 //		this.cloudsPostProcessing = this.createPostChain(manager, CLOUD_POST_PROCESSING_LOC, this.cloudTarget, 1.0F, 1.0F);
 		
 //		this.worldPostProcessing = this.createPostChain(manager, WORLD_POST_PROCESSING_LOC, this.mc.getMainRenderTarget(), 1.0F, 1.0F, effect -> {
