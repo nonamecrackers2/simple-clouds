@@ -89,7 +89,7 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 	@Override
 	protected void spawnLightning(CloudType type, float fade, int x, int z, boolean soundOnly)
 	{
-		int y = (int)(type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 256.0F);
+		int y = (int)(type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + this.getCloudHeight());
 		float spreadnessFactor = this.random.nextFloat();
 		float length = spreadnessFactor * 300.0F + 200.0F;
 		float minPitch = 20.0F + spreadnessFactor * 40.0F;
