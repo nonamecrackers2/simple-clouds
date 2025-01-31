@@ -21,8 +21,8 @@
       "scale_y": 30.0
     }
   ],
-  "storminess": 0.5,
+  "storminess": 0.6,
   "storm_start": 64.0,
-  "storm_fade_distance": 64.0,
+  "storm_fade_distance": 48.0,
   "transparency_fade": 0.02
 }
