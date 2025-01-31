@@ -48,6 +48,8 @@ import com.mojang.math.Axis;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
+import dev.nonamecrackers2.simpleclouds.client.dh.pipeline.DhSupportPipeline;
+import dev.nonamecrackers2.simpleclouds.client.framebuffer.CloudRenderTarget;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.WeightedBlendingTarget;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
@@ -77,6 +79,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.EffectInstance;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.ShaderInstance;
@@ -102,6 +105,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private static final Vector3f DIFFUSE_LIGHT_1 = (new Vector3f(-0.2F, 1.0F, 0.7F)).normalize();
 //	private static final ResourceLocation WORLD_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/world_post.json");
 	private static final ResourceLocation STORM_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/storm_post.json");
+//	private static final ResourceLocation STORM_SHADOWS_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/storm_shadows.json");
 	private static final ResourceLocation BLUR_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/blur_post.json");
 	private static final ResourceLocation SCREEN_SPACE_WORLD_FOG_LOC = SimpleCloudsMod.id("shaders/post/screen_space_world_fog.json");
 	private static final ResourceLocation FINAL_COMPOSITE_LOC = SimpleCloudsMod.id("shaders/post/final_composite.json");
@@ -129,10 +133,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable PostChain finalComposite;
 //	private @Nullable PostChain worldPostProcessing;
 	private @Nullable PostChain stormPostProcessing;
+//	private @Nullable PostChain stormShadowsProcessing;
 	private @Nullable PostChain blurPostProcessing;
 	private @Nullable PostChain screenSpaceWorldFog;
 	private @Nullable ShaderStorageBufferObject lightningBoltPositions;
-	private Frustum cullFrustum;
+	private @Nullable Frustum cullFrustum;
 	private int shadowMapBufferId = -1;
 	private int shadowMapDepthTextureId = -1;
 	private int shadowMapColorTextureId = -1;
@@ -210,6 +215,16 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		return 1.0F - Math.min(Math.max(distance - this.fogStart, 0.0F) / (this.fogEnd - this.fogStart), 1.0F);
 	}
 	
+	public @Nullable Frustum getCullFrustum()
+	{
+		return this.cullFrustum;
+	}
+	
+	public @Nullable PoseStack getShadowMapStack()
+	{
+		return this.shadowMapStack;
+	}
+	
 	private void prepareMeshGenerator(float partialTicks)
 	{
 		if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator generator)
@@ -260,14 +275,16 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		// --- Render Targets ---
 		
+		boolean highPrecisionDepth = SimpleCloudsMod.dhLoaded();
+		
 		if (this.cloudTarget != null)
 			this.cloudTarget.destroyBuffers();
-		this.cloudTarget = new TextureTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), true, Minecraft.ON_OSX);
+		this.cloudTarget = new CloudRenderTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), Minecraft.ON_OSX, highPrecisionDepth);
 		this.cloudTarget.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 		
 		if (this.cloudTransparencyTarget != null)
 			this.cloudTransparencyTarget.destroyBuffers();
-		this.cloudTransparencyTarget = new WeightedBlendingTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), Minecraft.ON_OSX);
+		this.cloudTransparencyTarget = new WeightedBlendingTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), Minecraft.ON_OSX, highPrecisionDepth);
 		
 		if (this.stormFogTarget != null)
 			this.stormFogTarget.destroyBuffers();
@@ -316,9 +333,19 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			EffectInstance effect = pass.getEffect();
 			effect.setSampler("ShadowMap", () -> this.shadowMapDepthTextureId);
 			effect.setSampler("ShadowMapColor", () -> this.shadowMapColorTextureId);
+			effect.setSampler("DepthSampler", () -> this.cloudTarget.getDepthTextureId());
 			this.lightningBoltPositions.optionalBindToProgram("LightningBolts", effect.getId());
 		});
 		
+//		this.stormShadowsProcessing = this.createPostChain(manager, STORM_SHADOWS_PROCESSING_LOC, this.mc.getMainRenderTarget(), 1.0F, 1.0F, pass -> 
+//		{
+//			EffectInstance effect = pass.getEffect();
+//			effect.setSampler("ShadowMap", () -> this.shadowMapDepthTextureId);
+//			effect.setSampler("ShadowMapColor", () -> this.shadowMapColorTextureId);
+//			effect.setSampler("DepthSampler", () -> this.cloudTarget.getDepthTextureId());
+//			this.lightningBoltPositions.optionalBindToProgram("LightningBolts", effect.getId());
+//		});
+//		
 		this.blurPostProcessing = this.createPostChain(manager, BLUR_POST_PROCESSING_LOC, this.blurTarget, 1.0F, 1.0F);
 		this.blurPostProcessing.getTempTarget("swap").setFilterMode(GL11.GL_LINEAR);
 		
@@ -680,6 +707,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		shader.safeGetUniform("FogStart").set(fadeStart);
 		shader.safeGetUniform("FogEnd").set(fadeEnd);
+		shader.safeGetUniform("WeightDistance").set(1000.0F); //1000.0F for non-DH
 		
 		shader.apply();
 		
@@ -858,6 +886,13 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		stack.translate(-camX, -camY + (double)CloudManager.get(this.mc.level).getCloudHeight(), -camZ);
 		stack.scale((float)SimpleCloudsConstants.CLOUD_SCALE, (float)SimpleCloudsConstants.CLOUD_SCALE, (float)SimpleCloudsConstants.CLOUD_SCALE);
+	}
+	
+	public void renderWeather(LightTexture texture, float partialTick, double camX, double camY, double camZ)
+	{
+		this.worldEffectsManager.renderRain(texture, partialTick, camX, camY, camZ);
+		if (!SimpleCloudsMod.dhLoaded())
+			this.worldEffectsManager.renderLightning(partialTick, camX, camY, camZ);
 	}
 	
 	public void renderBeforeLevel(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
@@ -1093,6 +1128,35 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.depthMask(true);
 		}
 	}
+//	
+//	public void doStormShadowProcessing(PoseStack stack, PoseStack shadowMapStack, float partialTick, Matrix4f projMat, double camX, double camY, double camZ, float r, float g, float b)
+//	{
+//		if (this.stormShadowsProcessing != null)
+//		{
+//			RenderSystem.disableBlend();
+//			RenderSystem.disableDepthTest();
+//			RenderSystem.resetTextureMatrix();
+//			RenderSystem.depthMask(false);
+//			
+//			Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
+//			Matrix4f invertedModelViewMat = new Matrix4f(stack.last().pose()).invert();
+//			for (PostPass pass : ((MixinPostChain)this.stormShadowsProcessing).simpleclouds$getPostPasses())
+//			{
+//				EffectInstance effect = pass.getEffect();
+//				effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
+//				effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
+//				effect.safeGetUniform("ShadowProjMat").set(this.shadowMapProjMat);
+//				effect.safeGetUniform("ShadowModelViewMat").set(shadowMapStack.last().pose());
+//				effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
+//				effect.safeGetUniform("ColorModulator").set(r, g, b, 1.0F);
+//				effect.safeGetUniform("TotalLightningBolts").set(0);
+//			}
+//			
+//			this.stormShadowsProcessing.process(partialTick);
+//			
+//			RenderSystem.depthMask(true);
+//		}
+//	}
 	
 	public static void prepareShader(ShaderInstance shader, Matrix4f modelView, Matrix4f projMat)
 	{
@@ -1234,7 +1298,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public static CloudsRenderPipeline getRenderPipeline()
 	{
-		return CompatHelper.areShadersRunning() ? CloudsRenderPipeline.SHADER_SUPPORT : CloudsRenderPipeline.DEFAULT;
+		if (SimpleCloudsMod.dhLoaded())
+			return DhSupportPipeline.INSTANCE;
+		else
+			return CompatHelper.areShadersRunning() ? CloudsRenderPipeline.SHADER_SUPPORT : CloudsRenderPipeline.DEFAULT;
 	}
 	
 	public static void initialize(CloudsRendererSettings settings)

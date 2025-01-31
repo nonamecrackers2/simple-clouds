@@ -2,6 +2,7 @@ package dev.nonamecrackers2.simpleclouds.client.renderer;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
@@ -106,7 +107,7 @@ public class WorldEffects
 		}
 	}
 	
-	public void renderWeather(LightTexture texture, float partialTick, double camX, double camY, double camZ)
+	public void renderRain(LightTexture texture, float partialTick, double camX, double camY, double camZ)
 	{
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder builder = tesselator.getBuilder();
@@ -114,33 +115,6 @@ public class WorldEffects
 		RenderSystem.colorMask(true, true, true, true);
 		RenderSystem.enableBlend();
 		RenderSystem.enableDepthTest();
-		
-		if (!this.lightningBolts.isEmpty())
-		{
-			float currentFogStart = RenderSystem.getShaderFogStart();
-			RenderSystem.setShaderFogStart(Float.MAX_VALUE);
-			PoseStack modelViewStack = RenderSystem.getModelViewStack();
-			modelViewStack.pushPose();
-			RenderSystem.applyModelViewMatrix();
-			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-			RenderSystem.setShader(GameRenderer::getRendertypeLightningShader);
-			RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
-			PoseStack stack = new PoseStack();
-			stack.pushPose();
-			stack.translate(-camX, -camY, -camZ);
-			for (LightningBolt bolt : this.lightningBolts)
-			{
-				if (bolt.getPosition().distance((float)camX, (float)camY, (float)camZ) <= SimpleCloudsConstants.CLOSE_THUNDER_CUTOFF && bolt.getFade(partialTick) > 0.5F)
-					this.mc.level.setSkyFlashTime(2);
-				float dist = bolt.getPosition().distance((float)camX, (float)camY, (float)camZ);
-				bolt.render(stack, builder, partialTick, 1.0F, 1.0F, 1.0F, this.renderer.getFadeFactorForDistance(dist));
-			}
-			stack.popPose();
-			tesselator.end();
-			modelViewStack.popPose();
-			RenderSystem.applyModelViewMatrix();
-			RenderSystem.setShaderFogStart(currentFogStart);
-		}
 		
 		if (!this.quadsByPrecipitation.isEmpty())
 		{
@@ -164,6 +138,56 @@ public class WorldEffects
 				tesselator.end();
 			}
 			RenderSystem.enableCull();
+		}
+		
+		RenderSystem.disableBlend();
+		RenderSystem.defaultBlendFunc();
+	}
+	
+	public boolean hasLightningToRender()
+	{
+		return !this.lightningBolts.isEmpty();
+	}
+	
+	public void forLightning(Consumer<LightningBolt> consumer)
+	{
+		this.lightningBolts.forEach(consumer);
+	}
+	
+	public void renderLightning(float partialTick, double camX, double camY, double camZ)
+	{
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder builder = tesselator.getBuilder();
+		RenderSystem.depthMask(Minecraft.useShaderTransparency() || CompatHelper.areShadersRunning());
+		RenderSystem.colorMask(true, true, true, true);
+		RenderSystem.enableBlend();
+		RenderSystem.enableDepthTest();
+		
+		if (this.hasLightningToRender())
+		{
+			float currentFogStart = RenderSystem.getShaderFogStart();
+			RenderSystem.setShaderFogStart(Float.MAX_VALUE);
+			PoseStack modelViewStack = RenderSystem.getModelViewStack();
+			modelViewStack.pushPose();
+			RenderSystem.applyModelViewMatrix();
+			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+			RenderSystem.setShader(GameRenderer::getRendertypeLightningShader);
+			RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+			PoseStack stack = new PoseStack();
+			stack.pushPose();
+			stack.translate(-camX, -camY, -camZ);
+			this.forLightning(bolt -> 
+			{
+				if (bolt.getPosition().distance((float)camX, (float)camY, (float)camZ) <= SimpleCloudsConstants.CLOSE_THUNDER_CUTOFF && bolt.getFade(partialTick) > 0.5F)
+					this.mc.level.setSkyFlashTime(2);
+				float dist = bolt.getPosition().distance((float)camX, (float)camY, (float)camZ);
+				bolt.render(stack, builder, partialTick, 1.0F, 1.0F, 1.0F, this.renderer.getFadeFactorForDistance(dist));
+			});
+			stack.popPose();
+			tesselator.end();
+			modelViewStack.popPose();
+			RenderSystem.applyModelViewMatrix();
+			RenderSystem.setShaderFogStart(currentFogStart);
 		}
 		
 		RenderSystem.disableBlend();

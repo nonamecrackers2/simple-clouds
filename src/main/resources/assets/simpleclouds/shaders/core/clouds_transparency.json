@@ -14,6 +14,7 @@
        	{ "name": "DarknessColorModifier", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.1 ] },
 		{ "name": "FogStart", "type": "float", "count": 1, "values": [ 1.0 ] },
 		{ "name": "FogEnd", "type": "float", "count": 1, "values": [ 2.0 ] },
-		{ "name": "DitherScale", "type": "float", "count": 1, "values": [ 0.05 ] }
+		{ "name": "DitherScale", "type": "float", "count": 1, "values": [ 0.05 ] },
+		{ "name": "WeightDistance", "type": "float", "count": 1, "values": [ 1000.0 ] }
     ]
 }

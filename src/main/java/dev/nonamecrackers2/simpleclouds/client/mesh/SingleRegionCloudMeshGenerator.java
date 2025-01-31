@@ -1,23 +1,16 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh;
 
-import java.io.IOException;
-
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL41;
-
-import com.google.common.collect.ImmutableMap;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
-import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.server.packs.resources.ResourceManager;
 
 public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 {

@@ -17,8 +17,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
-import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
-
 public class InstanceableMesh
 {
 	private int arrayObjectId = -1;

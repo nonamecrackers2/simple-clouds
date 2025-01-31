@@ -3,6 +3,7 @@ package dev.nonamecrackers2.simpleclouds;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 
 import dev.nonamecrackers2.simpleclouds.client.config.SimpleCloudsClientConfigListeners;
+import dev.nonamecrackers2.simpleclouds.client.dh.SimpleCloudsDhCompatHandler;
 import dev.nonamecrackers2.simpleclouds.client.event.SimpleCloudsClientEvents;
 import dev.nonamecrackers2.simpleclouds.client.keybind.SimpleCloudsKeybinds;
 import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
@@ -22,6 +23,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.IExtensionPoint;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -34,7 +36,9 @@ import net.minecraftforge.network.NetworkConstants;
 public class SimpleCloudsMod
 {
 	public static final String MODID = "simpleclouds";
+	private static final String DH_MODID = "distanthorizons";
 	private static ArtifactVersion version;
+	private static boolean dhLoaded;
 	
 	public SimpleCloudsMod()
 	{
@@ -69,6 +73,7 @@ public class SimpleCloudsMod
 		forgeBus.register(CloudManagerEvents.class);
 		forgeBus.register(SimpleCloudsEvents.class);
 		SimpleCloudsConfigListeners.registerListener();
+		dhLoaded = ModList.get().isLoaded(DH_MODID);
 	}
 	
 	private void clientInit(FMLClientSetupEvent event)
@@ -80,6 +85,13 @@ public class SimpleCloudsMod
 		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
 		forgeBus.register(SimpleCloudsClientEvents.class);
 		forgeBus.register(SimpleCloudsKeybinds.class);
+		
+		if (ModList.get().isLoaded(DH_MODID))
+		{
+			event.enqueueWork(() -> {
+				SimpleCloudsDhCompatHandler.initialize();
+			});
+		}
 	}
 	
 	public static ResourceLocation id(String path)
@@ -90,5 +102,10 @@ public class SimpleCloudsMod
 	public static ArtifactVersion getModVersion()
 	{
 		return version;
+	}
+	
+	public static boolean dhLoaded()
+	{
+		return dhLoaded;
 	}
 }

@@ -7,7 +7,6 @@ import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
-import org.lwjgl.opengl.GL43;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -17,12 +16,14 @@ import com.mojang.blaze3d.systems.RenderSystem;
 // https://jcgt.org/published/0002/02/09/paper.pdf and http://casual-effects.blogspot.com/2015/03/implemented-weighted-blended-order.html
 public class WeightedBlendingTarget extends RenderTarget
 {
+	private final boolean highPrecisionDepth;
 	protected int revealageTextureId;
 	
-	public WeightedBlendingTarget(int width, int height, boolean clearError)
+	public WeightedBlendingTarget(int width, int height, boolean clearError, boolean highPrecisionDepth)
 	{
 		super(true);
 		RenderSystem.assertOnRenderThreadOrInit();
+		this.highPrecisionDepth = highPrecisionDepth;
 		this.resize(width, height, clearError);
 		this.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 	}
@@ -71,7 +72,10 @@ public class WeightedBlendingTarget extends RenderTarget
 			GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL14.GL_TEXTURE_COMPARE_MODE, 0);
 			GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
 			GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
-			GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_DEPTH_COMPONENT, this.width, this.height, 0, GL11.GL_DEPTH_COMPONENT, GL11.GL_FLOAT, (IntBuffer)null);
+			if (this.highPrecisionDepth)
+				GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL30.GL_DEPTH_COMPONENT32F, this.width, this.height, 0, GL11.GL_DEPTH_COMPONENT, GL11.GL_FLOAT, (IntBuffer)null);
+			else
+				GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_DEPTH_COMPONENT, this.width, this.height, 0, GL30.GL_DEPTH_COMPONENT, GL11.GL_FLOAT, (IntBuffer)null);
 
 			this.setFilterMode(GL11.GL_NEAREST);
 			

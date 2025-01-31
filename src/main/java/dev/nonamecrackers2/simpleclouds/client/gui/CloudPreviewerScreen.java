@@ -27,7 +27,6 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
-import dev.nonamecrackers2.simpleclouds.client.framebuffer.WeightedBlendingTarget;
 import dev.nonamecrackers2.simpleclouds.client.gui.widget.LayerEditor;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;

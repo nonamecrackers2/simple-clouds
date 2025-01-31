@@ -5,7 +5,6 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
 import dev.nonamecrackers2.simpleclouds.client.world.FogRenderMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;

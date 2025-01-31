@@ -18,7 +18,8 @@
 		"MixinLightTexture",
 		"MixinMinecraft",
 		"MixinFrustumAccessor",
-		"MixinPostPass"
+		"MixinPostPass",
+		"MixinRenderTargetAccessor"
 	],
 	"minVersion": "0.8"
 }
