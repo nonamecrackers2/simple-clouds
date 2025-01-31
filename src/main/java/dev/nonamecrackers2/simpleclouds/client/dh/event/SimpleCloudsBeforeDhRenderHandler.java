@@ -19,7 +19,7 @@ public class SimpleCloudsBeforeDhRenderHandler extends DhApiBeforeApplyShaderRen
 	public void beforeRender(DhApiCancelableEventParam<DhApiRenderParam> event)
 	{
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
-		CloudsRenderPipeline pipeline = SimpleCloudsRenderer.getRenderPipeline();
+		CloudsRenderPipeline pipeline = renderer.getRenderPipeline();
 		Minecraft mc = Minecraft.getInstance();
 		Vec3 camPos = mc.gameRenderer.getMainCamera().getPosition();
 		

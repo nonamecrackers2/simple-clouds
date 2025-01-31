@@ -16,7 +16,9 @@ import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
 
 import dev.nonamecrackers2.simpleclouds.client.dh.event.SimpleCloudsAfterDhRenderHandler;
 import dev.nonamecrackers2.simpleclouds.client.dh.event.SimpleCloudsBeforeDhRenderHandler;
+import dev.nonamecrackers2.simpleclouds.client.dh.event.SimpleCloudsDhForgeEvents;
 import dev.nonamecrackers2.simpleclouds.client.dh.event.SimpleCloudsDhSetupHandler;
+import net.minecraftforge.common.MinecraftForge;
 
 public class SimpleCloudsDhCompatHandler
 {
@@ -68,6 +70,8 @@ public class SimpleCloudsDhCompatHandler
 			if (b)
 				val.setValue(false);
 		});
+		
+		MinecraftForge.EVENT_BUS.register(SimpleCloudsDhForgeEvents.class);
 	}
 	
 	public static Matrix4f dhMat4ToMc(DhApiMat4f mat4)

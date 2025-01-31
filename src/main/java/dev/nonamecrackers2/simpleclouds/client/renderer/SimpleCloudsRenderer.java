@@ -49,6 +49,8 @@ import com.mojang.math.Axis;
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.dh.pipeline.DhSupportPipeline;
+import dev.nonamecrackers2.simpleclouds.client.event.impl.DetermineCloudRenderPipelineEvent;
+import dev.nonamecrackers2.simpleclouds.client.event.impl.ModifyCloudRenderDistanceEvent;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.CloudRenderTarget;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.WeightedBlendingTarget;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
@@ -92,6 +94,7 @@ import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.loading.ImmediateWindowHandler;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
@@ -123,6 +126,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private final WorldEffects worldEffectsManager;
 	private ArtifactVersion openGlVersion;
 	private CloudMeshGenerator meshGenerator;
+	private @Nullable CloudsRenderPipeline renderPipelineThisPass;
 	private Matrix4f shadowMapProjMat;
 	private @Nullable RenderTarget cloudTarget;
 	private @Nullable WeightedBlendingTarget cloudTransparencyTarget;
@@ -158,6 +162,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public CloudMeshGenerator getMeshGenerator()
 	{
 		return this.meshGenerator;
+	}
+	
+	public CloudsRenderPipeline getRenderPipeline()
+	{
+		return Objects.requireNonNull(this.renderPipelineThisPass, "Pipeline not determined");
 	}
 	
 	public WorldEffects getWorldEffectsManager()
@@ -897,8 +906,18 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void renderBeforeLevel(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
+		CloudsRenderPipeline pipeline = CompatHelper.areShadersRunning() ? CloudsRenderPipeline.SHADER_SUPPORT : CloudsRenderPipeline.DEFAULT;
+		DetermineCloudRenderPipelineEvent pipelineEvent = new DetermineCloudRenderPipelineEvent(pipeline);
+		MinecraftForge.EVENT_BUS.post(pipelineEvent);
+		this.renderPipelineThisPass = pipeline;
+		if (pipelineEvent.getOverridenPipeline() != null)
+			this.renderPipelineThisPass = pipelineEvent.getOverridenPipeline();
+		
 		float factor = this.worldEffectsManager.getDarkenFactor(partialTick);
 		float renderDistance = (float)this.meshGenerator.getCloudAreaMaxRadius() * (float)SimpleCloudsConstants.CLOUD_SCALE * factor;
+		ModifyCloudRenderDistanceEvent renderDistEvent = new ModifyCloudRenderDistanceEvent(renderDistance);
+		MinecraftForge.EVENT_BUS.post(renderDistEvent);
+		renderDistance = renderDistEvent.getRenderDistance();
 		this.fogStart = renderDistance / 4.0F;
 		this.fogEnd = renderDistance;
 		this.meshGenerator.setCullDistance(this.fogEnd / (float)SimpleCloudsConstants.CLOUD_SCALE);
@@ -921,7 +940,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		}
 		
 		if (SimpleCloudsConfig.CLIENT.renderClouds.get())
-			getRenderPipeline().prepare(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
+			this.getRenderPipeline().prepare(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 			
 		this.mc.getProfiler().pop();
 	}
@@ -929,21 +948,21 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public void renderAfterSky(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds_after_sky");
-		getRenderPipeline().afterSky(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
+		this.getRenderPipeline().afterSky(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
 	}
 	
 	public void renderBeforeWeather(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds_before_weather");
-		getRenderPipeline().beforeWeather(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
+		this.getRenderPipeline().beforeWeather(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
 	}
 	
 	public void renderAfterLevel(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds");
-		getRenderPipeline().afterLevel(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
+		this.getRenderPipeline().afterLevel(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
 		
 		this.mc.getProfiler().push("world_effects");
@@ -1294,14 +1313,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			meshGenCategory.setDetail("Type", "Mesh generator is not initialized");
 		}
-	}
-	
-	public static CloudsRenderPipeline getRenderPipeline()
-	{
-		if (SimpleCloudsMod.dhLoaded())
-			return DhSupportPipeline.INSTANCE;
-		else
-			return CompatHelper.areShadersRunning() ? CloudsRenderPipeline.SHADER_SUPPORT : CloudsRenderPipeline.DEFAULT;
 	}
 	
 	public static void initialize(CloudsRendererSettings settings)
