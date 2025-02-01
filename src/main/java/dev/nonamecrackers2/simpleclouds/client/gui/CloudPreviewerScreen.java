@@ -144,17 +144,18 @@ public class CloudPreviewerScreen extends Screen3D
 	
 	public static void addCloudMeshListener(RegisterClientReloadListenersEvent event)
 	{
-		event.registerReloadListener((ResourceManagerReloadListener)(manager ->
-		{
-			if (generator != null)
-				generator.init(manager);
+		event.registerReloadListener((ResourceManagerReloadListener)(manager -> {
+			destroyMeshGenerator();
 		}));
 	}
 	
 	public static void destroyMeshGenerator()
 	{
 		if (generator != null)
+		{
 			generator.close();
+			generator = null;
+		}
 	}
 	
 	public CloudPreviewerScreen(Screen prev)
@@ -409,6 +410,12 @@ public class CloudPreviewerScreen extends Screen3D
 	}
 	
 	@Override
+	public void tick()
+	{
+		generator.worldTick();
+	}
+	
+	@Override
 	public void render(GuiGraphics stack, int pMouseX, int pMouseY, float pPartialTick)
 	{
 		if (SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup.get())
@@ -436,7 +443,7 @@ public class CloudPreviewerScreen extends Screen3D
 	{
 		if (this.needsMeshRegen)
 			this.generateMesh();
-		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, RenderSystem.getProjectionMatrix(), partialTick, -1.0F, -1.0F, 1.0F, 1.0F, 1.0F, null);
+		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, RenderSystem.getProjectionMatrix(), Float.MAX_VALUE, Float.MAX_VALUE, partialTick, 1.0F, 1.0F, 1.0F, null, false);
 		
 		float radius = generator.getCloudAreaMaxRadius();
 		Tesselator tesselator = Tesselator.getInstance();

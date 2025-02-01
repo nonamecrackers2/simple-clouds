@@ -15,11 +15,13 @@ out vec4 fragColor;
 
 void main() 
 {
-	vec4 finalCol = ColorModulator * vertexColor;
-	finalCol = mix(finalCol, FogColor, smoothstep(FogStart, FogEnd, fogDistance));
-	
+	float fade = ColorModulator.a;
 	float r = texture(BayerMatrixSampler, gl_FragCoord.xy * DitherScale).r;
-	if (finalCol.a < r)
+	if (fade < r)
 		discard;
-    fragColor = vec4(finalCol.rgb, 1.0);
+	
+	vec4 color = vertexColor * vec4(ColorModulator.rgb, 1.0);
+	color = mix(color, FogColor, smoothstep(FogStart, FogEnd, fogDistance));
+	
+    fragColor = vec4(color.rgb, 1.0);
 }

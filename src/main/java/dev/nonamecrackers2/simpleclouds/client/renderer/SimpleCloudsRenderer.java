@@ -650,6 +650,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public static void renderCloudsOpaque(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float fogStart, float fogEnd, float partialTick, float r, float g, float b, @Nullable Frustum frustum)
 	{
+		renderCloudsOpaque(generator, stack, projMat, fogStart, fogEnd, partialTick, r, g, b, frustum, true);
+	}
+	
+	public static void renderCloudsOpaque(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float fogStart, float fogEnd, float partialTick, float r, float g, float b, @Nullable Frustum frustum, boolean ditherFade)
+	{
 		RenderSystem.assertOnRenderThread();
 		
 		if (!generator.canRender())
@@ -674,13 +679,16 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		generator.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
 		{
-			RenderSystem.setShaderColor(r, g, b, chunk.getAlpha(partialTick));
-			shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
-			shader.COLOR_MODULATOR.upload();
+			if (ditherFade)
+			{
+				RenderSystem.setShaderColor(r, g, b, chunk.getAlpha(partialTick));
+				shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
+				shader.COLOR_MODULATOR.upload();
+			}
 			
 			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), opaqueBuffers.getBufferId());
 			generator.getSideMesh().drawInstanced(opaqueBuffers.getElementCount());
-		}, true);
+		}, ditherFade);
 		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), 0);
 		
 		shader.clear();
