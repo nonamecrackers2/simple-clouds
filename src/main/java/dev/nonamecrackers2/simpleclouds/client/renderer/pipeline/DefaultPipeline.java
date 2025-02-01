@@ -47,37 +47,6 @@ public class DefaultPipeline implements CloudsRenderPipeline
 	
 		ProfilerFiller p = mc.getProfiler();
 		
-		// Storm Fog
-		
-		if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
-		{
-			p.push("storm_fog");
-			
-			// Renders the storm fog at a lower resolution
-			renderer.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
-			
-			// Next we blit the storm fog to a higher resolution texture and apply a box blur
-			RenderTarget target = renderer.getBlurTarget();
-			target.clear(Minecraft.ON_OSX); // Clear old contents on the blur framebuffer
-			target.bindWrite(true); // Bind write and resize viewport
-			// Here we blit the contents of the storm fog framebuffer on to the blur framebuffer. A special function is used here
-			// to preserve the alpha channel when rendering
-			FrameBufferUtils.blitTargetPreservingAlpha(renderer.getStormFogTarget(), mc.getWindow().getWidth(), mc.getWindow().getHeight());
-			// Blurs the storm fog
-			renderer.doBlurPostProcessing(partialTick);
-			// Renders the storm fog to the screen
-			mc.getMainRenderTarget().bindWrite(false);
-			RenderSystem.enableBlend();
-			RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
-			renderer.getBlurTarget().blitToScreen(mc.getWindow().getWidth(), mc.getWindow().getHeight(), false);
-			RenderSystem.disableBlend();
-			RenderSystem.defaultBlendFunc();
-			// Need to do this here because blitToScreen messes up the projection matrix and doesn't set it back
-			RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
-			
-			p.pop();
-		}
-		
 		// Clouds
 		
 		p.push("clouds");
@@ -129,6 +98,37 @@ public class DefaultPipeline implements CloudsRenderPipeline
 		p.pop();
 		
 		p.pop();
+		
+		// Storm Fog
+		
+		if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
+		{
+			p.push("storm_fog");
+			
+			// Renders the storm fog at a lower resolution
+			renderer.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
+			
+			// Next we blit the storm fog to a higher resolution texture and apply a box blur
+			RenderTarget target = renderer.getBlurTarget();
+			target.clear(Minecraft.ON_OSX); // Clear old contents on the blur framebuffer
+			target.bindWrite(true); // Bind write and resize viewport
+			// Here we blit the contents of the storm fog framebuffer on to the blur framebuffer. A special function is used here
+			// to preserve the alpha channel when rendering
+			FrameBufferUtils.blitTargetPreservingAlpha(renderer.getStormFogTarget(), mc.getWindow().getWidth(), mc.getWindow().getHeight());
+			// Blurs the storm fog
+			renderer.doBlurPostProcessing(partialTick);
+			// Renders the storm fog to the screen
+			mc.getMainRenderTarget().bindWrite(false);
+			RenderSystem.enableBlend();
+			RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+			renderer.getBlurTarget().blitToScreen(mc.getWindow().getWidth(), mc.getWindow().getHeight(), false);
+			RenderSystem.disableBlend();
+			RenderSystem.defaultBlendFunc();
+			// Need to do this here because blitToScreen messes up the projection matrix and doesn't set it back
+			RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
+			
+			p.pop();
+		}
 		
 		// Set the frame buffer back to the main one so everything else can render normally
 		mc.getMainRenderTarget().bindWrite(false);

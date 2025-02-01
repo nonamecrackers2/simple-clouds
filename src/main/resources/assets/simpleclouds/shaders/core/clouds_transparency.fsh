@@ -29,7 +29,7 @@ void main()
 	
 	vec4 premul = vec4(color.r * color.a, color.g * color.a, color.b * color.a, color.a);
 
-	float weight = premul.a * max(0.1, WeightDistance * pow((1.0 - gl_FragCoord.z), 3.0) - 100.0);
+	float weight = premul.a * max(0.1, WeightDistance * pow((1.0 - gl_FragCoord.z), 3.0));
 	
     accumColor = premul * weight;
     revealage = premul.a;
