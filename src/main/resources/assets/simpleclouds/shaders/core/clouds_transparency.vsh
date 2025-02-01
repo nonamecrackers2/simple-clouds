@@ -21,7 +21,7 @@ uniform mat4 ProjMat;
 uniform vec3 DarknessColorModifier;
 
 out vec4 vertexColor;
-out float vertexDistance;
+out float fogDistance;
 
 void main() 
 {
@@ -30,5 +30,5 @@ void main()
 	vec4 finalPos = vec4(Position * info.radius + cubeOffset, 1.0);
     gl_Position = ProjMat * ModelViewMat * finalPos;
 	vertexColor = vec4(mix(DarknessColorModifier, vec3(1.0), info.brightness), info.alpha);
-	vertexDistance = length((ModelViewMat * finalPos).xz);
+	fogDistance = length((ModelViewMat * finalPos).xz);
 }

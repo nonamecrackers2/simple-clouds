@@ -436,7 +436,7 @@ public class CloudPreviewerScreen extends Screen3D
 	{
 		if (this.needsMeshRegen)
 			this.generateMesh();
-		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F, null);
+		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, RenderSystem.getProjectionMatrix(), partialTick, -1.0F, -1.0F, 1.0F, 1.0F, 1.0F, null);
 		
 		float radius = generator.getCloudAreaMaxRadius();
 		Tesselator tesselator = Tesselator.getInstance();

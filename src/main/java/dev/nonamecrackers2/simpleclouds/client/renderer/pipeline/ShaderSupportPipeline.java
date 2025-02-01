@@ -94,7 +94,7 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 		mc.getProfiler().push("clouds");
 		stack.pushPose();
 		renderer.translateClouds(stack, camX, camY, camZ);
-		SimpleCloudsRenderer.renderCloudsOpaque(renderer.getMeshGenerator(), stack, projMat, partialTick, cloudR, cloudG, cloudB, frustum);
+		SimpleCloudsRenderer.renderCloudsOpaque(renderer.getMeshGenerator(), stack, projMat, renderer.getFogStart(), renderer.getFogEnd(), partialTick, cloudR, cloudG, cloudB, frustum);
 		stack.popPose();
 		mc.getProfiler().pop();
 

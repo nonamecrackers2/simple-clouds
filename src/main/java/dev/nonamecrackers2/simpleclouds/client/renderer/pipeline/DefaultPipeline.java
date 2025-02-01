@@ -96,7 +96,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 		
 		// Renders the clouds on to the cloud frame buffer
 		CloudMeshGenerator generator = renderer.getMeshGenerator();
-		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, projMat, partialTick, cloudR, cloudG, cloudB, frustum);
+		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, projMat, renderer.getFogStart(), renderer.getFogEnd(), partialTick, cloudR, cloudG, cloudB, frustum);
 		
 		// Here we copy the depth from the cloud frame buffer to the main one, so we can have correct depth information with the
 		// rest of the Minecraft world
@@ -116,7 +116,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 			transparencyTarget.bindWrite(false);
 			
 			// Render the transparent geometry to the transparency framebuffer
-			SimpleCloudsRenderer.renderCloudsTransparency(generator, stack, projMat, partialTick, cloudR, cloudG, cloudB, frustum, renderer.getFogStart(), renderer.getFogEnd());
+			SimpleCloudsRenderer.renderCloudsTransparency(generator, stack, projMat, renderer.getFogStart(), renderer.getFogEnd(), partialTick, cloudR, cloudG, cloudB, frustum);
 		}
 		
 		p.pop();

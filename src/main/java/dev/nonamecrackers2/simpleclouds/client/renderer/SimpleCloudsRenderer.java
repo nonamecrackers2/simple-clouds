@@ -48,7 +48,6 @@ import com.mojang.math.Axis;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
-import dev.nonamecrackers2.simpleclouds.client.dh.pipeline.DhSupportPipeline;
 import dev.nonamecrackers2.simpleclouds.client.event.impl.DetermineCloudRenderPipelineEvent;
 import dev.nonamecrackers2.simpleclouds.client.event.impl.ModifyCloudRenderDistanceEvent;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.CloudRenderTarget;
@@ -649,7 +648,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.meshGenerator.worldTick();
 	}
 	
-	public static void renderCloudsOpaque(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b, @Nullable Frustum frustum)
+	public static void renderCloudsOpaque(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float fogStart, float fogEnd, float partialTick, float r, float g, float b, @Nullable Frustum frustum)
 	{
 		RenderSystem.assertOnRenderThread();
 		
@@ -670,7 +669,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		shader.setSampler("BayerMatrixSampler", ditherTexture);
 		shader.safeGetUniform("DitherScale").set(DITHER_SCALE);
 		
-		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
+		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat, fogStart, fogEnd);
 		shader.apply();
 		
 		generator.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
@@ -692,7 +691,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		RenderSystem.enableCull();
 	}
 	
-	public static void renderCloudsTransparency(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b, @Nullable Frustum frustum, float fadeStart, float fadeEnd)
+	public static void renderCloudsTransparency(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float fogStart, float fogEnd, float partialTick, float r, float g, float b, @Nullable Frustum frustum)
 	{
 		RenderSystem.assertOnRenderThread();
 		
@@ -712,11 +711,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		shader.setSampler("BayerMatrixSampler", ditherTexture);
 		shader.safeGetUniform("DitherScale").set(DITHER_SCALE);
 		
-		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
+		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat, fogStart, fogEnd);
 		
-		shader.safeGetUniform("FogStart").set(fadeStart);
-		shader.safeGetUniform("FogEnd").set(fadeEnd);
-		shader.safeGetUniform("WeightDistance").set(1000.0F); //1000.0F for non-DH
+		shader.safeGetUniform("WeightDistance").set(1000.0F);
 		
 		shader.apply();
 		
@@ -780,7 +777,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		SingleSSBOShaderInstance shader = SimpleCloudsShaders.getCloudsShadowMapShader();
 		RenderSystem.setShader(() -> shader);
-		prepareShader(shader, stack.last().pose(), this.shadowMapProjMat);
+		prepareShader(shader, stack.last().pose(), this.shadowMapProjMat, this.fogStart, this.fogEnd);
 		shader.apply();
 		
 		this.meshGenerator.forRenderableMeshChunks(this.cullFrustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
@@ -805,7 +802,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.shadowMapStack = stack;
 	}
 	
-	public static void renderCloudsDebug(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, @Nullable Frustum frustum, boolean chunkBoundaries, boolean noiseBoundaries)
+	public static void renderCloudsDebug(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, float fogStart, float fogEnd, @Nullable Frustum frustum, boolean chunkBoundaries, boolean noiseBoundaries)
 	{
 		RenderSystem.assertOnRenderThread();
 		
@@ -840,7 +837,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
 		ShaderInstance shader = RenderSystem.getShader();
-		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
+		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat, fogStart, fogEnd);
 		shader.LINE_WIDTH.set(2.5F);
 		shader.FOG_START.set(Float.MAX_VALUE);
 		shader.apply();
@@ -871,7 +868,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		RenderSystem.setShader(GameRenderer::getPositionColorShader);
 		shader = RenderSystem.getShader();
-		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat);
+		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat, fogStart, fogEnd);
 		shader.apply();
 		BufferUploader.draw(builder.end());
 		shader.clear();
@@ -1177,7 +1174,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 //		}
 //	}
 	
-	public static void prepareShader(ShaderInstance shader, Matrix4f modelView, Matrix4f projMat)
+	public static void prepareShader(ShaderInstance shader, Matrix4f modelView, Matrix4f projMat, float fogStart, float fogEnd)
 	{
 		for (int i = 0; i < 12; ++i)
 		{
@@ -1201,10 +1198,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			shader.GLINT_ALPHA.set(RenderSystem.getShaderGlintAlpha());
 
 		if (shader.FOG_START != null)
-			shader.FOG_START.set(RenderSystem.getShaderFogStart());
+			shader.FOG_START.set(fogStart);
 
 		if (shader.FOG_END != null)
-			shader.FOG_END.set(RenderSystem.getShaderFogEnd());
+			shader.FOG_END.set(fogEnd);
 
 		if (shader.FOG_COLOR != null)
 			shader.FOG_COLOR.set(RenderSystem.getShaderFogColor());
