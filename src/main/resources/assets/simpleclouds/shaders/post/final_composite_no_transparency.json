@@ -4,7 +4,7 @@
 	],
 	"passes": [
 		{
-			"name": "simpleclouds:clouds_composite",
+			"name": "simpleclouds:clouds_composite_no_transparency",
 			"intarget": "minecraft:main",
 			"outtarget": "output"
 		},
