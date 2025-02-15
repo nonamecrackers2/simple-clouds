@@ -168,7 +168,9 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 		this.scrollXO = this.scrollX;
 		this.scrollYO = this.scrollY;
 		this.scrollZO = this.scrollZ;
-		float speed = this.getSpeed() * 0.01F;
+		float speed = this.getSpeed();
+		speed = this.modifySpeed(speed);
+		speed *= 0.01F;
 		this.scrollX -= this.getDirection().x() * speed;
 		this.scrollY -= this.getDirection().y() * speed;
 		this.scrollZ -= this.getDirection().z() * speed;
@@ -244,6 +246,11 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 	public void setDirection(@Nonnull Vector3f direction)
 	{
 		this.direction = new Vector3f(Objects.requireNonNull(direction)).normalize();
+	}
+	
+	protected float modifySpeed(float speed)
+	{
+		return speed;
 	}
 	
 	public float getSpeed()

@@ -17,12 +17,14 @@ import dev.nonamecrackers2.simpleclouds.mixin.MixinServerLevelAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
 import net.minecraftforge.network.PacketDistributor;
 
 public class ServerCloudManager extends CloudManager<ServerLevel>
 {
 	private SyncType syncType = SyncType.NONE;
+	private float speedRamp;
 	
 	public ServerCloudManager(ServerLevel level)
 	{
@@ -48,6 +50,36 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 		
 		if (!this.useVanillaWeather)
 			this.level.setRainLevel(0.0F);
+		
+		boolean allSleeping = true;
+		for (ServerPlayer player : this.level.getServer().getPlayerList().getPlayers())
+		{
+			if (!player.isSleeping())
+				allSleeping = false;
+		}
+		if (allSleeping)
+		{
+			if (this.speedRamp < 1000.0F)
+			{
+				this.setRequiresSync(SyncType.MOVEMENT);
+				this.speedRamp += 10.0F;
+			}
+		}
+		else
+		{
+			if (this.speedRamp > 0.0F)
+			{
+				this.setRequiresSync(SyncType.MOVEMENT);
+				this.speedRamp -= 50.0F;
+			}
+		}
+		this.speedRamp = Math.max(0.0F, this.speedRamp);
+	}
+	
+	@Override
+	protected float modifySpeed(float speed)
+	{
+		return speed + this.speedRamp;
 	}
 	
 	@Override
