@@ -27,6 +27,7 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 
+@Deprecated
 public class CloudRegionTextureGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudRegionTextureGenerator");
@@ -264,6 +265,7 @@ public class CloudRegionTextureGenerator
 		}
 	}
 	
+	@Deprecated
 	public static class BufferState
 	{
 		private final int textureSize;

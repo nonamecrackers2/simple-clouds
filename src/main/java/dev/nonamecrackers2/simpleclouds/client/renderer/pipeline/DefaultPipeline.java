@@ -150,7 +150,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 //		mc.getProfiler().push("clouds_debug");
 //		stack.pushPose();
 //		renderer.translateClouds(stack, camX, camY, camZ);
-//		SimpleCloudsRenderer.renderCloudsDebug(renderer.getMeshGenerator(), stack, projMat, partialTick, frustum, false, true);
+//		SimpleCloudsRenderer.renderCloudsDebug(renderer.getMeshGenerator(), stack, projMat, partialTick, renderer.getFogStart(), renderer.getFogEnd(), frustum, false, true);
 //		stack.popPose();
 //		mc.getProfiler().pop();
 	}

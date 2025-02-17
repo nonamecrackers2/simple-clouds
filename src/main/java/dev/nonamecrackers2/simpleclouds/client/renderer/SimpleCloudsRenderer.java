@@ -70,7 +70,6 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
 import net.minecraft.CrashReport;
@@ -97,17 +96,12 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.loading.ImmediateWindowHandler;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
-//TODO: Pass near and far plane to transparency shader for a fog effect
-//TODO: Configurable transparency render distance
-//TODO: Transparency render distance uniform in clouds_transparency.fsh to adjust weight function
 public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/SimpleCloudsRenderer");
 	private static final Vector3f DIFFUSE_LIGHT_0 = (new Vector3f(0.2F, 1.0F, -0.7F)).normalize();
 	private static final Vector3f DIFFUSE_LIGHT_1 = (new Vector3f(-0.2F, 1.0F, 0.7F)).normalize();
-//	private static final ResourceLocation WORLD_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/world_post.json");
 	private static final ResourceLocation STORM_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/storm_post.json");
-//	private static final ResourceLocation STORM_SHADOWS_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/storm_shadows.json");
 	private static final ResourceLocation BLUR_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/blur_post.json");
 	private static final ResourceLocation SCREEN_SPACE_WORLD_FOG_LOC = SimpleCloudsMod.id("shaders/post/screen_space_world_fog.json");
 	private static final ResourceLocation FINAL_COMPOSITE_LOC = SimpleCloudsMod.id("shaders/post/final_composite.json");
@@ -132,11 +126,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable RenderTarget stormFogTarget;
 	private @Nullable RenderTarget blurTarget;
 	private final Map<PostChain, Pair<Float, Float>> postChains = Maps.newHashMap();
-//	private @Nullable PostChain cloudsPostProcessing;
 	private @Nullable PostChain finalComposite;
-//	private @Nullable PostChain worldPostProcessing;
 	private @Nullable PostChain stormPostProcessing;
-//	private @Nullable PostChain stormShadowsProcessing;
 	private @Nullable PostChain blurPostProcessing;
 	private @Nullable PostChain screenSpaceWorldFog;
 	private @Nullable ShaderStorageBufferObject lightningBoltPositions;
@@ -277,6 +268,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		}
 		
 		LOGGER.debug("OpenGL {}", openGlVersion);
+		
+		Instant started = Instant.now();
+		
 		LOGGER.debug("Beginning Simple Clouds renderer initialization");
 		
 		this.failedToCopyDepthBuffer = false;
@@ -308,8 +302,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		// --- Mesh Generator ---
 		
-		Instant started = Instant.now();
-		
 		this.setupMeshGenerator(); // Create/setup the generator
 		this.prepareMeshGenerator(0.0F); // Prepare it
 		
@@ -320,12 +312,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		// --- Post Processing Shaders ---
 		
 		this.destroyPostChains();
-		
-//		this.cloudsPostProcessing = this.createPostChain(manager, CLOUD_POST_PROCESSING_LOC, this.cloudTarget, 1.0F, 1.0F);
-		
-//		this.worldPostProcessing = this.createPostChain(manager, WORLD_POST_PROCESSING_LOC, this.mc.getMainRenderTarget(), 1.0F, 1.0F, effect -> {
-//			effect.setSampler("ShadowMap", () -> this.shadowMapDepthTextureId);
-//		});
 		
 		if (this.lightningBoltPositions != null)
 		{
@@ -345,15 +331,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.lightningBoltPositions.optionalBindToProgram("LightningBolts", effect.getId());
 		});
 		
-//		this.stormShadowsProcessing = this.createPostChain(manager, STORM_SHADOWS_PROCESSING_LOC, this.mc.getMainRenderTarget(), 1.0F, 1.0F, pass -> 
-//		{
-//			EffectInstance effect = pass.getEffect();
-//			effect.setSampler("ShadowMap", () -> this.shadowMapDepthTextureId);
-//			effect.setSampler("ShadowMapColor", () -> this.shadowMapColorTextureId);
-//			effect.setSampler("DepthSampler", () -> this.cloudTarget.getDepthTextureId());
-//			this.lightningBoltPositions.optionalBindToProgram("LightningBolts", effect.getId());
-//		});
-//		
 		this.blurPostProcessing = this.createPostChain(manager, BLUR_POST_PROCESSING_LOC, this.blurTarget, 1.0F, 1.0F);
 		this.blurPostProcessing.getTempTarget("swap").setFilterMode(GL11.GL_LINEAR);
 		
@@ -476,10 +453,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 						mode == CloudMode.AMBIENT, 
 						shadedClouds,
 						lod, 
-						RegionTypes.VORONOI_DIAGRAM.get(), 
 						SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), 
-						useTransparency, 
-						new CloudType[] { SimpleCloudsConstants.FALLBACK }
+						useTransparency
 				);
 				if (mode == CloudMode.AMBIENT) //Enable the fade near origin when using AMBIENT
 					generator.setFadeDistances(SimpleCloudsConstants.AMBIENT_MODE_FADE_START, SimpleCloudsConstants.AMBIENT_MODE_FADE_END);
@@ -495,7 +470,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 						lod, 
 						SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), 
 						useTransparency,
-						SimpleCloudsConstants.FALLBACK
+						SimpleCloudsConstants.EMPTY
 				).setFadeDistances(fadeStart, fadeEnd);
 			}
 			else
@@ -506,12 +481,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		if (this.meshGenerator instanceof MultiRegionCloudMeshGenerator multiRegionGenerator)
 		{
-			CloudType[] cloudTypes = ClientSideCloudTypeManager.getInstance().getIndexedCloudTypes();
-			if (cloudTypes.length > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
-				LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
-			else
-				multiRegionGenerator.setCloudTypes(cloudTypes); //Set the cloud types using the synced, or client-side loaded ones, from ClientSideCloudTypeManager
-			multiRegionGenerator.setRegionGenerator(this.settings.getRegionGenerator()); //Set the region generator
+			if (this.mc.level != null)
+			{
+				CloudManager<ClientLevel> manager = CloudManager.get(this.mc.level);
+				multiRegionGenerator.setCloudGetter(manager);
+ 			}
 		}
 		else if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator singleRegionGenerator)
 		{
@@ -519,9 +493,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			//from the synced cloud types from the server
 			CloudType type = this.settings.getSingleModeCloudType();
 			if (!ClientCloudManager.isAvailableServerSide() && !ClientSideCloudTypeManager.isValidClientSideSingleModeCloudType(type))
-				type = SimpleCloudsConstants.FALLBACK;
+				type = SimpleCloudsConstants.EMPTY;
 			if (type == null)
-				type = SimpleCloudsConstants.FALLBACK;
+				type = SimpleCloudsConstants.EMPTY;
 			singleRegionGenerator.setCloudType(type);
 		}
 		else
@@ -940,7 +914,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			this.mc.getProfiler().push("mesh_generation");
 			this.prepareMeshGenerator(partialTick);
-			this.meshGenerator.genTick(originX, originY, originZ, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null);
+			this.meshGenerator.genTick(originX, originY, originZ, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null, partialTick);
 			this.mc.getProfiler().pop();
 		}
 		
@@ -1016,57 +990,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.depthMask(true);
 		}
 	}
-//	
-//	private void doWorldPostProcessing(PoseStack stack, PoseStack shadowMapStack, float partialTick, Matrix4f projMat, double camX, double camY, double camZ)
-//	{
-//		if (this.worldPostProcessing != null)
-//		{
-//			RenderSystem.disableDepthTest();
-//			RenderSystem.resetTextureMatrix();
-//			RenderSystem.disableBlend();
-//			
-//			Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
-//			Matrix4f invertedModelViewMat = new Matrix4f(stack.last().pose()).invert();
-//			for (PostPass pass : ((MixinPostChain)this.worldPostProcessing).simpleclouds$getPostPasses())
-//			{
-//				EffectInstance effect = pass.getEffect();
-//				effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
-//				effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
-//				effect.safeGetUniform("ShadowProjMat").set(this.shadowMapProjMat);
-//				effect.safeGetUniform("ShadowModelViewMat").set(shadowMapStack.last().pose());
-//				effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
-//				effect.setSampler("ShadowMap", () -> this.shadowMapDepthTextureId);
-//			}
-//			
-//			this.worldPostProcessing.process(partialTick);
-//		}
-//	}
-	
-//	public void doCloudPostProcessing(PoseStack stack, float partialTick, Matrix4f projMat)
-//	{
-//		if (this.cloudsPostProcessing != null)
-//		{
-//			RenderSystem.disableBlend();
-//			RenderSystem.disableDepthTest();
-//			RenderSystem.resetTextureMatrix();
-//			RenderSystem.depthMask(false);
-//			
-//			Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
-//			Matrix4f invertedModelViewMat = new Matrix4f(stack.last().pose()).invert();
-//			for (PostPass pass : ((MixinPostChain)this.cloudsPostProcessing).simpleclouds$getPostPasses())
-//			{
-//				EffectInstance effect = pass.getEffect();
-//				effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
-//				effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
-//				effect.safeGetUniform("FogStart").set(this.fogStart);
-//				effect.safeGetUniform("FogEnd").set(this.fogEnd);
-//			}
-//			
-//			this.cloudsPostProcessing.process(partialTick);
-//			
-//			RenderSystem.depthMask(true);
-//		}
-//	}
 	
 	public void doFinalCompositePass(PoseStack stack, float partialTick, Matrix4f projMat)
 	{
@@ -1152,35 +1075,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.depthMask(true);
 		}
 	}
-//	
-//	public void doStormShadowProcessing(PoseStack stack, PoseStack shadowMapStack, float partialTick, Matrix4f projMat, double camX, double camY, double camZ, float r, float g, float b)
-//	{
-//		if (this.stormShadowsProcessing != null)
-//		{
-//			RenderSystem.disableBlend();
-//			RenderSystem.disableDepthTest();
-//			RenderSystem.resetTextureMatrix();
-//			RenderSystem.depthMask(false);
-//			
-//			Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
-//			Matrix4f invertedModelViewMat = new Matrix4f(stack.last().pose()).invert();
-//			for (PostPass pass : ((MixinPostChain)this.stormShadowsProcessing).simpleclouds$getPostPasses())
-//			{
-//				EffectInstance effect = pass.getEffect();
-//				effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
-//				effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
-//				effect.safeGetUniform("ShadowProjMat").set(this.shadowMapProjMat);
-//				effect.safeGetUniform("ShadowModelViewMat").set(shadowMapStack.last().pose());
-//				effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
-//				effect.safeGetUniform("ColorModulator").set(r, g, b, 1.0F);
-//				effect.safeGetUniform("TotalLightningBolts").set(0);
-//			}
-//			
-//			this.stormShadowsProcessing.process(partialTick);
-//			
-//			RenderSystem.depthMask(true);
-//		}
-//	}
 	
 	public static void prepareShader(ShaderInstance shader, Matrix4f modelView, Matrix4f projMat, float fogStart, float fogEnd)
 	{

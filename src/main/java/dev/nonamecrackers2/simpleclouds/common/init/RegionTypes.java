@@ -8,6 +8,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
+@Deprecated
 public class RegionTypes
 {
 	private static final DeferredRegister<RegionType> REGION_TYPES = DeferredRegister.create(SimpleCloudsRegistries.REGION_TYPES, SimpleCloudsMod.MODID);

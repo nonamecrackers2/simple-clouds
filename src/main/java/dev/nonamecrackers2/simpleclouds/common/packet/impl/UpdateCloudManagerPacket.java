@@ -5,6 +5,7 @@ import org.joml.Vector3f;
 import dev.nonamecrackers2.simpleclouds.client.packet.SimpleCloudsClientPacketHandler;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.network.NetworkEvent;
 import nonamecrackers2.crackerslib.common.packet.Packet;
 
@@ -17,7 +18,7 @@ public class UpdateCloudManagerPacket extends Packet
 	public float scrollZ;
 	public int cloudHeight;
 	
-	public UpdateCloudManagerPacket(CloudManager<?> manager)
+	public UpdateCloudManagerPacket(CloudManager<ServerLevel> manager)
 	{
 		super(true);
 		this.direction = manager.getDirection();

@@ -2,15 +2,16 @@ package dev.nonamecrackers2.simpleclouds.common.cloud;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
-import dev.nonamecrackers2.simpleclouds.common.noise.StaticNoiseSettings;
+import dev.nonamecrackers2.simpleclouds.common.noise.StaticLayeredNoise;
 
 public class SimpleCloudsConstants
 {
 	//General
-	public static final CloudType FALLBACK = new CloudType(SimpleCloudsMod.id("fallback"), WeatherType.NONE, 0.0F, 16.0F, 32.0F, 1.0F, StaticNoiseSettings.DEFAULT);
+	public static final CloudType EMPTY = new CloudType(SimpleCloudsMod.id("empty"), WeatherType.NONE, 0.0F, 0.0F, 0.0F, 0.0F, StaticLayeredNoise.EMPTY);
 	public static final int CLOUD_SCALE = 8;
 	public static final int CHUNK_SIZE = 32;
-	public static final float REGION_SCALE = 2000.0F;
+	public static final float REGION_EDGE_FADE_FACTOR = 0.005F;
+	public static final int MAX_CLOUD_FORMATIONS = 4;
 	//Weather
 	public static final float RAIN_THRESHOLD = 0.7F; // higher values means you have to be further into the clouds to experience rain
 	public static final float RAIN_FADE = 0.1F;

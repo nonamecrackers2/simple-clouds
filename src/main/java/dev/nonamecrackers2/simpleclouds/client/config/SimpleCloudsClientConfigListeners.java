@@ -57,7 +57,7 @@ public class SimpleCloudsClientConfigListeners
 			ClientSideCloudTypeManager.getInstance().getCloudTypeFromRawId(type).ifPresentOrElse(t -> {
 				generator.setCloudType(t);
 			}, () -> {
-				generator.setCloudType(SimpleCloudsConstants.FALLBACK);
+				generator.setCloudType(SimpleCloudsConstants.EMPTY);
 			});
 		}
 	}

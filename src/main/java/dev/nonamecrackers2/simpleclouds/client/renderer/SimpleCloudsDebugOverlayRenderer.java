@@ -13,7 +13,6 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
-import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.CloudRegionTextureGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import net.minecraft.client.gui.GuiGraphics;
@@ -45,12 +44,12 @@ public class SimpleCloudsDebugOverlayRenderer
 					int lod = meshGenerator.getLodConfig().getLods().length;
 					shader.safeGetUniform("LodLevel").set(lod);
 					shader.safeGetUniform("TotalCloudTypes").set(meshGenerator.getTotalCloudTypes());
-					CloudRegionTextureGenerator regionGenerator = meshGenerator.getCloudRegionTextureGenerator();
-					if (regionGenerator != null)
-					{
-						int size = regionGenerator.getTextureSize();
-						shader.safeGetUniform("Align").set(regionGenerator.getTexCoordOffsetX(lod) / (float)size, regionGenerator.getTexCoordOffsetZ(lod) / (float)size);
-					}
+//					CloudRegionTextureGenerator regionGenerator = meshGenerator.getCloudRegionTextureGenerator();
+//					if (regionGenerator != null)
+//					{
+//						int size = regionGenerator.getTextureSize();
+//						shader.safeGetUniform("Align").set(regionGenerator.getTexCoordOffsetX(lod) / (float)size, regionGenerator.getTexCoordOffsetZ(lod) / (float)size);
+//					}
 					ProgramManager.glUseProgram(shader.getId());
 					int loc = Uniform.glGetUniformLocation(shader.getId(), "TexRegionSampler");
 					Uniform.uploadInteger(loc, 0);

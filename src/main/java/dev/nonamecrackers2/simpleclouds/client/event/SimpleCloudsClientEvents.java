@@ -26,9 +26,7 @@ import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.client.world.FogRenderMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
-import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -237,13 +235,13 @@ public class SimpleCloudsClientEvents
 					if (singleGenerator.getCloudType() instanceof CloudType type)
 						text.add("Cloud type: " + type.id());
 				}
-				else if (generator instanceof MultiRegionCloudMeshGenerator multiRegionGenerator)
+				else if (generator instanceof MultiRegionCloudMeshGenerator)
 				{
-					RegionType regionGenerator = multiRegionGenerator.getRegionGenerator();
-					if (regionGenerator != null)
-						text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(regionGenerator));
-					else
-						text.add("Region generator: NONE");
+//					RegionType regionGenerator = multiRegionGenerator.getRegionGenerator();
+//					if (regionGenerator != null)
+//						text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(regionGenerator));
+//					else
+//						text.add("Region generator: NONE");
 					text.add("Cloud types: " + ClientSideCloudTypeManager.getInstance().getCloudTypes().size());
 				}
 				

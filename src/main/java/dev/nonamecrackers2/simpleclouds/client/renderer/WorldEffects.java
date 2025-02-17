@@ -84,7 +84,7 @@ public class WorldEffects
 	public void renderPost(PoseStack stack, float partialTick, double camX, double camY, double camZ, float scale)
 	{
 		CloudManager<ClientLevel> manager = CloudManager.get(this.mc.level);
-		Pair<CloudType, Float> result = manager.getCloudTypeAtPosition((float)camX, (float)camZ);
+		Pair<CloudType, Float> result = manager.getCloudTypeAtWorldPos((float)camX, (float)camZ);
 		CloudType type = result.getLeft();
 		this.typeAtCamera = type;
 		this.fadeAtCamera = result.getRight();

@@ -12,9 +12,7 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
-import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -63,16 +61,6 @@ public abstract class CloudsRendererSettings
 				rawId = "simpleclouds:itty_bitty";
 			return ClientSideCloudTypeManager.getInstance().getCloudTypeFromRawId(rawId).orElse(null);
 		}
-		
-		@Override
-		public RegionType getRegionGenerator()
-		{
-			ClientLevel level = Minecraft.getInstance().level;
-			if (level != null)
-				return CloudManager.get(level).getRegionGenerator();
-			else
-				return RegionTypes.VORONOI_DIAGRAM.get();
-		}
 	};
 	
 	private @Nullable CloudMode currentCloudMode;
@@ -87,8 +75,6 @@ public abstract class CloudsRendererSettings
 	public abstract LevelOfDetailOptions getLodConfig();
 	
 	public abstract @Nullable CloudType getSingleModeCloudType();
-	
-	public abstract RegionType getRegionGenerator();
 	
 	public boolean needsReinitialization(@Nullable CloudMeshGenerator generator)
 	{

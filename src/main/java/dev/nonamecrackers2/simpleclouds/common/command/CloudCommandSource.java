@@ -41,7 +41,7 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		
 		public void onValueUpdated(ServerCloudManager cloudManager, SyncType sync)
 		{
-			cloudManager.setRequiresSync(sync);
+			cloudManager.queueSync(sync);
 		}
 	};
 	

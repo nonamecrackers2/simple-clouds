@@ -65,7 +65,6 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 		RenderTarget transparencyTarget = renderer.getCloudTransparencyTarget();
 		transparencyTarget.clear(Minecraft.ON_OSX);
 		
-		//TODO: Not using api
 		GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, dhFbo);
 		GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, ((MixinRenderTargetAccessor)cloudTarget).simpleclouds$getFrameBufferId());
 		GL30.glBlitFramebuffer(0, 0, cloudTarget.width, cloudTarget.height, 0, 0, cloudTarget.width, cloudTarget.height, GL11.GL_DEPTH_BUFFER_BIT, GL11.GL_NEAREST);

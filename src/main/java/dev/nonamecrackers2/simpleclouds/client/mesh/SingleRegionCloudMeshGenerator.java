@@ -2,7 +2,6 @@ package dev.nonamecrackers2.simpleclouds.client.mesh;
 
 import javax.annotation.Nullable;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.lwjgl.opengl.GL15;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
@@ -25,10 +24,14 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	}
 	
 	@Override
-	protected Pair<Integer, Integer> determineMinimumAndMaximimumGenHeightsAt(float minX, float minZ, float maxX, float maxZ)
+	protected CloudMeshGenerator.ChunkGenSettings determineChunkGenSettings(float minX, float minZ, float maxX, float maxZ)
 	{
 		NoiseSettings config = this.type.noiseConfig();
-		return Pair.of(config.getStartHeight(), config.getEndHeight());
+		int startHeight = config.getStartHeight();
+		int endHeight = config.getEndHeight();
+//		if (startHeight == endHeight)
+//			return skip();
+		return heights(startHeight, endHeight);
 	}
 	
 	public CloudInfo getCloudType()
@@ -74,7 +77,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	}
 	
 	@Override
-	protected int prepareMeshGen(double originX, double originY, double originZ, float meshGenOffsetX, float meshGenOffsetZ, @Nullable Frustum frustum, int interval)
+	protected int prepareMeshGen(double originX, double originY, double originZ, float meshGenOffsetX, float meshGenOffsetZ, @Nullable Frustum frustum, int interval, float partialTick)
 	{
 		if (this.needsNoiseRefreshing)
 		{
@@ -82,7 +85,7 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 			this.needsNoiseRefreshing = false;
 		}
 		
-		return super.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, interval);
+		return super.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, interval, partialTick);
 	}
 	
 	@Override

@@ -10,6 +10,7 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudRegionsPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
@@ -49,7 +50,7 @@ public class SimpleCloudsClientPacketHandler
 		CloudManager<ClientLevel> manager = CloudManager.get(mc.level);
 		handleUpdateCloudManagerPacket(packet, manager);
 		manager.setSeed(packet.seed);
-		manager.setRegionGenerator(packet.type);
+		manager.getCloudGenerator().setClouds(packet.cloudRegions);
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
 		if (SimpleCloudsConfig.SERVER_SPEC.isLoaded())
 		{
@@ -66,6 +67,14 @@ public class SimpleCloudsClientPacketHandler
 		LOGGER.debug("Received cloud manager info");
 	}
 	
+	public static void handleSendCloudRegionsPacket(SendCloudRegionsPacket packet)
+	{
+		Minecraft mc = Minecraft.getInstance();
+		CloudManager<ClientLevel> manager = CloudManager.get(mc.level);
+		manager.getCloudGenerator().setClouds(packet.cloudRegions);
+		System.out.println("received");
+	}
+	
 	public static void handleCloudTypesPacket(SendCloudTypesPacket packet)
 	{
 		LOGGER.debug("Received {} synced cloud types", packet.types.size());
@@ -75,7 +84,7 @@ public class SimpleCloudsClientPacketHandler
 			if (packet.types.size() > MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES)
 				LOGGER.warn("The amount of loaded cloud types exceeds the maximum of {}. Please be aware that not all cloud types loaded will be used.", MultiRegionCloudMeshGenerator.MAX_CLOUD_TYPES);
 			else
-				meshGenerator.setCloudTypes(packet.indexed);
+				meshGenerator.updateCloudTypes();
 		}
 	}
 	

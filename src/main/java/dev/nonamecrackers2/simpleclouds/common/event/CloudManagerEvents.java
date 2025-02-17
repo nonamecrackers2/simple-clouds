@@ -2,10 +2,12 @@ package dev.nonamecrackers2.simpleclouds.common.event;
 
 import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacket;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudRegionsPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.ServerCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.SyncType;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.event.TickEvent;
@@ -25,19 +27,24 @@ public class CloudManagerEvents
 			manager.tick();
 			if (!level.isClientSide && manager instanceof ServerCloudManager serverManager)
 			{
-				SyncType syncType = serverManager.getAndResetSync();
-				if (syncType != SyncType.NONE)
+				SyncType syncType = serverManager.fetchNextSyncOperation();
+				if (syncType != null)
 				{
 					switch (syncType)
 					{
 					case BASE_PROPERTIES:
 					{
-						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new SendCloudManagerPacket(manager));
+						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new SendCloudManagerPacket(serverManager));
 						break;
 					}
 					case MOVEMENT:
 					{
-						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new UpdateCloudManagerPacket(manager));
+						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new UpdateCloudManagerPacket(serverManager));
+						break;
+					}
+					case CLOUD_FORMATIONS:
+					{
+						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new SendCloudRegionsPacket(serverManager));
 						break;
 					}
 					default:
@@ -46,7 +53,7 @@ public class CloudManagerEvents
 				}
 				else if (manager.getTickCount() % CloudManager.UPDATE_INTERVAL == 0)
 				{
-					SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new UpdateCloudManagerPacket(manager));
+					SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new UpdateCloudManagerPacket(serverManager));
 				}
 			}
 		}
@@ -75,6 +82,6 @@ public class CloudManagerEvents
 	
 	private static void update(ServerPlayer player)
 	{
-		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.PLAYER.with(() -> player), new SendCloudManagerPacket(CloudManager.get(player.level())));
+		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.PLAYER.with(() -> player), new SendCloudManagerPacket(CloudManager.get((ServerLevel)player.level())));
 	}
 }

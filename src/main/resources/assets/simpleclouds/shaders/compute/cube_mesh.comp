@@ -222,7 +222,7 @@ bool isPosValid(float x, float y, float z, int nx, int nz)
     vec4 info = texture(RegionsSampler, vec3(texelCoord / RegionsTexSize, float(LodLevel)));
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
-    float fade = -5.0 * pow(info.g, 10.0);
+    float fade = -5.0 * pow(1.0 - info.g, 10.0);
 #if FADE_NEAR_ORIGIN == 1
     float len = distance(vec2(x, z), Origin.xz);
 	fade = min(fade, -5.0 * (1.0 - min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0)));
@@ -337,7 +337,7 @@ void main()
     vec4 info = texture(RegionsSampler, vec3(texelCoord / RegionsTexSize, float(LodLevel)));
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
-    float fade = -5.0 * pow(info.g, 10.0);
+    float fade = -5.0 * pow(1.0 - info.g, 10.0);
 #if FADE_NEAR_ORIGIN == 1
     float len = distance(vec2(x, z), Origin.xz);
 	fade = min(fade, -5.0 * (1.0 - min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0)));

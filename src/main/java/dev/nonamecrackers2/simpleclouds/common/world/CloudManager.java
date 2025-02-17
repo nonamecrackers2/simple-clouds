@@ -1,5 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.common.world;
 
+import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -12,10 +13,11 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
-import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGenerator;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGetter;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
 import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -24,7 +26,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 
-public abstract class CloudManager<T extends Level> implements CloudTypeSource
+public abstract class CloudManager<T extends Level> implements CloudGetter
 {
 	public static final int CLOUD_HEIGHT_MAX = 2048;
 	public static final int CLOUD_HEIGHT_MIN = 0;
@@ -32,7 +34,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 	public static final float RANDOM_SPREAD = 10000.0F;
 	protected final T level;
 	protected final CloudTypeSource cloudSource;
-	private RegionType regionGenerator = RegionTypes.VORONOI_DIAGRAM.get();
+	protected final CloudGenerator cloudGenerator;
 	private long seed;
 	protected @Nullable RandomSource random;
 	protected float scrollXO;
@@ -58,6 +60,20 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 	{
 		this.level = level;
 		this.cloudSource = source;
+		this.cloudGenerator = this.createCloudGenerator();
+	}
+	
+	protected abstract CloudGenerator createCloudGenerator();
+	
+	public CloudGenerator getCloudGenerator()
+	{
+		return this.cloudGenerator;
+	}
+	
+	@Override
+	public List<CloudRegion> getClouds()
+	{
+		return this.cloudGenerator.getClouds();
 	}
 	
 	@Override
@@ -72,17 +88,18 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 		return this.cloudSource.getIndexedCloudTypes();
 	}
 	
+	@Override
 	public Pair<CloudType, Float> getCloudTypeAtPosition(float x, float z)
 	{
 		if (this.getCloudMode() != CloudMode.SINGLE)
 		{
-			CloudType[] types = this.getIndexedCloudTypes();
-			float posX = this.scrollX + x / (float)SimpleCloudsConstants.CLOUD_SCALE;
-			float posZ = this.scrollZ + z / (float)SimpleCloudsConstants.CLOUD_SCALE;
-			var result = this.getRegionGenerator().getCloudTypeIndexAt(posX, posZ, SimpleCloudsConstants.REGION_SCALE, types.length);
-			if (result.index() < 0 || result.index() >= types.length)
-				throw new IndexOutOfBoundsException("Region type generator sent an invalid index: " + result.index());
-			return Pair.of(types[result.index()], result.fade());
+			Pair<CloudRegion, Float> result = CloudRegion.calculateAt(this.getClouds(), x, z);
+			CloudType type = null;
+			if (result.getLeft() != null)
+				type = this.getCloudTypeForId(result.getLeft().getCloudTypeId());
+			if (type == null)
+				type = SimpleCloudsConstants.EMPTY;
+			return Pair.of(type, 1.0F - result.getRight());
 		}
 		else
 		{
@@ -94,7 +111,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 				if (type != null)
 					return Pair.of(type, 0.0F);
 			}
-			return Pair.of(SimpleCloudsConstants.FALLBACK, 0.0F);
+			return Pair.of(SimpleCloudsConstants.EMPTY, 0.0F);
 		}
 	}
 	
@@ -106,7 +123,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 		if (this.level.getBiome(pos).value().getPrecipitationAt(pos) != Biome.Precipitation.RAIN)
 			return false;
 		
-		var info = this.getCloudTypeAtPosition((float)pos.getX() + 0.5F, (float)pos.getZ() + 0.5F);
+		var info = this.getCloudTypeAtWorldPos((float)pos.getX() + 0.5F, (float)pos.getZ() + 0.5F);
 		CloudType type = info.getLeft();
 		if ((float)pos.getY() + 0.5F > type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 128.0F)
 			return false;
@@ -119,7 +136,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 	
 	public float getRainLevel(float x, float y, float z)
 	{
-		var info = this.getCloudTypeAtPosition(x, z);
+		var info = this.getCloudTypeAtWorldPos(x, z);
 		CloudType type = info.getLeft();
 		
 		if (!type.weatherType().includesRain())
@@ -128,16 +145,6 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 		float fade = info.getRight();
 		float verticalFade = 1.0F - Mth.clamp((y - (type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + this.getCloudHeight())) / SimpleCloudsConstants.RAIN_VERTICAL_FADE, 0.0F, 1.0F);
 		return Math.min(1.0F, Math.max(0.0F, SimpleCloudsConstants.RAIN_THRESHOLD - fade) / SimpleCloudsConstants.RAIN_FADE) * verticalFade;
-	}
-	
-	public void setRegionGenerator(RegionType type)
-	{
-		this.regionGenerator = type;
-	}
-	
-	public RegionType getRegionGenerator()
-	{
-		return this.regionGenerator;
 	}
 
 	public void init(long seed)
@@ -149,6 +156,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 		this.scrollY = (random.nextFloat() * 2.0F - 1.0F) * RANDOM_SPREAD;
 		this.scrollZ = (random.nextFloat() * 2.0F - 1.0F) * RANDOM_SPREAD;
 		this.speed = 1.0F;
+		this.cloudGenerator.initialize(random, this.level);
 	}
 	
 	public int getCloudHeight()
@@ -164,6 +172,9 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 	public void tick()
 	{
 		this.tickCount++;
+
+		if (this.getCloudMode() != CloudMode.SINGLE)
+			this.cloudGenerator.tick(this.random, this.level);
 		
 		this.scrollXO = this.scrollX;
 		this.scrollYO = this.scrollY;
@@ -218,7 +229,7 @@ public abstract class CloudManager<T extends Level> implements CloudTypeSource
 	
 	public void spawnLightning(int x, int z, boolean soundOnly)
 	{
-		var info = this.getCloudTypeAtPosition((float)x + 0.5F, (float)z + 0.5f);
+		var info = this.getCloudTypeAtWorldPos((float)x + 0.5F, (float)z + 0.5f);
 		this.spawnLightning(info.getLeft(), info.getRight(), x, z, soundOnly);
 	}
 	

@@ -13,7 +13,6 @@ import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfigListener
 import dev.nonamecrackers2.simpleclouds.common.event.CloudManagerEvents;
 import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsDataEvents;
 import dev.nonamecrackers2.simpleclouds.common.event.SimpleCloudsEvents;
-import dev.nonamecrackers2.simpleclouds.common.init.RegionTypes;
 import dev.nonamecrackers2.simpleclouds.common.init.SimpleCloudsSounds;
 import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
 import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
@@ -48,7 +47,6 @@ public class SimpleCloudsMod
 		modBus.addListener(this::clientInit);
 		modBus.addListener(this::commonInit);
 		modBus.addListener(SimpleCloudsRegistries::registerRegistries);
-		RegionTypes.register(modBus);
 		SimpleCloudsSounds.register(modBus);
 		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
 			modBus.addListener(SimpleCloudsClientEvents::registerReloadListeners);

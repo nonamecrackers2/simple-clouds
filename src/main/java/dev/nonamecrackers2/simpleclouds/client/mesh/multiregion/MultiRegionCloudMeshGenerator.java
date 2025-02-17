@@ -1,119 +1,87 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh.multiregion;
 
+import java.io.IOException;
+import java.nio.IntBuffer;
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL41;
+import org.lwjgl.opengl.GL42;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
+import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetail;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
+import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
+import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
-import dev.nonamecrackers2.simpleclouds.common.cloud.region.RegionType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGetter;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
-import dev.nonamecrackers2.simpleclouds.common.registry.SimpleCloudsRegistries;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");
+	private static final ResourceLocation REGION_GENERATOR_LOC = SimpleCloudsMod.id("cloud_regions");
+	private static final String LOD_SCALES_NAME = "LodScales";
+	private static final String CLOUD_REGIONS_NAME = "CloudRegions";
 	public static final int MAX_CLOUD_TYPES = 32;
+	private static final int BYTES_PER_REGION = 16;
 	private int requiredRegionTexSize;
-	private CloudInfo[] cloudTypes;
-	private RegionType regionGenerator;
-	private @Nullable CloudRegionTextureGenerator regionTextureGenerator;
-	private boolean cloudTypesModified;
-	private boolean regionGeneratorChanged;
-	private @Nullable float[] currentRegionAlignX;
-	private @Nullable float[] currentRegionAlignZ;
+	private CloudGetter cloudGetter = CloudGetter.EMPTY;
+	private CloudInfo[] cachedTypes = new CloudInfo[0];
+	private @Nullable ComputeShader regionTextureGenerator;
+	private int cloudRegionTextureId = -1;
+	private int cloudRegionImageBinding = -1;
+	private boolean updateCloudTypes;
 	
-	public MultiRegionCloudMeshGenerator(boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, RegionType regionGenerator, int meshGenInterval, boolean useTransparency, CloudInfo[] cloudTypes)
+	public MultiRegionCloudMeshGenerator(boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency)
 	{
 		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 0, fadeNearOrigin, shadedClouds, lodConfig, meshGenInterval, useTransparency);
-		this.setCloudTypes(cloudTypes);
-		this.regionGenerator = regionGenerator;
 	}
 	
-	@Override
-	protected Pair<Integer, Integer> determineMinimumAndMaximimumGenHeightsAt(float minX, float minZ, float maxX, float maxZ)
+	public void setCloudGetter(CloudGetter getter)
 	{
-		float[][] positions = new float[][] { {minX, minZ}, {minX, maxZ}, {maxX, minZ}, {maxX, maxZ} };
-		int smallestStartHeight = 0;
-		int largestEndHeight = 0;
-		for (int i = 0; i < positions.length; i++)
-		{
-			float[] pos = positions[i];
-			float x = pos[0] + this.scrollX;
-			float z = pos[1] + this.scrollZ;
-			RegionType.Result result = this.regionGenerator.getCloudTypeIndexAt(x, z, SimpleCloudsConstants.REGION_SCALE, this.cloudTypes.length);
-			CloudInfo type = this.cloudTypes[result.index()];
-			NoiseSettings config = type.noiseConfig();
-			int startHeight = config.getStartHeight();
-			int endHeight = config.getEndHeight();
-			if (i == 0 || smallestStartHeight > startHeight)
-				smallestStartHeight = startHeight;
-			if (i == 0 || largestEndHeight < endHeight)
-				largestEndHeight = endHeight;
-		}
-		return Pair.of(smallestStartHeight, largestEndHeight);
+		this.cloudGetter = getter;
+		this.updateCloudTypes();
 	}
 
-	public CloudInfo[] getCloudTypes()
+	
+	public int getCloudRegionTextureId()
 	{
-		return this.cloudTypes;
+		return this.cloudRegionTextureId;
+	}
+	
+	public void updateCloudTypes()
+	{
+		this.updateCloudTypes = true;
 	}
 	
 	public int getTotalCloudTypes()
 	{
-		return this.cloudTypes.length;
-	}
-	
-	public void setCloudTypes(CloudInfo[] cloudTypes)
-	{
-		Objects.requireNonNull(cloudTypes, "Cloud types cannot be null");
-		if (cloudTypes.length > MAX_CLOUD_TYPES)
-			throw new IllegalArgumentException("Too many cloud types! The maximum allowed is " + MAX_CLOUD_TYPES);
-		if (!Arrays.equals(this.cloudTypes, cloudTypes))
-		{
-			this.cloudTypes = cloudTypes;
-			this.cloudTypesModified = true;
-		}
-	}
-	
-	public RegionType getRegionGenerator()
-	{
-		return this.regionGenerator;
-	}
-	
-	public void setRegionGenerator(RegionType generator)
-	{
-		if (this.regionGenerator != generator)
-		{
-			this.regionGenerator = generator;
-			this.regionGeneratorChanged = true;
-		}
-	}
-	
-	@Override
-	public void close()
-	{
-		super.close();
-		
-		this.closeRegionGenerator();
+		return this.cachedTypes.length;
 	}
 	
 	@Override
@@ -121,52 +89,125 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	{
 		super.setupShader();
 		
+		this.cachedTypes = new CloudInfo[0];
+		this.updateCloudTypes = false;
+		
 		this.shader.bindShaderStorageBuffer(NOISE_LAYERS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * MAX_CLOUD_TYPES);
 		this.shader.bindShaderStorageBuffer(LAYER_GROUPINGS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(CloudInfo.BYTES_PER_TYPE * MAX_CLOUD_TYPES);
 		
-		this.uploadNoiseData();
-		this.cloudTypesModified = false;
-		this.regionGeneratorChanged = false;
-		this.setupOrReinitializeRegionGenerator();
+		this.uploadCloudTypeData();
 	}
 	
-	private void closeRegionGenerator()
+	@Override
+	protected void initExtra(ResourceManager manager) throws IOException
 	{
+		// Cloud region texture generator compute shader
+		// This texture is a 2D array texture, with a texture for each level of detail.
+		// The red channel contains the index for a cloud type in the main mesh compute shader, and
+		// the green channel contains an "edge fade" value for smooth cloud region boundaries.
+		// When generating the cloud mesh, the main mesh compute shader samples this array texture
+		// depending on what LOD it is generating for to determine what cloud type to construct
+		
+		// Create the compute shader
+		
 		if (this.regionTextureGenerator != null)
-		{
 			this.regionTextureGenerator.close();
-			this.regionTextureGenerator = null;
-		}
-	}
-	
-	private void setupOrReinitializeRegionGenerator()
-	{
-		RenderSystem.assertOnRenderThreadOrInit();
-	
-		int requiredRegionTexSize = this.lodConfig.getPrimaryChunkSpan();
+		
+		var params = ImmutableMap.of("EDGE_FADE_FACTOR", String.valueOf(SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR));
+		this.regionTextureGenerator = ComputeShader.loadShader(REGION_GENERATOR_LOC, manager, 16, 16, this.lodConfig.getLods().length + 1, params);
+		
+		ShaderStorageBufferObject lodScales = this.regionTextureGenerator.bindShaderStorageBuffer(LOD_SCALES_NAME, GL15.GL_STATIC_READ);
+		int lodScalesSize = this.lodConfig.getLods().length * 4 + 4;
+		lodScales.allocateBuffer(lodScalesSize);
+		lodScales.writeData(b -> {
+			b.putFloat(1.0F); // Primary chunk scale
+			for (LevelOfDetail l : this.lodConfig.getLods())
+				b.putFloat((float)l.chunkScale());
+			b.rewind();
+		}, lodScalesSize);
+		
+		// Data for the cloud regions in world
+		this.regionTextureGenerator.bindShaderStorageBuffer(CLOUD_REGIONS_NAME, GL15.GL_STATIC_READ).allocateBuffer(SimpleCloudsConstants.MAX_CLOUD_FORMATIONS * BYTES_PER_REGION);
+
+		// Create the cloud region 2D array texture
+		
+		// Here we calculate the maximum size we need for this array texture,
+		// ensuring each block in the mesh will have a value to read in this texture
+		// when doing mesh generation
+		int prevSpan = this.lodConfig.getPrimaryChunkSpan();
+		int prevScale = 1;
+		int largestSpan = prevSpan;
 		for (LevelOfDetail config : this.lodConfig.getLods())
-			requiredRegionTexSize += config.spread() * 2;
-		this.requiredRegionTexSize = requiredRegionTexSize * SimpleCloudsConstants.CHUNK_SIZE;
+		{
+			int scale = config.chunkScale();
+			int div = scale / prevScale;
+			prevScale = scale;
+			prevSpan = prevSpan / div + config.spread() * 2;
+			if (prevSpan > largestSpan)
+				largestSpan = prevSpan;
+		}
+		this.requiredRegionTexSize = largestSpan * SimpleCloudsConstants.CHUNK_SIZE;
 		
-		this.closeRegionGenerator();
+		if (this.cloudRegionTextureId != -1)
+		{
+			TextureUtil.releaseTextureId(this.cloudRegionTextureId);
+			this.cloudRegionTextureId = -1;
+		}
 		
-		this.regionTextureGenerator = new CloudRegionTextureGenerator(this.lodConfig, this.cloudTypes, this.requiredRegionTexSize, SimpleCloudsConstants.REGION_SCALE, this.regionGenerator);
-		if (this.shader != null)
-			this.updateCloudRegionTextureInfoOnMeshShader();
+		this.cloudRegionTextureId = TextureUtil.generateTextureId();
+		GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, this.cloudRegionTextureId);
+		GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
+		GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+		GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+		GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+		GL12.glTexImage3D(GL30.GL_TEXTURE_2D_ARRAY, 0, GL30.GL_RG32F, this.requiredRegionTexSize, this.requiredRegionTexSize, this.lodConfig.getLods().length + 1, 0, GL30.GL_RG, GL11.GL_FLOAT, (IntBuffer)null);
+		GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, 0);
 		
-		int layers = this.lodConfig.getLods().length;
-		this.currentRegionAlignX = new float[layers + 1];
-		this.currentRegionAlignZ = new float[layers + 1];
+		// Assign an image unit to it so any shader can access it
+		if (this.cloudRegionImageBinding != -1)
+			ComputeShader.freeImageUnit(this.cloudRegionImageBinding);
+		this.cloudRegionImageBinding = ComputeShader.getAndUseImageUnit();
+		GL42.glBindImageTexture(this.cloudRegionImageBinding, this.cloudRegionTextureId, 0, false, 0, GL15.GL_WRITE_ONLY, GL30.GL_RG32F);
+		this.regionTextureGenerator.setImageUnit("regionTexture", this.cloudRegionImageBinding);
+		
+		this.runRegionGenerator(0.0F, 0.0F, 1.0F);
+		
+		// Update the main mesh shader to use this texture
+		this.shader.setSampler2DArray("RegionsSampler", this.cloudRegionTextureId, 0);
+		this.shader.forUniform("RegionsTexSize", (id, loc) -> {
+			GL41.glProgramUniform1i(id, loc, this.requiredRegionTexSize);
+		});
 		
 		LOGGER.debug("Created cloud region texture generator with size {}x{}x{}", this.requiredRegionTexSize, this.requiredRegionTexSize, this.lodConfig.getLods().length + 1);
 	}
 	
-	private void updateCloudRegionTextureInfoOnMeshShader()
+	@Override
+	protected CloudMeshGenerator.ChunkGenSettings determineChunkGenSettings(float minX, float minZ, float maxX, float maxZ)
 	{
-		this.shader.setSampler2DArray("RegionsSampler", this.regionTextureGenerator.getAvailableRegionTextureId(), 0);
-		this.shader.forUniform("RegionsTexSize", (id, loc) -> {
-			GL41.glProgramUniform1i(id, loc, this.requiredRegionTexSize);
-		});
+		float[][] positions = new float[][] { {minX, minZ}, {minX, maxZ}, {maxX, minZ}, {maxX, maxZ} };
+		int smallestStartHeight = 0;
+		int largestEndHeight = 0;
+		boolean empty = true;
+		for (int i = 0; i < positions.length; i++)
+		{
+			float[] pos = positions[i];
+			Pair<CloudType, Float> typeAt = this.cloudGetter.getCloudTypeAtPosition(pos[0], pos[1]);
+			if (typeAt.getRight() < 1.0F)
+				empty = false;
+			NoiseSettings config = typeAt.getLeft().noiseConfig();
+			int startHeight = config.getStartHeight();
+			int endHeight = config.getEndHeight();
+			if (i == 0 || smallestStartHeight > startHeight)
+				smallestStartHeight = startHeight;
+			if (i == 0 || largestEndHeight < endHeight)
+				largestEndHeight = endHeight;
+		}
+		//TODO: If clouds move super fast, old chunks wont get cleared when they should be empty
+		//Will try to make this work later on (also for single cloud mesh generator as well)
+//		if (empty || smallestStartHeight == largestEndHeight)
+//			return skip();
+//		else
+			return heights(smallestStartHeight, largestEndHeight);
 	}
 	
 	@Override
@@ -175,103 +216,152 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		this.shader.forUniform("RegionSampleOffset", (id, loc) -> 
 		{
 			PreparedChunk chunk = task.chunk().getChunkInfo();
-			int lodLevel = chunk.lodLevel();
-			float alignX = this.currentRegionAlignX[lodLevel];
-			float alignZ = this.currentRegionAlignZ[lodLevel];
-			GL41.glProgramUniform2f(id, loc, chunk.x() * (float)SimpleCloudsConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F + alignX, chunk.z() * (float)SimpleCloudsConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F + alignZ);
+			GL41.glProgramUniform2f(id, loc, chunk.x() * (float)SimpleCloudsConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F, chunk.z() * (float)SimpleCloudsConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F);
 		});
 		
 		super.generateChunk(task);
 	}
 	
-	private void uploadNoiseData()
+	protected void runRegionGenerator(float meshOffsetX, float meshOffsetZ, float partialTick)
+	{
+		if (this.regionTextureGenerator == null || !this.regionTextureGenerator.isValid())
+			return;
+		this.uploadCloudRegions(partialTick);
+		this.regionTextureGenerator.forUniform("Offset", (id, loc) -> {
+			GL41.glProgramUniform2f(id, loc, meshOffsetX, meshOffsetZ);
+		});
+		this.regionTextureGenerator.dispatchAndWait(this.requiredRegionTexSize / 16, this.requiredRegionTexSize / 16, 1);
+	}
+	
+	private void uploadCloudRegions(float partialTick)
+	{
+		if (this.regionTextureGenerator == null || !this.regionTextureGenerator.isValid())
+			return;
+		
+		// Converts the cloud regions into data we can then easily pack into
+		// the SSBO. This method also checks and excludes cloud regions that
+		// reference cloud types that are not set up in this mesh generator
+		// to avoid errors.
+		List<float[]> regionData = this.cloudGetter.getClouds().stream().map(region -> 
+		{
+			float[] data = new float[] {
+					region.getPosX(partialTick),
+					region.getPosZ(partialTick),
+					(float)ArrayUtils.indexOf(this.cachedTypes, this.cloudGetter.getCloudTypeForId(region.getCloudTypeId())),
+					region.getRadius(partialTick)
+			};
+			return data;
+		}).filter(data -> data[2] >= 0.0F).toList();
+		
+		int count = Math.min(SimpleCloudsConstants.MAX_CLOUD_FORMATIONS, regionData.size());
+		
+		if (count > 0)
+		{
+			ShaderStorageBufferObject regionsBuffer = this.regionTextureGenerator.getShaderStorageBuffer("CloudRegions");
+			regionsBuffer.writeData(b -> 
+			{
+				for (int i = 0; i < count; i++)
+				{
+					float[] data = regionData.get(i);
+					for (float f : data)
+						b.putFloat(f);
+				}
+				b.rewind();
+			}, count * BYTES_PER_REGION);
+		}
+		
+		this.regionTextureGenerator.forUniform("TotalCloudRegions", (id, loc) -> {
+			GL41.glProgramUniform1i(id, loc, count);
+		});
+	}
+	
+	private void uploadCloudTypeData()
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
 		
 		if (this.shader != null && this.shader.isValid())
 		{
-			LOGGER.debug("Uploading noise data to main mesh compute shader...");
+			var toCopy = this.cloudGetter.getIndexedCloudTypes();
+			if (toCopy.length > MAX_CLOUD_TYPES)
+				LOGGER.warn("Cloud type count exceeds the maximum. Not all cloud types will render.");
+			int copySize = Math.min(MAX_CLOUD_TYPES, toCopy.length);
+			this.cachedTypes = Arrays.copyOf(toCopy, copySize);
+			
+			LOGGER.debug("Uploading cloud type noise data...");
+			
 			this.shader.getShaderStorageBuffer(LAYER_GROUPINGS_NAME).writeData(b -> 
 			{
 				int previousLayerIndex = 0;
-				for (int i = 0; i < this.cloudTypes.length; i++)
+				for (int i = 0; i < this.cachedTypes.length; i++)
 				{
-					CloudInfo type = this.cloudTypes[i];
+					CloudInfo type = this.cachedTypes[i];
 					previousLayerIndex = type.packToBuffer(b, previousLayerIndex);
 				}
 				b.rewind();
-			}, CloudInfo.BYTES_PER_TYPE * this.cloudTypes.length);
+			}, CloudInfo.BYTES_PER_TYPE * this.cachedTypes.length);
 			
 			this.shader.getShaderStorageBuffer(NOISE_LAYERS_NAME).writeData(b -> 
 			{
-				for (int i = 0; i < this.cloudTypes.length; i++)
+				for (int i = 0; i < this.cachedTypes.length; i++)
 				{
-					NoiseSettings settings = this.cloudTypes[i].noiseConfig();
+					NoiseSettings settings = this.cachedTypes[i].noiseConfig();
 					float[] packed = settings.packForShader();
 					for (int j = 0; j < packed.length && j < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; j++)
 						b.putFloat(packed[j]);
 				}
 				b.rewind();
-			}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * this.cloudTypes.length);
+			}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * this.cachedTypes.length);
 		}
 	}
 	
 	@Override
-	protected int prepareMeshGen(double originX, double originY, double originZ, float meshGenOffsetX, float meshGenOffsetZ, @Nullable Frustum frustum, int interval)
+	protected int prepareMeshGen(double originX, double originY, double originZ, float meshGenOffsetX, float meshGenOffsetZ, @Nullable Frustum frustum, int interval, float partialTick)
 	{
-		if (this.cloudTypesModified)
+		if (this.updateCloudTypes)
 		{
-			this.uploadNoiseData();
-			this.setupOrReinitializeRegionGenerator();
-			this.cloudTypesModified = false;
+			this.uploadCloudTypeData();
+			this.updateCloudTypes = false;
 		}
 		
-		if (this.regionGeneratorChanged)
-		{
-			this.setupOrReinitializeRegionGenerator();
-			this.regionGeneratorChanged = false;
-		}
-
+		this.runRegionGenerator(meshGenOffsetX, meshGenOffsetZ, partialTick);
+		
+		return super.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, interval, partialTick);
+	}
+	
+	@Override
+	public void close()
+	{
+		super.close();
+		
+		this.requiredRegionTexSize = 0;
+		this.updateCloudTypes = false;
+		this.cloudGetter = CloudGetter.EMPTY;
+		this.cachedTypes = new CloudInfo[0];
+		
 		if (this.regionTextureGenerator != null)
 		{
-			this.regionTextureGenerator.update(this.scrollX, this.scrollZ, meshGenOffsetX, meshGenOffsetZ);
-			this.regionTextureGenerator.tick();
-			if (this.shader != null)
-				this.shader.setSampler2DArray("RegionsSampler", this.regionTextureGenerator.getAvailableRegionTextureId(), 0);
+			this.regionTextureGenerator.close();
+			this.regionTextureGenerator = null;
 		}
 		
-		for (int i = 0; i < this.currentRegionAlignX.length; i++)
+		if (this.cloudRegionTextureId != -1)
 		{
-			this.currentRegionAlignX[i] = this.regionTextureGenerator.getTexCoordOffsetX(i);
-			this.currentRegionAlignZ[i] = this.regionTextureGenerator.getTexCoordOffsetZ(i);
+			TextureUtil.releaseTextureId(this.cloudRegionTextureId);
+			this.cloudRegionTextureId = -1;
 		}
 		
-		return super.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, interval);
-	}
-	
-	public int getCloudRegionTextureId()
-	{
-		if (this.regionTextureGenerator == null)
-			return -1;
-		return this.regionTextureGenerator.getAvailableRegionTextureId();
-	}
-	
-	public @Nullable CloudRegionTextureGenerator getCloudRegionTextureGenerator()
-	{
-		return this.regionTextureGenerator;
+		if (this.cloudRegionImageBinding != -1)
+		{
+			ComputeShader.freeImageUnit(this.cloudRegionImageBinding);
+			this.cloudRegionImageBinding = -1;
+		}
 	}
 	
 	@Override
 	public void fillReport(CrashReportCategory category)
 	{
-		category.setDetail("Cloud Types", "(" + this.cloudTypes.length + ") " + Joiner.on(", ").join(this.cloudTypes));
-		category.setDetail("Region Generator", () -> {
-			ResourceLocation key = SimpleCloudsRegistries.getRegionTypeRegistry().getKey(this.regionGenerator);
-			if (key == null)
-				return "UNKNOWN";
-			else
-				return key.toString();
-		});
+		category.setDetail("Cloud Types", "(" + this.cachedTypes.length + ") " + Joiner.on(", ").join(this.cachedTypes));
+		category.setDetail("Cloud Regions", this.cloudGetter.getClouds().size());
 		super.fillReport(category);
 	}
 }

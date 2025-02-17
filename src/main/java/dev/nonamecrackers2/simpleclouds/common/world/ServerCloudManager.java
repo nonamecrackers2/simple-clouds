@@ -1,15 +1,21 @@
 package dev.nonamecrackers2.simpleclouds.common.world;
 
 import java.util.List;
+import java.util.Queue;
+
+import javax.annotation.Nullable;
 
 import org.joml.Vector2i;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGenerator;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.ServerCloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPacket;
@@ -23,12 +29,18 @@ import net.minecraftforge.network.PacketDistributor;
 
 public class ServerCloudManager extends CloudManager<ServerLevel>
 {
-	private SyncType syncType = SyncType.NONE;
+	private Queue<SyncType> toSync = Queues.newArrayDeque();
 	private float speedRamp;
 	
 	public ServerCloudManager(ServerLevel level)
 	{
 		super(level, CloudTypeDataManager.getServerInstance());
+	}
+	
+	@Override
+	protected CloudGenerator createCloudGenerator()
+	{
+		return new ServerCloudGenerator(this, 1);
 	}
 	
 	@Override
@@ -61,7 +73,7 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 		{
 			if (this.speedRamp < 1000.0F)
 			{
-				this.setRequiresSync(SyncType.MOVEMENT);
+				this.queueSync(SyncType.MOVEMENT);
 				this.speedRamp += 10.0F;
 			}
 		}
@@ -69,11 +81,14 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 		{
 			if (this.speedRamp > 0.0F)
 			{
-				this.setRequiresSync(SyncType.MOVEMENT);
+				this.queueSync(SyncType.MOVEMENT);
 				this.speedRamp -= 50.0F;
 			}
 		}
 		this.speedRamp = Math.max(0.0F, this.speedRamp);
+		
+		if (this.getCloudMode() != CloudMode.SINGLE && ((ServerCloudGenerator)this.getCloudGenerator()).checkAndResetSync())
+			this.queueSync(SyncType.CLOUD_FORMATIONS);
 	}
 	
 	@Override
@@ -107,7 +122,7 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 			{
 				int x = this.random.nextInt(region.radius() * 2) - region.radius() + region.x();
 				int z = this.random.nextInt(region.radius() * 2) - region.radius() + region.z();
-				var info = this.getCloudTypeAtPosition((float)x + 0.5F, (float)z + 0.5F);
+				var info = this.getCloudTypeAtWorldPos((float)x + 0.5F, (float)z + 0.5F);
 				CloudType type = info.getLeft();
 				if (!isValidLightning(type, info.getRight(), this.random))
 					continue;
@@ -129,23 +144,15 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(() -> this.level.dimension()), new SpawnLightningPacket(new BlockPos(x, y, z), soundOnly, this.random.nextInt(), 4, 2, length, 20.0F, minPitch, maxPitch));
 	}
 	
-	public void setRequiresSync(SyncType syncType)
+	public void queueSync(SyncType syncType)
 	{
-		this.syncType = syncType;
+		if (!this.toSync.contains(syncType))
+			this.toSync.add(syncType);
 	}
 	
-	public SyncType getAndResetSync()
+	public @Nullable SyncType fetchNextSyncOperation()
 	{
-		if (this.syncType != SyncType.NONE)
-		{
-			SyncType syncType = this.syncType;
-			this.syncType = SyncType.NONE;
-			return syncType;
-		}
-		else
-		{
-			return SyncType.NONE;
-		}
+		return this.toSync.poll();
 	}
 	
 	private static record LightningRegion(int x, int z, int radius)

@@ -1,10 +1,12 @@
 package dev.nonamecrackers2.simpleclouds.client.world;
 
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
+import dev.nonamecrackers2.simpleclouds.client.cloud.region.ClientCloudGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Camera;
@@ -19,6 +21,12 @@ public class ClientCloudManager extends CloudManager<ClientLevel>
 	public ClientCloudManager(ClientLevel level)
 	{
 		super(level, ClientSideCloudTypeManager.getInstance());
+	}
+	
+	@Override
+	protected CloudGenerator createCloudGenerator()
+	{
+		return new ClientCloudGenerator(this, 1);
 	}
 	
 	@Override
@@ -66,7 +74,7 @@ public class ClientCloudManager extends CloudManager<ClientLevel>
 		{
 			int x = this.random.nextInt(SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER) - SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER / 2 + camX;
 			int z = this.random.nextInt(SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER) - SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER / 2 + camZ;
-			var info = this.getCloudTypeAtPosition((float)x + 0.5F, (float)z + 0.5F);
+			var info = this.getCloudTypeAtWorldPos((float)x + 0.5F, (float)z + 0.5F);
 			float fade = info.getRight();
 			CloudType type = info.getLeft();
 			if (!isValidLightning(type, fade, this.random))

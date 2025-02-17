@@ -391,15 +391,6 @@ public abstract class CloudMeshGenerator
 		
 		try
 		{
-			this.initExtra(manager);
-		}
-		catch (Exception e)
-		{
-			builder.errorUnknown(e, "Init Extra");
-		}
-		
-		try
-		{
 			LOGGER.debug("Creating mesh compute shader...");
 			this.shader = this.createShader(manager);
 			this.setupShader();
@@ -412,6 +403,15 @@ public abstract class CloudMeshGenerator
 		catch (Exception e)
 		{
 			builder.errorRecommendations(e, "Mesh Generator; Compute Shader");
+		}
+		
+		try
+		{
+			this.initExtra(manager);
+		}
+		catch (Exception e)
+		{
+			builder.errorUnknown(e, "Init Extra");
 		}
 		
 		List<PreparedChunk> preparedChunks = this.getLodConfig().getPreparedChunks();
@@ -517,7 +517,7 @@ public abstract class CloudMeshGenerator
 		return bufferSize;
 	}
 	
-	protected void initExtra(ResourceManager manager) {}
+	protected void initExtra(ResourceManager manager) throws IOException {}
 	
 	/**
 	 * Generates the entire cloud mesh at the origin at once
@@ -529,7 +529,7 @@ public abstract class CloudMeshGenerator
 		if (this.shader == null || !this.shader.isValid())
 			return;
 		
-		this.prepareMeshGen(0.0D, 0.0D, 0.0D, 0.0F, 0.0F, null, 1);
+		this.prepareMeshGen(0.0D, 0.0D, 0.0D, 0.0F, 0.0F, null, 1, 1.0F);
 		
 		if (!this.chunkGenTasks.isEmpty())
 			this.doMeshGenning(this.chunkGenTasks.size());
@@ -552,7 +552,7 @@ public abstract class CloudMeshGenerator
 	 * @param originZ
 	 * @param frustum
 	 */
-	public void genTick(double originX, double originY, double originZ, @Nullable Frustum frustum)
+	public void genTick(double originX, double originY, double originZ, @Nullable Frustum frustum, float partialTick)
 	{
 		RenderSystem.assertOnRenderThread();
 		
@@ -569,12 +569,11 @@ public abstract class CloudMeshGenerator
 			this.completedGenTasks.clear(); //Clear the chunk gen tasks
 			
 			//Prepare the next batch of chunks to generate meshes for
-			this.tasksPerTick = this.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, this.meshGenInterval);
+			this.tasksPerTick = this.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, this.meshGenInterval, partialTick);
 		}
 		else
 		{
-//			TODO: Make sure this is okay to remove now
-//			We read the counter here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
+			//We read these SSBOs here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
 			this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4);
 			this.shader.getShaderStorageBuffer(SIDES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
 			if (this.useTransparency)
@@ -723,7 +722,7 @@ public abstract class CloudMeshGenerator
 	 * How many frames mesh genning should take
 	 * @return
 	 */
-	protected int prepareMeshGen(double originX, double originY, double originZ, float meshGenOffsetX, float meshGenOffsetZ, @Nullable Frustum frustum, int genInterval)
+	protected int prepareMeshGen(double originX, double originY, double originZ, float meshGenOffsetX, float meshGenOffsetZ, @Nullable Frustum frustum, int genInterval, float partialTick)
 	{
 		this.shader.forUniform("Scroll", (id, loc) -> {
 			GL41.glProgramUniform3f(id, loc, this.scrollX, this.scrollY, this.scrollZ);
@@ -775,15 +774,18 @@ public abstract class CloudMeshGenerator
 			
 			if (this.cullDistance <= 0.0F || dist < this.cullDistance)
 			{
-				Pair<Integer, Integer> minMaxHeights = this.determineMinimumAndMaximimumGenHeightsAt(minX, minZ, maxX, maxZ);
-				this.chunkGenTasks.add(new CloudMeshGenerator.ChunkGenTask(chunk, minX, (float)bounds.minY, minZ, maxX, (float)bounds.maxY, maxZ, chunkIndex, minX, 0.0F, minZ, minMaxHeights.getLeft(), minMaxHeights.getRight()));
-				return true;
+				CloudMeshGenerator.ChunkGenSettings settings = this.determineChunkGenSettings(minX, minZ, maxX, maxZ);
+				if (!settings.skipChunk())
+				{
+					this.chunkGenTasks.add(new CloudMeshGenerator.ChunkGenTask(chunk, minX, (float)bounds.minY, minZ, maxX, (float)bounds.maxY, maxZ, chunkIndex, minX, 0.0F, minZ, settings.minimumHeight(), settings.maximumHeight()));
+					return true;
+				}
 			}
 		}
 		return false;
 	}
 	
-	protected abstract Pair<Integer, Integer> determineMinimumAndMaximimumGenHeightsAt(float minX, float minZ, float maxX, float maxZ);
+	protected abstract CloudMeshGenerator.ChunkGenSettings determineChunkGenSettings(float minX, float minZ, float maxX, float maxZ);
 	
 	/**
 	 * Does mesh generating for a given amount of chunks defined by tasksPerTick
@@ -917,6 +919,18 @@ public abstract class CloudMeshGenerator
 	{
 		return String.format("%s[shader_name=%s]", this.getClass().getSimpleName(), this.meshShaderLoc);
 	}
+	
+	protected static CloudMeshGenerator.ChunkGenSettings skip()
+	{
+		return new CloudMeshGenerator.ChunkGenSettings(true, 0, 0);
+	}
+	
+	protected static CloudMeshGenerator.ChunkGenSettings heights(int min, int max)
+	{
+		return new CloudMeshGenerator.ChunkGenSettings(false, min, max);
+	}
+	
+	protected static record ChunkGenSettings(boolean skipChunk, int minimumHeight, int maximumHeight) {}
 	
 	protected static record ChunkGenTask(MeshChunk chunk, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int index, float x, float y, float z, int startY, int endY) {}
 	
