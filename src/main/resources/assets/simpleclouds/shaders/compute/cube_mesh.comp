@@ -7,10 +7,12 @@
 
 #define SHADE_DIRECTION normalize(vec3(0.5, 0.5, 0.5))
 
+#define TILE_PERIOD vec3(32.0, 64.0, 32.0)
+
 #define LOCAL_SIZE vec3(${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z})
 layout(local_size_x = ${LOCAL_SIZE_X}, local_size_y = ${LOCAL_SIZE_Y}, local_size_z = ${LOCAL_SIZE_Z}) in;
 
-#moj_import <simpleclouds:simplex_noise.glsl>
+#moj_import <simpleclouds:psrdnoise.glsl>
 
 struct LayerGroup {
 	int StartIndex;
@@ -164,21 +166,21 @@ uniform float FadeStart;
 uniform float FadeEnd;
 #endif
 
-float getNoiseForLayer(NoiseLayer layer, float x, float y, float z)
+float getNoiseForLayer(NoiseLayer layer, float x, float y, float z, out vec3 gradient)
 {
 	if (y < layer.HeightOffset || y > layer.HeightOffset + layer.Height - 1)
 		return -10000.0;
 	vec3 scale = vec3(layer.ScaleX, layer.ScaleY, layer.ScaleZ);
 	vec3 scrollScaled = Scroll / scale;
-	vec3 samplePos = vec3(x, y, z) / scale + scrollScaled;
-	float noise = snoise(samplePos) * layer.ValueScale + layer.ValueOffset;
+	vec3 samplePos = vec3(x, y, z) / scale;
+	float noise = psrdnoise(samplePos, TILE_PERIOD, scrollScaled.x, gradient) * layer.ValueScale + layer.ValueOffset;
 	float heightDelta = y - layer.HeightOffset;
 	noise -= 1.0 - clamp(heightDelta / layer.FadeDistance, 0.0, 1.0);
 	noise -= 1.0 - clamp((layer.Height - heightDelta) / layer.FadeDistance, 0.0, 1.0);
 	return noise;
 }
 
-float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
+float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z, out vec3 gradient)
 {
 	int totalLayers = group.EndIndex - group.StartIndex;
 	if (totalLayers == 0)
@@ -187,21 +189,25 @@ float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
 	}
 	else if (totalLayers == 1)
 	{
-		return getNoiseForLayer(layers.data[group.StartIndex], x, y, z);
+		return getNoiseForLayer(layers.data[group.StartIndex], x, y, z, gradient);
 	}
 	else
 	{
+		vec3 finalGradient = vec3(0.0);
 		float combinedNoise = 0.0;
 		bool anyValid = false;
 		for (int i = 0; i < totalLayers; i++)
 		{
-			float valForLayer = getNoiseForLayer(layers.data[i + group.StartIndex], x, y, z);
+			vec3 gradForLayer = vec3(0.0);
+			float valForLayer = getNoiseForLayer(layers.data[i + group.StartIndex], x, y, z, gradForLayer);
 			if (valForLayer > -10.0)
 			{
 				combinedNoise += valForLayer;
+				finalGradient += gradForLayer;
 				anyValid = true;
 			}
 		}
+		gradient = finalGradient;
 		if (anyValid)
 			return combinedNoise;
 		else
@@ -212,7 +218,8 @@ float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
 
 bool isPosValid(float x, float y, float z, LayerGroup group, float fade)
 {
-	return getNoiseForLayerGroup(group, x, y, z) + fade > 0.0;
+	vec3 gradient = vec3(0.0);
+	return getNoiseForLayerGroup(group, x, y, z, gradient) + fade > 0.0;
 }
 
 bool isPosValid(float x, float y, float z, int nx, int nz)
@@ -347,22 +354,24 @@ void main()
 	float len = distance(vec2(x, z), Origin.xz);
 	float fade = -5.0 * min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0);
 #endif
-	float noise = getNoiseForLayerGroup(group, x, y, z) + fade;
+	vec3 gradient = vec3(0.0);
+	float noise = getNoiseForLayerGroup(group, x, y, z, gradient) + fade;
 	float storminess = clamp(group.Storminess + fade * 0.1, 0.0, 1.0);
 	float brightness = clamp(1.0 - storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
+#if STYLE == 1
+    //float px = getNoiseForLayerGroup(group, x - 0.1, y, z) + fade;
+	//float py = getNoiseForLayerGroup(group, x, y - 0.1, z) + fade;
+	//float pz = getNoiseForLayerGroup(group, x, y, z - 0.1) + fade;
+	//float dx = (px - noise) / -0.1;
+	//float dy = (py - noise) / -0.1;
+	//float dz = (pz - noise) / -0.1;
+	//vec3 secant = normalize(vec3(dx, dy, dz));
+	gradient = normalize(gradient);
+	float strength = dot(gradient, SHADE_DIRECTION) * 0.5 + 0.5;
+	brightness = clamp(brightness - strength * 0.1, 1.0 - group.Storminess, 1.0);
+#endif
     if (noise > 0.0)
     {
-#if STYLE == 1
-	    float px = getNoiseForLayerGroup(group, x - 0.1, y, z) + fade;
-		float py = getNoiseForLayerGroup(group, x, y - 0.1, z) + fade;
-		float pz = getNoiseForLayerGroup(group, x, y, z - 0.1) + fade;
-		float dx = (px - noise) / -0.1;
-		float dy = (py - noise) / -0.1;
-		float dz = (pz - noise) / -0.1;
-		vec3 secant = normalize(vec3(dx, dy, dz));
-		float strength = dot(secant, SHADE_DIRECTION) * 0.5 + 0.5;
-		brightness = clamp(brightness - strength * 0.1, 1.0 - group.Storminess, 1.0);
-#endif
     	createCube(x, y, z, Scale / 2.0, brightness, fade, group);
     }
 #if TRANSPARENCY == 1

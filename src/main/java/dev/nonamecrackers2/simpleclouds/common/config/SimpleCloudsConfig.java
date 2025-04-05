@@ -52,7 +52,6 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<String> singleModeCloudType;
 		public final ForgeConfigSpec.ConfigValue<Integer> singleModeFadeStartPercentage;
 		public final ForgeConfigSpec.ConfigValue<Integer> singleModeFadeEndPercentage;
-//		public final ForgeConfigSpec.ConfigValue<CloudStyle> cloudStyle;
 		public final ForgeConfigSpec.ConfigValue<Long> cloudSeed;
 		public final ForgeConfigSpec.ConfigValue<Boolean> useSpecificSeed;
 		public final ForgeConfigSpec.ConfigValue<List<? extends String>> dimensionWhitelist;
@@ -65,7 +64,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Integer> transparencyRenderDistancePercentage;
 		//Cloud Visuals
 		public final ForgeConfigSpec.ConfigValue<Boolean> cubeNormals;
-//		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds; //TODO: Reintroduce in the future
+		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds;
 		public final ForgeConfigSpec.ConfigValue<Boolean> transparency;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
@@ -104,11 +103,9 @@ public class SimpleCloudsConfig
 			
 			builder.comment("Visual").push("visual");
 			
-			//this.cloudStyle = this.createEnumValue(CloudStyle.DEFAULT, "cloudStyle", false, "Specifies the visual style of the cloud. DEFAULT is the default style. SHADED adds minimal shading to clouds, making them appear more defined");
-			
 			this.cubeNormals = this.createValue(false, "cubeNormals", false, "Specifies if normals should be applied to each individual cube in the cloud which applies a bit of shading per cube face. Helps distinguish each individual cube in a cloud");
 			
-//			this.shadedClouds = this.createValue(false, "shadedClouds", false, "Specifies if minimal shading should be applied to clouds. May cause performance drops");
+			this.shadedClouds = this.createValue(false, "shadedClouds", false, "Specifies if minimal shading should be applied to clouds. May cause performance drops");
 			
 			this.transparency = this.createValue(true, "transparency", false, "Specifies if transparent cubes should be generated for supported cloud types. May cause performance drops");
 			
