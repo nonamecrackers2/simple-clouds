@@ -180,6 +180,9 @@ public class SimpleCloudsClientEvents
 			WorldEffects effects = renderer.getWorldEffectsManager();
 			float partialTick = (float)event.getPartialTick();
 			float lerp = effects.getDarkenFactor(partialTick);
+//			event.setRed(207.0F / 255.0F);
+//			event.setGreen(231.0F / 255.0F);
+//			event.setBlue(255.0F / 255.0F);
 			event.setRed(Mth.lerp(event.getRed(), 0.03F, lerp));
 			event.setGreen(Mth.lerp(event.getGreen(), 0.02F, lerp));
 			event.setBlue(Mth.lerp(event.getBlue(), 0.0F, lerp));
@@ -196,10 +199,10 @@ public class SimpleCloudsClientEvents
 			List<String> text = event.getRight();
 			text.add("");
 			text.add(ChatFormatting.GREEN + SimpleCloudsMod.MODID + ": " + SimpleCloudsMod.getModVersion());
+			text.add(renderer.getClientCloudManagerString());
 			if (SimpleCloudsRenderer.canRenderInDimension(mc.level))
 			{
 				CloudMeshGenerator generator = renderer.getMeshGenerator();
-				
 				
 				var meshGenResult = generator.getMeshGenStatus();
 				CloudMeshGenerator.MeshGenStatus opaqueStatus = meshGenResult.getLeft();
@@ -211,12 +214,7 @@ public class SimpleCloudsClientEvents
 				
 				String opaqueGeomInfo = humanReadableByteCountSI(generator.getOpaqueBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getOpaqueBufferSize());
 				String transparentGeomInfo = humanReadableByteCountSI(generator.getTransparentBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getTransparentBufferSize());
-//				text.add("Compute Geom Pool");
 				text.add("O: " + opaqueGeomInfo + " | T: " + transparentGeomInfo);
-//				String opaqueChunkInfo = humanReadableByteCountSI(generator.getOpaqueBytesPerChunk()) + "; " + humanReadableByteCountSI(generator.getOpaqueBytesPerChunk() * generator.getTotalMeshChunks());
-//				String transparentChunkInfo = humanReadableByteCountSI(generator.getTransparentBytesPerChunk()) + "; " + humanReadableByteCountSI(generator.getTransparentBytesPerChunk() * generator.getTotalMeshChunks());
-//				text.add("Chunk Mesh Geom Buffers");
-//				text.add("O: " + opaqueChunkInfo + " | T: " + transparentChunkInfo);
 				
 				int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
 				text.add("Mesh gen frames: " + frames + "; Effective FPS: " + mc.getFps() / frames);
@@ -235,14 +233,14 @@ public class SimpleCloudsClientEvents
 					if (singleGenerator.getCloudType() instanceof CloudType type)
 						text.add("Cloud type: " + type.id());
 				}
-				else if (generator instanceof MultiRegionCloudMeshGenerator)
+				else if (generator instanceof MultiRegionCloudMeshGenerator multiRegion)
 				{
-//					RegionType regionGenerator = multiRegionGenerator.getRegionGenerator();
-//					if (regionGenerator != null)
-//						text.add("Region generator: " + ChatFormatting.GRAY + SimpleCloudsRegistries.getRegionTypeRegistry().getKey(regionGenerator));
-//					else
-//						text.add("Region generator: NONE");
 					text.add("Cloud types: " + ClientSideCloudTypeManager.getInstance().getCloudTypes().size());
+					int formationCount =  multiRegion.getCloudFormationCount();
+					String formationText = "Cloud formations: " + formationCount + "/" + MultiRegionCloudMeshGenerator.MAX_CLOUD_FORMATIONS;
+					if (formationCount > MultiRegionCloudMeshGenerator.MAX_CLOUD_FORMATIONS)
+						formationText = ChatFormatting.RED + formationText;
+					text.add(formationText);
 				}
 				
 				if (mc.level != null)

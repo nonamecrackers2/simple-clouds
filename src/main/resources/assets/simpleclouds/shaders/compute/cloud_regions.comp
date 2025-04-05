@@ -9,6 +9,7 @@ struct CloudRegion {
 	float posZ;
 	float index;
     float radius;
+    mat2 transform;
 };
 
 layout(std430) readonly buffer CloudRegions {
@@ -28,7 +29,9 @@ uniform vec2 Offset;
 
 vec3 circle(CloudRegion region, vec2 coord)
 {
-    float d = distance(vec2(region.posX, region.posZ), coord);
+	vec2 p = vec2(region.posX, region.posZ);
+	coord = region.transform * (coord - p) + p;
+    float d = distance(p, coord);
     float r = region.radius;
     if (d > r + 1.0 / EFF)
         return vec3(-1.0);

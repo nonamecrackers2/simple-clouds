@@ -2,6 +2,7 @@ package dev.nonamecrackers2.simpleclouds.common.event;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
+import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudSpawningDataManager;
 import dev.nonamecrackers2.simpleclouds.common.command.CloudCommandSource;
 import dev.nonamecrackers2.simpleclouds.common.command.CloudCommands;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
@@ -22,13 +23,16 @@ public class SimpleCloudsEvents
 	public static void registerCommands(RegisterCommandsEvent event)
 	{
 		ConfigCommandBuilder.builder(event.getDispatcher(), SimpleCloudsMod.MODID).addSpec(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC).addSpec(ModConfig.Type.COMMON, SimpleCloudsConfig.COMMON_SPEC).register();
-		CloudCommands.register(event.getDispatcher(), "clouds", src -> src.hasPermission(2), CloudCommandSource.SERVER);
+		CloudCommands.register(event.getDispatcher(), "clouds", src -> src.hasPermission(2), CloudCommandSource.SERVER, CloudTypeDataManager.getServerInstance());
 	}
 	
 	@SubscribeEvent
 	public static void registerReloadListeners(AddReloadListenerEvent event)
 	{
-		event.addListener(CloudTypeDataManager.getServerInstance());
+		CloudTypeDataManager manager = CloudTypeDataManager.getServerInstance();
+		event.addListener(manager);
+		CloudSpawningDataManager.optionalInitialize(manager);
+		event.addListener(CloudSpawningDataManager.getInstance());
 	}
 	
 	@SubscribeEvent

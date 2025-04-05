@@ -10,17 +10,24 @@ import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
+import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
+import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.ServerCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.SyncType;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.coordinates.Vec2Argument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
 public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
@@ -172,5 +179,45 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		this.onValueUpdated(manager, SyncType.MOVEMENT);
 		source.sendSuccess(() -> Component.translatable("command.simpleclouds.height.set", height), true);
 		return height;
+	}
+	
+	default int spawnCloud(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+	{
+		CommandSourceStack source = context.getSource();
+		T manager = this.getCloudManager(context);
+		CloudGenerator generator = manager.getCloudGenerator();
+		ResourceLocation id = ResourceLocationArgument.getId(context, "type");
+		Vec2 pos = Vec2Argument.getVec2(context, "position");
+		float radius = FloatArgumentType.getFloat(context, "radius") / SimpleCloudsConstants.CLOUD_SCALE;
+		float stretchFactor = FloatArgumentType.getFloat(context, "stretchFactor");
+		float rotation = (float)Math.PI / 180.0F * (FloatArgumentType.getFloat(context, "rotation") % 360.0F);
+		int lifeTime = IntegerArgumentType.getInteger(context, "lifeTime");
+		int growTime = IntegerArgumentType.getInteger(context, "growTime");
+		Vec2 direction = Vec2Argument.getVec2(context, "direction");
+		float maxSpeed = FloatArgumentType.getFloat(context, "maxSpeed");
+		float accelerationFactor = FloatArgumentType.getFloat(context, "accelerationFactor");
+		if (generator.addCloud(new CloudRegion(id, direction, maxSpeed, accelerationFactor, pos.x / SimpleCloudsConstants.CLOUD_SCALE, pos.y / SimpleCloudsConstants.CLOUD_SCALE, radius, rotation, stretchFactor, lifeTime, growTime, Integer.MAX_VALUE), CloudGenerator.Order.TOP))
+		{
+			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.spawn", id, pos.x, pos.y), true);
+			return 1;
+		}
+		else
+		{
+			source.sendFailure(Component.translatable("command.simpleclouds.clouds.spawn.fail"));
+			return 0;
+		}
+	}
+	
+	default int clearClouds(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+	{
+		CommandSourceStack source = context.getSource();
+		T manager = this.getCloudManager(context);
+		CloudGenerator generator = manager.getCloudGenerator();
+		int amount = generator.getClouds().size();
+		if (generator.removeAllClouds())
+			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.removeAll", amount), true);
+		else
+			source.sendFailure(Component.translatable("command.simpleclouds.clouds.removeAll.fail"));
+		return amount;
 	}
 }

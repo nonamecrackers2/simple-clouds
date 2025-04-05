@@ -24,7 +24,7 @@ public class SimpleCloudsDebugOverlayRenderer
 {
 	public static void render(ForgeGui gui, GuiGraphics stack, float partialTicks, float width, float height)
 	{
-		if (gui.getMinecraft().options.renderDebug && SimpleCloudsRenderer.canRenderInDimension(gui.getMinecraft().level))
+		if (SimpleCloudsRenderer.canRenderInDimension(gui.getMinecraft().level))
 		{
 			float displaySize = 50.0F;
 			if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof MultiRegionCloudMeshGenerator meshGenerator)
@@ -44,12 +44,6 @@ public class SimpleCloudsDebugOverlayRenderer
 					int lod = meshGenerator.getLodConfig().getLods().length;
 					shader.safeGetUniform("LodLevel").set(lod);
 					shader.safeGetUniform("TotalCloudTypes").set(meshGenerator.getTotalCloudTypes());
-//					CloudRegionTextureGenerator regionGenerator = meshGenerator.getCloudRegionTextureGenerator();
-//					if (regionGenerator != null)
-//					{
-//						int size = regionGenerator.getTextureSize();
-//						shader.safeGetUniform("Align").set(regionGenerator.getTexCoordOffsetX(lod) / (float)size, regionGenerator.getTexCoordOffsetZ(lod) / (float)size);
-//					}
 					ProgramManager.glUseProgram(shader.getId());
 					int loc = Uniform.glGetUniformLocation(shader.getId(), "TexRegionSampler");
 					Uniform.uploadInteger(loc, 0);

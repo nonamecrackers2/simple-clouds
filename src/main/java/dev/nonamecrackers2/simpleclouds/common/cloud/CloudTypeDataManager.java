@@ -25,7 +25,6 @@ import net.minecraft.world.level.storage.LevelResource;
 
 public class CloudTypeDataManager extends SimpleJsonResourceReloadListener implements CloudTypeSource
 {
-	public static final LevelResource SIMPLE_CLOUDS_FOLDER = new LevelResource("simpleclouds");
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	private static final CloudTypeDataManager SERVER = new CloudTypeDataManager();

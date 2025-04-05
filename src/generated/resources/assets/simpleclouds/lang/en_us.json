@@ -1,4 +1,8 @@
 {
+  "command.simpleclouds.clouds.removeAll": "Removed %s cloud formations",
+  "command.simpleclouds.clouds.removeAll.fail": "No cloud formations to remove",
+  "command.simpleclouds.clouds.spawn": "Spawned cloud %s at [%s, %s]",
+  "command.simpleclouds.clouds.spawn.fail": "Too many cloud formations close by!",
   "command.simpleclouds.direction.get": "Clouds are currently moving in direction [x: %s, y: %s, z: %s] (%s)",
   "command.simpleclouds.direction.set": "Successfully set cloud direction to [x: %s, y: %s, z: %s] (%s)",
   "command.simpleclouds.height.get": "Cloud height is set to %s",
@@ -9,6 +13,7 @@
   "command.simpleclouds.speed.get": "The current cloud speed is %s",
   "command.simpleclouds.weather.override": "Simple Clouds is overriding vanilla weather, and the /weather command is disabled. To use vanilla weather, please do either of the following:\n1. Set the cloud mode in the SERVER config to AMBIENT.\n2. Set the cloud mode in the SERVER config to SINGLE, and set the single mode cloud type to a cloud type that has no weather associated with it (e.x. simpleclouds:itty_bitty)",
   "commands.simpleclouds.client.configReferal": "This option is overriden by the CLIENT config. Please refer to the CLIENT config to change this option.",
+  "commands.simpleclouds.cloudType.notFound": "Unknown cloud type '%s'",
   "commands.simpleclouds.notClientSideOnly": "Client cloud commands can only be used when connected to servers that do not have Simple Clouds installed. If you're connected on singleplayer, or you are an operator on a dedicated server with Simple Clouds installed, please use '/simpleclouds clouds'",
   "gui.simpleclouds.cloud_previewer.button.add_layer.title": "Add Layer",
   "gui.simpleclouds.cloud_previewer.button.next_layer.title": "Next layer",

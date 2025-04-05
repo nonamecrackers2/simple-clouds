@@ -72,7 +72,6 @@ public class SimpleCloudsClientPacketHandler
 		Minecraft mc = Minecraft.getInstance();
 		CloudManager<ClientLevel> manager = CloudManager.get(mc.level);
 		manager.getCloudGenerator().setClouds(packet.cloudRegions);
-		System.out.println("received");
 	}
 	
 	public static void handleCloudTypesPacket(SendCloudTypesPacket packet)

@@ -11,7 +11,7 @@ public class SimpleCloudsConstants
 	public static final int CLOUD_SCALE = 8;
 	public static final int CHUNK_SIZE = 32;
 	public static final float REGION_EDGE_FADE_FACTOR = 0.005F;
-	public static final int MAX_CLOUD_FORMATIONS = 4;
+	public static final int MAX_CLOUD_FORMATIONS = 8;
 	//Weather
 	public static final float RAIN_THRESHOLD = 0.7F; // higher values means you have to be further into the clouds to experience rain
 	public static final float RAIN_FADE = 0.1F;

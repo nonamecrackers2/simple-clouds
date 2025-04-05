@@ -2,6 +2,8 @@ package dev.nonamecrackers2.simpleclouds.common.world;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -13,15 +15,17 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
-import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGetter;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
+import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudGenerator;
+import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudSpawningConfig;
 import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -37,7 +41,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	protected final CloudGenerator cloudGenerator;
 	private long seed;
 	protected @Nullable RandomSource random;
-	protected float scrollXO;
+	protected float scrollXO; //TODO: Make this periodic?
 	protected float scrollYO;
 	protected float scrollZO;
 	protected float scrollX;
@@ -56,14 +60,12 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		return Objects.requireNonNull(((CloudManagerAccessor<T>)level).getCloudManager(), "Cloud manager is not available, this shouldn't happen!");
 	}
 	
-	public CloudManager(T level, CloudTypeSource source)
+	public CloudManager(T level, CloudTypeSource source, Supplier<CloudSpawningConfig> configGetter, BiFunction<CloudGetter, Supplier<CloudSpawningConfig>, CloudGenerator> generatorFunc)
 	{
 		this.level = level;
 		this.cloudSource = source;
-		this.cloudGenerator = this.createCloudGenerator();
+		this.cloudGenerator = generatorFunc.apply(this, configGetter);
 	}
-	
-	protected abstract CloudGenerator createCloudGenerator();
 	
 	public CloudGenerator getCloudGenerator()
 	{
@@ -86,6 +88,17 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	public CloudType[] getIndexedCloudTypes()
 	{
 		return this.cloudSource.getIndexedCloudTypes();
+	}
+	
+	public boolean isCloudGeneratorActive()
+	{
+		return this.getCloudMode() != CloudMode.SINGLE && !this.useVanillaWeather;
+	}
+	
+	public void onPlayerJoin(Player player)
+	{
+		if (this.isCloudGeneratorActive())
+			this.cloudGenerator.doInitialGen(player.getBlockX(), player.getBlockZ(), this.level);
 	}
 	
 	@Override
@@ -173,8 +186,8 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	{
 		this.tickCount++;
 
-		if (this.getCloudMode() != CloudMode.SINGLE)
-			this.cloudGenerator.tick(this.random, this.level);
+		if (this.isCloudGeneratorActive())
+			this.cloudGenerator.tick(this.level);
 		
 		this.scrollXO = this.scrollX;
 		this.scrollYO = this.scrollY;
@@ -363,5 +376,11 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 			return false;
 		}
 		}
+	}
+	
+	@Override
+	public String toString()
+	{
+		return this.getClass().getSimpleName() + "[level=" + this.level.dimension().location() + "]";
 	}
 }

@@ -1,11 +1,16 @@
 package dev.nonamecrackers2.simpleclouds.common.event;
 
+import java.util.List;
+
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
+import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudRegionsPacket;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPacket;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.ServerCloudManager;
+import dev.nonamecrackers2.simpleclouds.common.world.SpawnRegion;
 import dev.nonamecrackers2.simpleclouds.common.world.SyncType;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,7 +49,8 @@ public class CloudManagerEvents
 					}
 					case CLOUD_FORMATIONS:
 					{
-						SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(level::dimension), new SendCloudRegionsPacket(serverManager));
+						for (ServerPlayer player : ((ServerLevel)level).players())
+							sendCloudRegionsToPlayer(player);
 						break;
 					}
 					default:
@@ -62,6 +68,7 @@ public class CloudManagerEvents
 	@SubscribeEvent
 	public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event)
 	{
+		CloudManager.get(event.getEntity().level()).onPlayerJoin(event.getEntity());
 		if (event.getEntity() instanceof ServerPlayer player)
 			update(player);
 	}
@@ -69,6 +76,8 @@ public class CloudManagerEvents
 	@SubscribeEvent
 	public static void onPlayerSwapDimensions(PlayerEvent.PlayerChangedDimensionEvent event)
 	{
+		System.out.println(event.getEntity().position());
+		CloudManager.get(event.getEntity().level()).onPlayerJoin(event.getEntity());
 		if (event.getEntity() instanceof ServerPlayer player)
 			update(player);
 	}
@@ -76,6 +85,8 @@ public class CloudManagerEvents
 	@SubscribeEvent
 	public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event)
 	{
+		System.out.println(event.getEntity().position()); //TODO: Respawning not working correctly?
+		CloudManager.get(event.getEntity().level()).onPlayerJoin(event.getEntity());
 		if (event.getEntity() instanceof ServerPlayer player)
 			update(player);
 	}
@@ -83,5 +94,15 @@ public class CloudManagerEvents
 	private static void update(ServerPlayer player)
 	{
 		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.PLAYER.with(() -> player), new SendCloudManagerPacket(CloudManager.get((ServerLevel)player.level())));
+		sendCloudRegionsToPlayer(player);
+	}
+	
+	private static void sendCloudRegionsToPlayer(ServerPlayer player)
+	{
+		CloudManager<ServerLevel> manager = CloudManager.get(player.serverLevel());
+		SpawnRegion region = new SpawnRegion(player.getBlockX(), player.getBlockZ(), CloudGenerator.SPAWN_RADIUS);
+		List<CloudRegion> formationsForPlayer = manager.getCloudGenerator().getCloudsInRegion(region);
+		System.out.println("sending " + formationsForPlayer.size() + " clouds to player " + player.getDisplayName().getString());
+		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.PLAYER.with(() -> player), new SendCloudRegionsPacket(formationsForPlayer));
 	}
 }

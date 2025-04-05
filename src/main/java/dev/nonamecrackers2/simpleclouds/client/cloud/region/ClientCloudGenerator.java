@@ -1,21 +1,42 @@
 package dev.nonamecrackers2.simpleclouds.client.cloud.region;
 
-import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGenerator;
+import java.util.List;
+import java.util.function.Supplier;
+
+import com.google.common.collect.Lists;
+
+import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
+import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGetter;
+import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
+import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudGenerator;
+import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudSpawningConfig;
+import dev.nonamecrackers2.simpleclouds.common.world.SpawnRegion;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 
 public class ClientCloudGenerator extends CloudGenerator
 {
-	public ClientCloudGenerator(CloudGetter cloudGetter, int initialMaximumAmount)
+	public ClientCloudGenerator(CloudGetter cloudGetter, Supplier<CloudSpawningConfig> config)
 	{
-		super(cloudGetter, initialMaximumAmount);
+		super(cloudGetter, config);
 	}
-
+	
 	@Override
-	protected void generateCloud(RandomSource random, Level level, boolean initial)
+	protected boolean shouldGenerateCloud(CloudSpawningConfig config, RandomSource random, Level level)
 	{
-		//this.addCloud(new CloudRegion(this.cloudGetter.getIndexedCloudTypes()[1].id(), new Vec2(1.0F, 0.0F), 0.0F, 0.0F, 1220.0F, -823.0F, 500.0F, 120000));
-		//this.addCloud(new CloudRegion(this.cloudGetter.getIndexedCloudTypes()[1].id(), new Vec2(-1.0F, 0.0F), 0.0F, 0.0F, 820.0F, -723.0F, 400.0F, 120000));
+		return !ClientCloudManager.isAvailableServerSide() && super.shouldGenerateCloud(config, random, level);
+	}
+	
+	@Override
+	protected List<SpawnRegion> determineValidSpawnRegions(RandomSource random, Level level)
+	{
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player != null)
+			return Lists.newArrayList(new SpawnRegion(player.getBlockX(), player.getBlockZ(), SPAWN_RADIUS));
+		else
+			return Lists.newArrayList();
 	}
 }

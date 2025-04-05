@@ -25,6 +25,7 @@ public class MixinClientLevel implements CloudManagerAccessor<ClientLevel>
 	{
 		this.cloudManager = new ClientCloudManager((ClientLevel)(Object)this);
 		this.cloudManager.init(SimpleCloudsConfig.CLIENT.useSpecificSeed.get() ? SimpleCloudsConfig.CLIENT.cloudSeed.get() : RandomSource.create().nextLong());
+		SimpleCloudsRenderer.getOptionalInstance().ifPresent(renderer -> renderer.onCloudManagerChange(this.cloudManager));
 	}
 	
 	@Inject(method = "getSkyDarken", at = @At("RETURN"), cancellable = true)

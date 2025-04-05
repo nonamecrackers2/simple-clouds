@@ -77,6 +77,11 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("commands.simpleclouds.notClientSideOnly", "Client cloud commands can only be used when connected to servers that do not have Simple Clouds installed. If you're connected on singleplayer, or you are an operator on a dedicated server with Simple Clouds installed, please use '/simpleclouds clouds'");
 		this.add("commands.simpleclouds.client.configReferal", "This option is overriden by the CLIENT config. Please refer to the CLIENT config to change this option.");
 		this.add("command.simpleclouds.weather.override", "Simple Clouds is overriding vanilla weather, and the /weather command is disabled. To use vanilla weather, please do either of the following:\n1. Set the cloud mode in the SERVER config to AMBIENT.\n2. Set the cloud mode in the SERVER config to SINGLE, and set the single mode cloud type to a cloud type that has no weather associated with it (e.x. simpleclouds:itty_bitty)");
+		this.add("command.simpleclouds.clouds.spawn", "Spawned cloud %s at [%s, %s]");
+		this.add("command.simpleclouds.clouds.spawn.fail", "Too many cloud formations close by!");
+		this.add("command.simpleclouds.clouds.removeAll", "Removed %s cloud formations");
+		this.add("command.simpleclouds.clouds.removeAll.fail", "No cloud formations to remove");
+		this.add("commands.simpleclouds.cloudType.notFound", "Unknown cloud type '%s'");
 		this.add("gui.simpleclouds.debug.title", "Simple Clouds Debug");
 		this.add("simpleclouds.subtitle.distant_thunder", "Distant Thunder Roars");
 		this.add("simpleclouds.subtitle.close_thunder", "Thunder Roars");

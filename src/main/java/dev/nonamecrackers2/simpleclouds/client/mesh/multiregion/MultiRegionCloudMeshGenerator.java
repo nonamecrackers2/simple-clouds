@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -11,6 +12,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix2f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL15;
@@ -41,6 +43,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
+//TODO: SSBO leak
 public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");
@@ -48,14 +51,16 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private static final String LOD_SCALES_NAME = "LodScales";
 	private static final String CLOUD_REGIONS_NAME = "CloudRegions";
 	public static final int MAX_CLOUD_TYPES = 32;
-	private static final int BYTES_PER_REGION = 16;
-	private int requiredRegionTexSize;
+	public static final int MAX_CLOUD_FORMATIONS = 10;
+	private static final int BYTES_PER_REGION = 32;
+	private int requiredRegionTexSize; 
 	private CloudGetter cloudGetter = CloudGetter.EMPTY;
 	private CloudInfo[] cachedTypes = new CloudInfo[0];
 	private @Nullable ComputeShader regionTextureGenerator;
 	private int cloudRegionTextureId = -1;
 	private int cloudRegionImageBinding = -1;
 	private boolean updateCloudTypes;
+	private int currentCloudFormationCount;
 	
 	public MultiRegionCloudMeshGenerator(boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency)
 	{
@@ -64,11 +69,10 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	
 	public void setCloudGetter(CloudGetter getter)
 	{
-		this.cloudGetter = getter;
+		this.cloudGetter = Objects.requireNonNull(getter, "Cloud getter cannot be null");
 		this.updateCloudTypes();
 	}
 
-	
 	public int getCloudRegionTextureId()
 	{
 		return this.cloudRegionTextureId;
@@ -82,6 +86,11 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	public int getTotalCloudTypes()
 	{
 		return this.cachedTypes.length;
+	}
+	
+	public int getCloudFormationCount()
+	{
+		return this.currentCloudFormationCount;
 	}
 	
 	@Override
@@ -110,6 +119,9 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		
 		// Create the compute shader
 		
+		this.currentCloudFormationCount = 0;
+		this.requiredRegionTexSize = 0;
+		
 		if (this.regionTextureGenerator != null)
 			this.regionTextureGenerator.close();
 		
@@ -127,7 +139,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		}, lodScalesSize);
 		
 		// Data for the cloud regions in world
-		this.regionTextureGenerator.bindShaderStorageBuffer(CLOUD_REGIONS_NAME, GL15.GL_STATIC_READ).allocateBuffer(SimpleCloudsConstants.MAX_CLOUD_FORMATIONS * BYTES_PER_REGION);
+		this.regionTextureGenerator.bindShaderStorageBuffer(CLOUD_REGIONS_NAME, GL15.GL_STATIC_READ).allocateBuffer(MAX_CLOUD_FORMATIONS * BYTES_PER_REGION);
 
 		// Create the cloud region 2D array texture
 		
@@ -222,18 +234,19 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		super.generateChunk(task);
 	}
 	
-	protected void runRegionGenerator(float meshOffsetX, float meshOffsetZ, float partialTick)
+	private void runRegionGenerator(float meshOffsetX, float meshOffsetZ, float partialTick)
 	{
 		if (this.regionTextureGenerator == null || !this.regionTextureGenerator.isValid())
 			return;
-		this.uploadCloudRegions(partialTick);
+		
+		this.uploadCloudRegionData(partialTick);
 		this.regionTextureGenerator.forUniform("Offset", (id, loc) -> {
 			GL41.glProgramUniform2f(id, loc, meshOffsetX, meshOffsetZ);
 		});
 		this.regionTextureGenerator.dispatchAndWait(this.requiredRegionTexSize / 16, this.requiredRegionTexSize / 16, 1);
 	}
 	
-	private void uploadCloudRegions(float partialTick)
+	private void uploadCloudRegionData(float partialTick)
 	{
 		if (this.regionTextureGenerator == null || !this.regionTextureGenerator.isValid())
 			return;
@@ -244,16 +257,28 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		// to avoid errors.
 		List<float[]> regionData = this.cloudGetter.getClouds().stream().map(region -> 
 		{
+			Matrix2f transform = region.createTransform(partialTick);
 			float[] data = new float[] {
 					region.getPosX(partialTick),
 					region.getPosZ(partialTick),
 					(float)ArrayUtils.indexOf(this.cachedTypes, this.cloudGetter.getCloudTypeForId(region.getCloudTypeId())),
-					region.getRadius(partialTick)
+					region.getRadius(partialTick),
+					transform.m00,
+					transform.m01,
+					transform.m10,
+					transform.m11
 			};
 			return data;
 		}).filter(data -> data[2] >= 0.0F).toList();
 		
-		int count = Math.min(SimpleCloudsConstants.MAX_CLOUD_FORMATIONS, regionData.size());
+		int regionDataSize = regionData.size();
+		int count = Math.min(MAX_CLOUD_FORMATIONS, regionDataSize);
+		if (regionDataSize != this.currentCloudFormationCount)
+		{
+			if (regionDataSize > MAX_CLOUD_FORMATIONS && regionDataSize > this.currentCloudFormationCount)
+				LOGGER.warn("Cloud formations {}/{}. Maximum count has been exceeded; some cloud formations will be ignored. Please ensure cloud formation count does not exceed the maximum of {}.", regionData.size(), MAX_CLOUD_FORMATIONS, MAX_CLOUD_FORMATIONS);
+			this.currentCloudFormationCount = regionDataSize;
+		}
 		
 		if (count > 0)
 		{
@@ -333,6 +358,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	{
 		super.close();
 		
+		this.currentCloudFormationCount = 0;
 		this.requiredRegionTexSize = 0;
 		this.updateCloudTypes = false;
 		this.cloudGetter = CloudGetter.EMPTY;
@@ -362,6 +388,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	{
 		category.setDetail("Cloud Types", "(" + this.cachedTypes.length + ") " + Joiner.on(", ").join(this.cachedTypes));
 		category.setDetail("Cloud Regions", this.cloudGetter.getClouds().size());
+		category.setDetail("Cloud Formations", this.currentCloudFormationCount);
 		super.fillReport(category);
 	}
 }
