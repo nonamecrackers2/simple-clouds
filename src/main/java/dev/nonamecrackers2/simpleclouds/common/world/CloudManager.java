@@ -193,7 +193,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		speed *= 0.0001F;
 		this.scrollAngle += speed;
 		this.scrollX = (float)Math.cos(this.scrollAngle) * SCROLL_OFFSET;
-		this.scrollY = (float)Math.sin(this.scrollAngle) * SCROLL_OFFSET * 0.5F;
+		this.scrollY = 0.0F;//(float)Math.sin(this.scrollAngle + (float)Math.PI / 4.0F) * SCROLL_OFFSET * 0.5F;
 		this.scrollZ = (float)Math.sin(this.scrollAngle) * SCROLL_OFFSET;
 		
 		boolean flag = this.determineUseVanillaWeather();

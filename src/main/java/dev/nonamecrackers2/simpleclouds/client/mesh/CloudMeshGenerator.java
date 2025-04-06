@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.annotation.Nullable;
@@ -727,6 +728,9 @@ public abstract class CloudMeshGenerator
 		this.shader.forUniform("Scroll", (id, loc) -> {
 			GL41.glProgramUniform3f(id, loc, this.scrollX, this.scrollY, this.scrollZ);
 		});
+		this.shader.forUniform("Wiggle", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, (this.scrollX + this.scrollY + this.scrollZ) / 5.0F);
+		});
 		this.shader.forUniform("Origin", (id, loc) -> {
 			GL41.glProgramUniform3f(id, loc, (float)originX, (float)originY, (float)originZ);
 		});
@@ -775,11 +779,8 @@ public abstract class CloudMeshGenerator
 			if (this.cullDistance <= 0.0F || dist < this.cullDistance)
 			{
 				CloudMeshGenerator.ChunkGenSettings settings = this.determineChunkGenSettings(minX, minZ, maxX, maxZ);
-				if (!settings.skipChunk())
-				{
-					this.chunkGenTasks.add(new CloudMeshGenerator.ChunkGenTask(chunk, minX, (float)bounds.minY, minZ, maxX, (float)bounds.maxY, maxZ, chunkIndex, minX, 0.0F, minZ, settings.minimumHeight(), settings.maximumHeight()));
-					return true;
-				}
+				this.chunkGenTasks.add(new CloudMeshGenerator.ChunkGenTask(chunk, settings.skipChunk(), minX, (float)bounds.minY, minZ, maxX, (float)bounds.maxY, maxZ, chunkIndex, minX, 0.0F, minZ, settings.minimumHeight(), settings.maximumHeight()));
+				return true;
 			}
 		}
 		return false;
@@ -799,7 +800,10 @@ public abstract class CloudMeshGenerator
 			CloudMeshGenerator.ChunkGenTask task = this.chunkGenTasks.poll();
 			if (task != null)
 			{
-				this.generateChunk(task);
+				if (task.clear())
+					this.clearChunk(task);
+				else
+					this.generateChunk(task);
 				this.updateMeshChunkAfterGeneration(task.chunk(), task);
 				this.completedGenTasks.add(task);
 			}
@@ -855,6 +859,20 @@ public abstract class CloudMeshGenerator
 			this.shader.dispatch(WORK_SIZE, localHeightInvocations, WORK_SIZE, false);
 			GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
 		}
+	}
+	
+	protected void clearChunk(CloudMeshGenerator.ChunkGenTask task)
+	{
+		Consumer<String> clear = countPerChunkBufferName -> 
+		{
+			//Clear count. This will cause the given chunk to not render in the render pass
+			this.shader.getShaderStorageBuffer(countPerChunkBufferName).writeData(buffer -> {
+				buffer.putInt(task.index() * 4, 0);
+			}, task.index() * 4 + 4);
+		};
+		clear.accept(SIDES_PER_CHUNK_NAME);
+		if (this.transparencyEnabled())
+			clear.accept(TRANSPARENT_CUBES_PER_CHUNK_NAME);
 	}
 	
 	public void forRenderableMeshChunks(@Nullable Frustum frustum, Function<MeshChunk, MeshChunk.BufferSet> bufferSetFunction, BiConsumer<MeshChunk, MeshChunk.BufferSet> function)
@@ -932,7 +950,7 @@ public abstract class CloudMeshGenerator
 	
 	protected static record ChunkGenSettings(boolean skipChunk, int minimumHeight, int maximumHeight) {}
 	
-	protected static record ChunkGenTask(MeshChunk chunk, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int index, float x, float y, float z, int startY, int endY) {}
+	protected static record ChunkGenTask(MeshChunk chunk, boolean clear, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int index, float x, float y, float z, int startY, int endY) {}
 	
 	public static enum MeshGenStatus
 	{
