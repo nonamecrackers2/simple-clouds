@@ -151,6 +151,7 @@ public abstract class CloudGenerator
 			//formation visible again causing it to tick. It could then move outside the region again, then the player can move and make it become
 			//visible again causing a cycle. This shouldn't happen as often since cloud formations shrink and will shrink extra fast when no longer visible,
 			//making it so they will shrink farther away from the edge of a spawn region preventing this, but it is behavior to note
+			//TODO: Account for stretch
 			boolean isVisible = SpawnRegion.doesCircleIntersect(this.spawnRegions, region.getWorldX(), region.getWorldZ(), region.getWorldRadius() + (float)SimpleCloudsConstants.CLOUD_SCALE / SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR);
 			if (isVisible != region.wasPriorVisible())
 				this.onRegionVisibilityChange(region, isVisible);
