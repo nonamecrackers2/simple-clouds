@@ -216,9 +216,9 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		}
 		//TODO: If clouds move super fast, old chunks wont get cleared when they should be empty
 		//Will try to make this work later on (also for single cloud mesh generator as well)
-//		if (empty || smallestStartHeight == largestEndHeight)
-//			return skip();
-//		else
+		if (empty || smallestStartHeight == largestEndHeight)
+			return skip();
+		else
 			return heights(smallestStartHeight, largestEndHeight);
 	}
 	
