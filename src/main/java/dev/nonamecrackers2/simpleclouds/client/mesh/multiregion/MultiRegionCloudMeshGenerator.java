@@ -43,7 +43,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
-//TODO: SSBO leak
+//TODO: Use alpha (rotation) value in periodic noise in cube_mesh
 public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");

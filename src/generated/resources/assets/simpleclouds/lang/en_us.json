@@ -81,7 +81,7 @@
   "gui.simpleclouds.config.renderClouds.title": "Render Clouds",
   "gui.simpleclouds.config.renderStormFog.description": "Specifies if the fog beneath storm clouds should appear or not. Disabling can improve performance.",
   "gui.simpleclouds.config.renderStormFog.title": "Render Storm Fog",
-  "gui.simpleclouds.config.shadedClouds.description": "Specifies if minimal shading should be applied to clouds. May cause performance drops.",
+  "gui.simpleclouds.config.shadedClouds.description": "Specifies if minimal shading should be applied to clouds. May cause performance drops",
   "gui.simpleclouds.config.shadedClouds.title": "Shaded Clouds",
   "gui.simpleclouds.config.showCloudPreviewerInfoPopup.description": "Specifies if the info pop-up should appear when opening the cloud previewer menu.",
   "gui.simpleclouds.config.showCloudPreviewerInfoPopup.title": "Show Cloud Previewer Info Popup",
