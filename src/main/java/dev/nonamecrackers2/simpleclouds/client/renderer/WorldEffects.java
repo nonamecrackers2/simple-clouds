@@ -260,8 +260,8 @@ public class WorldEffects
 		float rainIntensity = this.mc.level.getRainLevel(0.0F);
 		BlockPos camPos = this.mc.gameRenderer.getMainCamera().getBlockPosition();
 		float xRot = SimpleCloudsConfig.CLIENT.rainAngle.get().floatValue() * ((float)Math.PI / 180.0F);
-		Vector3f direction = CloudManager.get(this.mc.level).getDirection();
-		float yRot = (float)-Mth.atan2((double)direction.x, (double)direction.z);
+		Vector2f direction = CloudManager.get(this.mc.level).calculateWindDirection();
+		float yRot = (float)-Mth.atan2((double)direction.x, (double)direction.y);
 		float xRotCos = Mth.cos(xRot - (float)Math.PI / 2.0F);
 		int xOffset = Mth.floor(Mth.sin(-yRot) * xRotCos * ((float)RAIN_SCAN_WIDTH / 2.0F));
 		int zOffset = Mth.floor(Mth.cos(-yRot) * xRotCos * ((float)RAIN_SCAN_WIDTH / 2.0F));

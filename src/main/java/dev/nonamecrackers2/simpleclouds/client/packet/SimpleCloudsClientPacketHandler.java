@@ -34,10 +34,7 @@ public class SimpleCloudsClientPacketHandler
 	
 	public static void handleUpdateCloudManagerPacket(UpdateCloudManagerPacket packet, CloudManager<ClientLevel> manager)
 	{
-		manager.setScrollX(packet.scrollX);
-		manager.setScrollY(packet.scrollY);
-		manager.setScrollZ(packet.scrollZ);
-		manager.setDirection(packet.direction);
+		manager.setScrollAngle(packet.scrollAngle);
 		manager.setSpeed(packet.speed);
 		manager.setCloudHeight(packet.cloudHeight);
 		if (manager instanceof ClientCloudManager clientManager)

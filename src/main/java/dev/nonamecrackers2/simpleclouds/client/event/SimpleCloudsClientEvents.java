@@ -249,8 +249,6 @@ public class SimpleCloudsClientEvents
 					
 					text.add("Speed: " + round(manager.getSpeed()) + "; Height: " + manager.getCloudHeight());
 					text.add("Scroll XYZ: " + round(manager.getScrollX()) + " / " + round(manager.getScrollY()) + " / " + round(manager.getScrollZ()));
-					Vector3f d = manager.getDirection();
-					text.add("Direction XYZ: " + round(d.x) + " / " + round(d.y) + " / " + round(d.z));
 					
 					WorldEffects effects = renderer.getWorldEffectsManager();
 					CloudType atCamera = effects.getCloudTypeAtCamera();

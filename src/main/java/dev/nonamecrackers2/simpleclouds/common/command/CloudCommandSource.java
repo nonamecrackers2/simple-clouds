@@ -66,17 +66,6 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		return 0;
 	}
 	
-	default int setScrollAmount(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
-	{
-		T manager = this.getCloudManager(context);
-		Vec3 scroll = Vec3Argument.getVec3(context, "amount");
-		manager.setScrollX((float)scroll.x);
-		manager.setScrollY((float)scroll.y);
-		manager.setScrollZ((float)scroll.z);
-		this.onValueUpdated(manager, SyncType.MOVEMENT);
-		return 0;
-	}
-	
 	default int getSpeed(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
 		CommandSourceStack source = context.getSource();
@@ -125,41 +114,6 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 	default int reinitializeWithRandomSeed(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
 		return this.reinitialize(context, m -> context.getSource().getUnsidedLevel().getRandom().nextLong());
-	}
-	
-	default int getDirection(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
-	{
-		CommandSourceStack source = context.getSource();
-		T manager = this.getCloudManager(context);
-		Vector3f dir = manager.getDirection();
-		float dx = (float)Math.round(dir.x * 100.0F) / 100.0F;
-		float dy = (float)Math.round(dir.y * 100.0F) / 100.0F;
-		float dz = (float)Math.round(dir.z * 100.0F) / 100.0F;
-		source.sendSuccess(() -> Component.translatable("command.simpleclouds.direction.get", dx, dy, dz, Direction.getNearest(dx, dy, dz)), false);
-		return 0;
-	}
-	
-	default int setDirection(CommandContext<CommandSourceStack> context, Vector3f dir) throws CommandSyntaxException
-	{
-		CommandSourceStack source = context.getSource();
-		T manager = this.getCloudManager(context);
-		manager.setDirection(dir);
-		this.onValueUpdated(manager, SyncType.MOVEMENT);
-		float dx = (float)Math.round(dir.x * 100.0F) / 100.0F;
-		float dy = (float)Math.round(dir.y * 100.0F) / 100.0F;
-		float dz = (float)Math.round(dir.z * 100.0F) / 100.0F;
-		source.sendSuccess(() -> Component.translatable("command.simpleclouds.direction.set", dx, dy, dz, Direction.getNearest(dx, dy, dz)), true);
-		return 0;
-	}
-	
-	default int setDirectionWithPlayerFacing(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
-	{
-		return this.setDirection(context, this.getPlayer(context).getLookAngle().toVector3f());
-	}
-	
-	default int setDirectionSpecified(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
-	{
-		return this.setDirection(context, Vec3Argument.getVec3(context, "direction").toVector3f());
 	}
 	
 	default int getCloudHeight(CommandContext<CommandSourceStack> context) throws CommandSyntaxException

@@ -20,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -71,7 +72,6 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGetter;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
@@ -765,8 +765,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		int span = this.meshGenerator.getLodConfig().getEffectiveChunkSpan() * SimpleCloudsConstants.CHUNK_SIZE * SimpleCloudsConstants.CLOUD_SCALE;
 		stack.translate(span / 2.0D, span / 2.0D, -5000.0D);
-		Vector3f direction = this.cloudManager.getDirection();
-		float yaw = (float)Mth.atan2((double)direction.x, (double)direction.z);
+		Vector2f direction = this.cloudManager.calculateWindDirection();
+		float yaw = (float)Mth.atan2((double)direction.x, (double)direction.y);
 		stack.mulPose(Axis.XP.rotationDegrees(SimpleCloudsConfig.CLIENT.stormFogAngle.get().floatValue()));
 		stack.mulPose(Axis.YP.rotation(yaw));
 		float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * (float)SimpleCloudsConstants.CLOUD_SCALE;

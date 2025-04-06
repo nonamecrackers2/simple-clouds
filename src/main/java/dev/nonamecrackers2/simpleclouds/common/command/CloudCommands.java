@@ -57,19 +57,6 @@ public class CloudCommands
 		);
 		
 		root.then(Commands.literal(baseName).requires(requirement)
-				.then(Commands.literal("scroll")
-						.then(Commands.literal("get")
-								.executes(source::getScrollAmount)
-						)
-						.then(Commands.literal("set")
-								.then(Commands.argument("amount", Vec3Argument.vec3(false))
-										.executes(source::setScrollAmount)
-								)
-						)
-				)
-		);
-		
-		root.then(Commands.literal(baseName).requires(requirement)
 				.then(Commands.literal("speed")
 						.then(Commands.literal("get")
 								.executes(source::getSpeed)
@@ -99,22 +86,6 @@ public class CloudCommands
 								.executes(source::reinitializeWithSpecifiedSeed)
 						)
 						.executes(source::reinitializeWithSameSeed)
-				)
-		);
-		
-		root.then(Commands.literal(baseName).requires(requirement)
-				.then(Commands.literal("direction")
-						.then(Commands.literal("get")
-								.executes(source::getDirection)
-						)
-						.then(Commands.literal("set")
-								.then(Commands.literal("facingMyDirection")
-										.executes(source::setDirectionWithPlayerFacing)
-								)
-								.then(Commands.argument("direction", Vec3Argument.vec3(false))
-										.executes(source::setDirectionSpecified)
-								)
-						)
 				)
 		);
 		

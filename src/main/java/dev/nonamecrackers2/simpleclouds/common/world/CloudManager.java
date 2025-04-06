@@ -5,11 +5,10 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.joml.Vector3f;
+import org.joml.Vector2f;
 
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
@@ -36,18 +35,19 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	public static final int CLOUD_HEIGHT_MIN = 0;
 	public static final int UPDATE_INTERVAL = 200;
 	public static final float RANDOM_SPREAD = 10000.0F;
+	public static final float SCROLL_OFFSET = 100.0F;
 	protected final T level;
 	protected final CloudTypeSource cloudSource;
 	protected final CloudGenerator cloudGenerator;
 	private long seed;
 	protected @Nullable RandomSource random;
+	protected float scrollAngle;
 	protected float scrollXO; //TODO: Make this periodic?
 	protected float scrollYO;
 	protected float scrollZO;
 	protected float scrollX;
 	protected float scrollY;
 	protected float scrollZ;
-	protected Vector3f direction = new Vector3f(1.0F, 0.0F, 0.0F);
 	protected float speed = 1.0F;
 	protected int cloudHeight = 128;
 	protected int tickCount;
@@ -164,10 +164,6 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	{
 		RandomSource random = this.setSeed(seed);
 		this.random = random;
-		this.direction = new Vector3f(random.nextFloat() * 2.0F - 1.0F, random.nextFloat() * 2.0F - 1.0F, random.nextFloat() * 2.0F - 1.0F).normalize();
-		this.scrollX = (random.nextFloat() * 2.0F - 1.0F) * RANDOM_SPREAD;
-		this.scrollY = (random.nextFloat() * 2.0F - 1.0F) * RANDOM_SPREAD;
-		this.scrollZ = (random.nextFloat() * 2.0F - 1.0F) * RANDOM_SPREAD;
 		this.speed = 1.0F;
 		this.cloudGenerator.initialize(random, this.level);
 	}
@@ -194,10 +190,11 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		this.scrollZO = this.scrollZ;
 		float speed = this.getSpeed();
 		speed = this.modifySpeed(speed);
-		speed *= 0.01F;
-		this.scrollX -= this.getDirection().x() * speed;
-		this.scrollY -= this.getDirection().y() * speed;
-		this.scrollZ -= this.getDirection().z() * speed;
+		speed *= 0.0001F;
+		this.scrollAngle += speed;
+		this.scrollX = (float)Math.cos(this.scrollAngle) * SCROLL_OFFSET;
+		this.scrollY = (float)Math.sin(this.scrollAngle) * SCROLL_OFFSET * 0.5F;
+		this.scrollZ = (float)Math.sin(this.scrollAngle) * SCROLL_OFFSET;
 		
 		boolean flag = this.determineUseVanillaWeather();
 		if (flag != this.useVanillaWeather)
@@ -246,6 +243,13 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		this.spawnLightning(info.getLeft(), info.getRight(), x, z, soundOnly);
 	}
 	
+	public Vector2f calculateWindDirection()
+	{
+		float dirX = Mth.cos(this.scrollAngle);
+		float dirZ = Mth.sin(this.scrollAngle);
+		return new Vector2f(dirX, dirZ);
+	}
+	
 	public int getTickCount()
 	{
 		return this.tickCount;
@@ -262,16 +266,6 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		return RandomSource.create(seed);
 	}
 	
-	public Vector3f getDirection()
-	{
-		return this.direction;
-	}
-	
-	public void setDirection(@Nonnull Vector3f direction)
-	{
-		this.direction = new Vector3f(Objects.requireNonNull(direction)).normalize();
-	}
-	
 	protected float modifySpeed(float speed)
 	{
 		return speed;
@@ -286,16 +280,20 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	{
 		this.speed = Math.max(0.0F, speed);
 	}
+	
+	public float getScrollAngle()
+	{
+		return this.scrollAngle;
+	}
+	
+	public void setScrollAngle(float angle)
+	{
+		this.scrollAngle = angle;
+	}
 
 	public float getScrollX()
 	{
 		return this.scrollX;
-	}
-
-	public void setScrollX(float scrollX)
-	{
-		this.scrollX = scrollX;
-		this.scrollXO = scrollX;
 	}
 
 	public float getScrollY()
@@ -303,23 +301,11 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		return this.scrollY;
 	}
 
-	public void setScrollY(float scrollY)
-	{
-		this.scrollY = scrollY;
-		this.scrollYO = scrollY;
-	}
-
 	public float getScrollZ()
 	{
 		return this.scrollZ;
 	}
 
-	public void setScrollZ(float scrollZ)
-	{
-		this.scrollZ = scrollZ;
-		this.scrollZO = scrollZ;
-	}
-	
 	public float getScrollX(float partialTicks)
 	{
 		return Mth.lerp(partialTicks, this.scrollXO, this.scrollX);
