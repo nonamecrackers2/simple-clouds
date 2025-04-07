@@ -29,11 +29,6 @@ public class ClientSideCloudTypeManager implements CloudTypeSource
 		return this.dataManager;
 	}
 	
-	public void clearCloudTypes()
-	{
-		this.synced = ImmutableMap.of();
-	}
-	
 	@Override
 	public CloudType getCloudTypeForId(ResourceLocation id)
 	{
@@ -61,6 +56,12 @@ public class ClientSideCloudTypeManager implements CloudTypeSource
 	{
 		this.synced = ImmutableMap.copyOf(synced);
 		this.indexed = indexed;
+	}
+	
+	public void clearSynced()
+	{
+		this.synced = ImmutableMap.of();
+		this.indexed = new CloudType[0];
 	}
 	
 	public static ClientSideCloudTypeManager getInstance()

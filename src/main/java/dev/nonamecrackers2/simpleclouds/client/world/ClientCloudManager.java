@@ -2,11 +2,11 @@ package dev.nonamecrackers2.simpleclouds.client.world;
 
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.cloud.region.ClientCloudGenerator;
+import dev.nonamecrackers2.simpleclouds.client.cloud.spawning.ClientSideCloudSpawningManager;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
-import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudSpawningConfig;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.client.Camera;
@@ -20,7 +20,7 @@ public class ClientCloudManager extends CloudManager<ClientLevel>
 	
 	public ClientCloudManager(ClientLevel level)
 	{
-		super(level, ClientSideCloudTypeManager.getInstance(), () -> CloudSpawningConfig.EMPTY, ClientCloudGenerator::new);
+		super(level, ClientSideCloudTypeManager.getInstance(), ClientSideCloudSpawningManager.getClientInstance()::getConfig, ClientCloudGenerator::new);
 	}
 	
 	@Override

@@ -92,7 +92,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	
 	public boolean isCloudGeneratorActive()
 	{
-		return this.getCloudMode() != CloudMode.SINGLE && !this.useVanillaWeather;
+		return this.getCloudMode() != CloudMode.SINGLE;
 	}
 	
 	public void onPlayerJoin(Player player)

@@ -1,5 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.common.event;
 
+import dev.nonamecrackers2.simpleclouds.common.data.SimpleCloudsCloudSpawningConfigProvider;
 import dev.nonamecrackers2.simpleclouds.common.data.SimpleCloudsCloudTypeProvider;
 import dev.nonamecrackers2.simpleclouds.common.data.SimpleCloudsLangProvider;
 import net.minecraft.data.DataGenerator;
@@ -13,5 +14,6 @@ public class SimpleCloudsDataEvents
 		DataGenerator generator = event.getGenerator();
 		generator.addProvider(event.includeClient(), (DataProvider.Factory<SimpleCloudsLangProvider>)SimpleCloudsLangProvider::new);
 		generator.addProvider(true, (DataProvider.Factory<SimpleCloudsCloudTypeProvider>)SimpleCloudsCloudTypeProvider::new);
+		generator.addProvider(true, (DataProvider.Factory<SimpleCloudsCloudSpawningConfigProvider>)SimpleCloudsCloudSpawningConfigProvider::new);
 	}
 }

@@ -1,13 +1,10 @@
 package dev.nonamecrackers2.simpleclouds.common.data;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -20,19 +17,15 @@ import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 
-public abstract class CloudTypeProvider implements DataProvider
+public abstract class CloudTypeProvider extends DualPathProvider
 {
 	private final String modid;
-	private final List<PackOutput.PathProvider> paths;
 	private final Map<ResourceLocation, CloudInfo> cloudTypes = Maps.newHashMap();
 	
 	public CloudTypeProvider(String modid, PackOutput output)
 	{
+		super(output, "cloud_types");
 		this.modid = modid;
-		this.paths = ImmutableList.of(
-				output.createPathProvider(PackOutput.Target.RESOURCE_PACK, "cloud_types"),
-				output.createPathProvider(PackOutput.Target.DATA_PACK, "cloud_types")
-		);
 	}
 	
 	protected abstract void addTypes();
@@ -45,11 +38,6 @@ public abstract class CloudTypeProvider implements DataProvider
 	protected void addType(CloudType type)
 	{
 		this.addType(type.id().getPath(), type);
-	}
-	
-	private void forPaths(ResourceLocation id, Consumer<Path> consumer)
-	{
-		this.paths.forEach(p -> consumer.accept(p.json(id)));
 	}
 	
 	@Override
@@ -67,7 +55,7 @@ public abstract class CloudTypeProvider implements DataProvider
 			else
 			{
 				JsonObject object = info.toJson();
-				this.forPaths(id, p -> {
+				this.jsonForPaths(id, p -> {
 					futures.add(DataProvider.saveStable(output, object, p));
 				});
 			}

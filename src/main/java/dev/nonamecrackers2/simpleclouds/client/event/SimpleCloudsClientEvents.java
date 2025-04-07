@@ -4,12 +4,11 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.List;
 
-import org.joml.Vector3f;
-
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
+import dev.nonamecrackers2.simpleclouds.client.cloud.spawning.ClientSideCloudSpawningManager;
 import dev.nonamecrackers2.simpleclouds.client.command.ClientCloudCommandHelper;
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
@@ -26,6 +25,7 @@ import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.client.world.FogRenderMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.ChatFormatting;
@@ -64,9 +64,12 @@ public class SimpleCloudsClientEvents
 	
 	public static void registerReloadListeners(RegisterClientReloadListenersEvent event)
 	{
-		event.registerReloadListener(ClientSideCloudTypeManager.getInstance().getClientSideDataManager());
+		CloudTypeDataManager manager = ClientSideCloudTypeManager.getInstance().getClientSideDataManager();
+		event.registerReloadListener(manager);
+		ClientSideCloudSpawningManager.optionalInitializeOnClient(manager);
+		event.registerReloadListener(ClientSideCloudSpawningManager.getClientInstance());
 		SimpleCloudsRenderer.initialize(CloudsRendererSettings.DEFAULT);
-		event.registerReloadListener((ResourceManagerReloadListener)(manager -> {
+		event.registerReloadListener((ResourceManagerReloadListener)(m -> {
 			ComputeShader.destroyCompiledShaders();
 		}));
 		event.registerReloadListener(SimpleCloudsRenderer.getInstance());
@@ -144,13 +147,14 @@ public class SimpleCloudsClientEvents
 	@SubscribeEvent
 	public static void onClientLoggingIn(ClientPlayerNetworkEvent.LoggingIn event)
 	{
+		CloudManager.get(event.getPlayer().level()).onPlayerJoin(event.getPlayer());
 		SimpleCloudsRenderer.getInstance().requestReload();
 	}
 	
 	@SubscribeEvent
 	public static void onClientDisconnect(ClientPlayerNetworkEvent.LoggingOut event)
 	{
-		ClientSideCloudTypeManager.getInstance().clearCloudTypes();
+		ClientSideCloudTypeManager.getInstance().clearSynced();
 	}
 	
 	@SubscribeEvent

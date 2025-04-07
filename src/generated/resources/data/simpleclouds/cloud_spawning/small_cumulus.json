@@ -1,0 +1,35 @@
+{
+  "type": "simpleclouds:small_cumulus",
+  "exist_ticks": {
+    "type": "minecraft:biased_to_bottom",
+    "value": {
+      "max_inclusive": 48000,
+      "min_inclusive": 12000
+    }
+  },
+  "grow_ticks": {
+    "type": "minecraft:biased_to_bottom",
+    "value": {
+      "max_inclusive": 10000,
+      "min_inclusive": 4000
+    }
+  },
+  "moves_to_player": false,
+  "order_weight": 500,
+  "radius": {
+    "type": "minecraft:biased_to_bottom",
+    "value": {
+      "max_inclusive": 10000,
+      "min_inclusive": 4000
+    }
+  },
+  "speed": {
+    "type": "minecraft:uniform",
+    "value": {
+      "max_exclusive": 0.2,
+      "min_inclusive": 0.1
+    }
+  },
+  "stretch_factor": 1.0,
+  "weight": 10
+}

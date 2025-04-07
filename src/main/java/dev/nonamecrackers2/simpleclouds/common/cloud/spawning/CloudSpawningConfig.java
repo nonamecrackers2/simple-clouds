@@ -8,8 +8,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
@@ -45,37 +43,37 @@ public class CloudSpawningConfig
 		this.weights = WeightedRandomList.create(Lists.newArrayList(weightsPerType.values()));
 	}
 	
-	public static CloudSpawningConfig of(IntProvider spawnInterval, int maxCloudRegions, int maxInitialRegions, Map<ResourceLocation, CloudSpawningConfig.Info> weightsPerType)
+	public static CloudSpawningConfig of(IntProvider spawnInterval, int maxCloudRegions, int maxInitialRegions, ImmutableMap<ResourceLocation, CloudSpawningConfig.Info> weightsPerType)
 	{
 		if (weightsPerType.isEmpty())
 			return EMPTY;
-		return new CloudSpawningConfig(spawnInterval, maxCloudRegions, maxInitialRegions, ImmutableMap.copyOf(weightsPerType));
+		return new CloudSpawningConfig(spawnInterval, maxCloudRegions, maxInitialRegions, weightsPerType);
 	}
 	
-	public static CloudSpawningConfig fromJson(CloudTypeSource typeValidator, JsonObject object) throws JsonSyntaxException, NullPointerException, IllegalArgumentException
+	public static CloudSpawningConfig fromJson(CloudTypeSource typeValidator, JsonObject object, ImmutableMap<ResourceLocation, CloudSpawningConfig.Info> entries) throws JsonSyntaxException, NullPointerException, IllegalArgumentException
 	{
-		IntProvider spawnInterval = IntProvider.CODEC.parse(JsonOps.INSTANCE, Objects.requireNonNull(object.get("spawn_interval"))).resultOrPartial(e -> {
+		if (entries.isEmpty())
+			return EMPTY;
+		IntProvider spawnInterval = IntProvider.NON_NEGATIVE_CODEC.parse(JsonOps.INSTANCE, Objects.requireNonNull(object.get("spawn_interval"))).resultOrPartial(e -> {
 			throw new JsonSyntaxException(e);
 		}).get();
 		int maxCloudRegions = GsonHelper.getAsInt(object, "max_formations");
 		int maxInitialRegions = GsonHelper.getAsInt(object, "max_initial_formations");
 		if (maxCloudRegions > SimpleCloudsConstants.MAX_CLOUD_FORMATIONS || maxInitialRegions > SimpleCloudsConstants.MAX_CLOUD_FORMATIONS)
 			throw new IllegalArgumentException("Maximum cloud formations is " + SimpleCloudsConstants.MAX_CLOUD_FORMATIONS);
-		ImmutableMap.Builder<ResourceLocation, CloudSpawningConfig.Info> values = ImmutableMap.builder();
-		JsonArray entries = GsonHelper.getAsJsonArray(object, "entries");
-		for (JsonElement element : entries)
-		{
-			JsonObject entry = GsonHelper.convertToJsonObject(element, "entry");
-			CloudSpawningConfig.Info info = readInfo(typeValidator, entry);
-			values.put(info.cloudType, info);
-		}
-		ImmutableMap<ResourceLocation, CloudSpawningConfig.Info> map = values.buildOrThrow();
-		if (map.isEmpty())
-			return EMPTY;
-		return new CloudSpawningConfig(spawnInterval, maxCloudRegions, maxInitialRegions, map);
+//		ImmutableMap.Builder<ResourceLocation, CloudSpawningConfig.Info> values = ImmutableMap.builder();
+//		JsonArray entries = GsonHelper.getAsJsonArray(object, "entries");
+//		for (JsonElement element : entries)
+//		{
+//			JsonObject entry = GsonHelper.convertToJsonObject(element, "entry");
+//			CloudSpawningConfig.Info info = readInfo(typeValidator, entry);
+//			values.put(info.cloudType, info);
+//		}
+//		ImmutableMap<ResourceLocation, CloudSpawningConfig.Info> map = values.buildOrThrow();
+		return new CloudSpawningConfig(spawnInterval, maxCloudRegions, maxInitialRegions, entries);
 	}
 	
-	private static CloudSpawningConfig.Info readInfo(CloudTypeSource typeValidator, JsonObject object) throws JsonSyntaxException, NullPointerException, IllegalArgumentException
+	public static CloudSpawningConfig.Info readInfo(CloudTypeSource typeValidator, JsonObject object) throws JsonSyntaxException, NullPointerException, IllegalArgumentException
 	{
 		String rawId = GsonHelper.getAsString(object, "type");
 		ResourceLocation id = ResourceLocation.read(rawId).resultOrPartial(e -> {
@@ -85,6 +83,10 @@ public class CloudSpawningConfig
 			throw new IllegalArgumentException("Unknown cloud type with id '" + id + "'");
 		
 		Weight weight = Weight.CODEC.parse(JsonOps.INSTANCE, object.get("weight")).resultOrPartial(e -> {
+			throw new JsonSyntaxException(e);
+		}).get();
+		
+		FloatProvider speed = FloatProvider.codec(0.0F, 10.0F).parse(JsonOps.INSTANCE, object.get("speed")).resultOrPartial(e -> {
 			throw new JsonSyntaxException(e);
 		}).get();
 		
@@ -120,7 +122,7 @@ public class CloudSpawningConfig
 		if (orderWeight <= 0)
 			throw new IllegalArgumentException("Order weight must be >= 1");
 		
-		return new CloudSpawningConfig.Info(id, weight, radius, existTicks, growTicks, stretchFactor, movesToPlayer, orderWeight);
+		return new CloudSpawningConfig.Info(id, weight, speed, radius, existTicks, growTicks, stretchFactor, movesToPlayer, orderWeight);
 	}
 	
 	public boolean isEmpty()
@@ -153,12 +155,43 @@ public class CloudSpawningConfig
 		return this.weights.getRandom(random);
 	}
 	
-	public static record Info(ResourceLocation cloudType, Weight weight, IntProvider radius, IntProvider existTicks, IntProvider growTicks, FloatProvider stretchFactor, boolean movesToPlayer, int orderWeight) implements WeightedEntry
+	public static record Info(ResourceLocation cloudType, Weight weight, FloatProvider speed, IntProvider radius, IntProvider existTicks, IntProvider growTicks, FloatProvider stretchFactor, boolean movesToPlayer, int orderWeight) implements WeightedEntry
 	{
 		@Override
 		public Weight getWeight()
 		{
 			return this.weight;
+		}
+		
+		public JsonObject toJson() throws IllegalArgumentException
+		{
+			JsonObject object = new JsonObject();
+			
+			object.addProperty("type", this.cloudType.toString());
+			object.add("weight", Weight.CODEC.encodeStart(JsonOps.INSTANCE, this.weight).resultOrPartial(e -> {
+				throw new IllegalArgumentException(e);
+			}).get());
+			object.add("speed", FloatProvider.codec(0.0F, 10.0F).encodeStart(JsonOps.INSTANCE, this.speed).resultOrPartial(e -> {
+				throw new IllegalArgumentException(e);
+			}).get());
+			object.add("radius", IntProvider.NON_NEGATIVE_CODEC.encodeStart(JsonOps.INSTANCE, this.radius).resultOrPartial(e -> {
+				throw new IllegalArgumentException(e);
+			}).get());
+			object.add("exist_ticks", IntProvider.NON_NEGATIVE_CODEC.encodeStart(JsonOps.INSTANCE, this.existTicks).resultOrPartial(e -> {
+				throw new IllegalArgumentException(e);
+			}).get());
+			object.add("grow_ticks", IntProvider.codec(0, this.existTicks.getMaxValue()).encodeStart(JsonOps.INSTANCE, this.radius).resultOrPartial(e -> {
+				throw new IllegalArgumentException(e);
+			}).get());
+			object.add("stretch_factor", FloatProvider.codec(0.01F, Float.MAX_VALUE).encodeStart(JsonOps.INSTANCE, this.stretchFactor).resultOrPartial(e -> {
+				throw new IllegalArgumentException(e);
+			}).get());
+			object.addProperty("moves_to_player", this.movesToPlayer);
+			if (this.orderWeight <= 0)
+				throw new IllegalArgumentException("Order weight must be >= 1");
+			object.addProperty("order_weight", this.orderWeight);
+			
+			return object;
 		}
 	}
 }
