@@ -10,7 +10,7 @@
   "grow_ticks": {
     "type": "minecraft:biased_to_bottom",
     "value": {
-      "max_inclusive": 6000,
+      "max_inclusive": 9000,
       "min_inclusive": 6000
     }
   },
@@ -19,7 +19,7 @@
   "radius": {
     "type": "minecraft:biased_to_bottom",
     "value": {
-      "max_inclusive": 6000,
+      "max_inclusive": 9000,
       "min_inclusive": 6000
     }
   },
