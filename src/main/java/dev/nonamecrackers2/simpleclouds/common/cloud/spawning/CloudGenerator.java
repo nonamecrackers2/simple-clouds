@@ -3,6 +3,7 @@ package dev.nonamecrackers2.simpleclouds.common.cloud.spawning;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.logging.log4j.LogManager;
@@ -47,6 +48,11 @@ public abstract class CloudGenerator
 		return ImmutableList.copyOf(this.clouds);
 	}
 	
+	public final List<SpawnRegion> getSpawnRegions()
+	{
+		return ImmutableList.copyOf(this.spawnRegions);
+	}
+	
 	public List<CloudRegion> getCloudsInRegion(SpawnRegion region)
 	{
 		List<CloudRegion> clouds = Lists.newArrayList();
@@ -84,15 +90,23 @@ public abstract class CloudGenerator
 	
 	public boolean removeAllClouds()
 	{
-		if (!this.clouds.isEmpty())
+		return this.removeClouds(r -> true);
+	}
+	
+	public boolean removeClouds(Predicate<CloudRegion> predicate)
+	{
+		boolean anyPassed = false;
+		var iterator = this.clouds.iterator();
+		while (iterator.hasNext())
 		{
-			this.clouds.clear();
-			return true;
+			CloudRegion region = iterator.next();
+			if (predicate.test(region))
+			{
+				iterator.remove();
+				anyPassed = true;
+			}
 		}
-		else
-		{
-			return false;
-		}
+		return anyPassed;
 	}
 	
 	public boolean addCloud(CloudRegion region, CloudGenerator.Order order)
@@ -253,7 +267,7 @@ public abstract class CloudGenerator
 		return Optional.of(new CloudRegion(info.cloudType(), direction, maxSpeed, accelerationFactor, x / (float)SimpleCloudsConstants.CLOUD_SCALE, z / (float)SimpleCloudsConstants.CLOUD_SCALE, radius / (float)SimpleCloudsConstants.CLOUD_SCALE, rotation, stretchFactor, existTicks, growTicks, info.orderWeight()));
 	}
 	
-	public void doInitialGen(int x, int z, Level level)
+	public void doInitialGen(int x, int z, Level level, boolean ignoreOtherRegions)
 	{
 		SpawnRegion region = new SpawnRegion(x, z, CloudGenerator.SPAWN_RADIUS);
 		
@@ -267,7 +281,7 @@ public abstract class CloudGenerator
 			for (int j = 0; j < SPAWN_ATTEMPTS; j++)
 			{
 				Vector2i pos = SpawnRegion.getRandomPointInRegion(region, this.random);
-				if (this.spawnRegions.stream().anyMatch(r -> r.includesPoint(pos.x, pos.y)))
+				if (!ignoreOtherRegions && this.spawnRegions.stream().anyMatch(r -> r.includesPoint(pos.x, pos.y)))
 					continue;
 				CloudRegion cloudFormation = this.createRandomRegion(config, (float)x + 0.5F, (float)z + 0.5F, (float)pos.x + 0.5F, (float)pos.y + 0.5F, this.random, false).orElse(null);
 				if (cloudFormation == null)

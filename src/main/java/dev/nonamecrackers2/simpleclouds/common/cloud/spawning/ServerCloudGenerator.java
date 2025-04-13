@@ -1,6 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.common.cloud.spawning;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGetter;
@@ -43,9 +44,9 @@ public class ServerCloudGenerator extends CloudGenerator
 	}
 	
 	@Override
-	public boolean removeAllClouds()
+	public boolean removeClouds(Predicate<CloudRegion> predicate)
 	{
-		if (!super.removeAllClouds())
+		if (!super.removeClouds(predicate))
 			return false;
 		this.requiresSync = true;
 		return true;

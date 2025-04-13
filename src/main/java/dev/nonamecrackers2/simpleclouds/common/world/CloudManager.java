@@ -98,7 +98,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	public void onPlayerJoin(Player player)
 	{
 		if (this.isCloudGeneratorActive())
-			this.cloudGenerator.doInitialGen(player.getBlockX(), player.getBlockZ(), this.level);
+			this.cloudGenerator.doInitialGen(player.getBlockX(), player.getBlockZ(), this.level, false);
 	}
 	
 	@Override

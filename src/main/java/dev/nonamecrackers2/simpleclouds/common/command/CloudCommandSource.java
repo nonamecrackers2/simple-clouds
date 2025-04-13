@@ -1,8 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.common.command;
 
 import java.util.function.Function;
-
-import org.joml.Vector3f;
+import java.util.function.Predicate;
 
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -10,17 +9,18 @@ import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
 import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.ServerCloudManager;
+import dev.nonamecrackers2.simpleclouds.common.world.SpawnRegion;
 import dev.nonamecrackers2.simpleclouds.common.world.SyncType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.commands.arguments.coordinates.Vec2Argument;
-import net.minecraft.commands.arguments.coordinates.Vec3Argument;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.resources.ResourceLocation;
@@ -28,12 +28,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
-import net.minecraft.world.phys.Vec3;
 
 //TODO: A command to specify removal of a certain cloud region
 public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 {
-	public static final CloudCommandSource<ServerLevel, ServerCloudManager> SERVER = new CloudCommandSource<>()
+	CloudCommandSource<ServerLevel, ServerCloudManager> SERVER = new CloudCommandSource<>()
 	{
 		@Override
 		public Player getPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
@@ -52,6 +51,17 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 			cloudManager.queueSync(sync);
 		}
 	};
+	Predicate<CloudRegion> ALL = r -> true;
+	
+	static Predicate<CloudRegion> storms(CloudTypeSource source)
+	{
+		return r -> {
+			CloudType type = source.getCloudTypeForId(r.getCloudTypeId());
+			if (type != null)
+				return type.weatherType().causesDarkening();
+			return false;
+		};
+	}
 	
 	T getCloudManager(CommandContext<CommandSourceStack> context)  throws CommandSyntaxException;
 	
@@ -163,16 +173,28 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		}
 	}
 	
-	default int clearClouds(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+	default int clearClouds(CommandContext<CommandSourceStack> context, Predicate<CloudRegion> region) throws CommandSyntaxException
 	{
 		CommandSourceStack source = context.getSource();
 		T manager = this.getCloudManager(context);
 		CloudGenerator generator = manager.getCloudGenerator();
 		int amount = generator.getClouds().size();
-		if (generator.removeAllClouds())
-			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.removeAll", amount), true);
+		if (generator.removeClouds(region))
+			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.clear", amount), true);
 		else
-			source.sendFailure(Component.translatable("command.simpleclouds.clouds.removeAll.fail"));
+			source.sendFailure(Component.translatable("command.simpleclouds.clouds.clear.fail"));
 		return amount;
+	}
+	
+	default int refreshClouds(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+	{
+		CommandSourceStack source = context.getSource();
+		T manager = this.getCloudManager(context);
+		CloudGenerator generator = manager.getCloudGenerator();
+		generator.removeAllClouds();
+		for (SpawnRegion region : generator.getSpawnRegions())
+			generator.doInitialGen(region.x(), region.z(), source.getUnsidedLevel(), true);
+		source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.refresh"), true);
+		return 1;
 	}
 }

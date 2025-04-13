@@ -1,6 +1,7 @@
 {
-  "command.simpleclouds.clouds.removeAll": "Removed %s cloud formations",
-  "command.simpleclouds.clouds.removeAll.fail": "No cloud formations to remove",
+  "command.simpleclouds.clouds.clear": "Removed %s cloud formations",
+  "command.simpleclouds.clouds.clear.fail": "No cloud formations to remove",
+  "command.simpleclouds.clouds.refresh": "Refreshing clouds",
   "command.simpleclouds.clouds.spawn": "Spawned cloud %s at [%s, %s]",
   "command.simpleclouds.clouds.spawn.fail": "Too many cloud formations close by!",
   "command.simpleclouds.direction.get": "Clouds are currently moving in direction [x: %s, y: %s, z: %s] (%s)",

@@ -16,7 +16,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.TimeArgument;
 import net.minecraft.commands.arguments.coordinates.Vec2Argument;
-import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 
 public class CloudCommands
 {
@@ -25,8 +24,13 @@ public class CloudCommands
 		LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(SimpleCloudsMod.MODID);
 		
 		root.then(Commands.literal(baseName).requires(requirement)
-				.then(Commands.literal("removeAll")
-						.executes(source::clearClouds)
+				.then(Commands.literal("clear")
+						.then(Commands.literal("all")
+								.executes(ctx -> source.clearClouds(ctx, CloudCommandSource.ALL))
+						)
+						.then(Commands.literal("storms")
+								.executes(ctx -> source.clearClouds(ctx, CloudCommandSource.storms(cloudTypeSource)))
+						)
 				)
 		);
 		
@@ -53,6 +57,12 @@ public class CloudCommands
 										)
 								)
 						)
+				)
+		);
+		
+		root.then(Commands.literal(baseName).requires(requirement)
+				.then(Commands.literal("refresh")
+						.executes(source::refreshClouds)
 				)
 		);
 		
