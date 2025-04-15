@@ -19,7 +19,8 @@
 		"MixinMinecraft",
 		"MixinFrustumAccessor",
 		"MixinPostPass",
-		"MixinRenderTargetAccessor"
+		"MixinRenderTargetAccessor",
+		"MixinUniform"
 	],
 	"minVersion": "0.8"
 }

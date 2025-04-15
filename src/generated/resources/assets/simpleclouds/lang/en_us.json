@@ -36,6 +36,8 @@
   "gui.simpleclouds.cloud_previewer.title": "Cloud Previewer",
   "gui.simpleclouds.cloud_previewer.warning.too_many_cubes": "Warning: Too many cubes",
   "gui.simpleclouds.cloud_previewer.weather_type.title": "Weather Type",
+  "gui.simpleclouds.config.atmosphericClouds.description": "Specifies if a purely visual 2D atmospheric cloud layer should render.",
+  "gui.simpleclouds.config.atmosphericClouds.title": "Atmospheric Clouds",
   "gui.simpleclouds.config.category.debug.title": "Debug",
   "gui.simpleclouds.config.category.lightning_and_thunder.title": "Lightning And Thunder",
   "gui.simpleclouds.config.category.performance.title": "Performance",

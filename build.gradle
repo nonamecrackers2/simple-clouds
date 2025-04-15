@@ -166,7 +166,7 @@ dependencies {
     implementation fg.deobf("nonamecrackers2:crackerslib-forge:${crackerslib_version}")
 
 	implementation fg.deobf("maven.modrinth:DistantHorizonsApi:${dh_api_version}")
-	//implementation fg.deobf("maven.modrinth:DistantHorizons:${dh_version}-${minecraft_version}")
+	implementation fg.deobf("maven.modrinth:DistantHorizons:${dh_version}-${minecraft_version}")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

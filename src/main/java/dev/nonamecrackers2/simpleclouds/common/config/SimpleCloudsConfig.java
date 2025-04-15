@@ -66,6 +66,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Boolean> cubeNormals;
 		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds;
 		public final ForgeConfigSpec.ConfigValue<Boolean> transparency;
+		public final ForgeConfigSpec.ConfigValue<Boolean> atmosphericClouds;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -108,6 +109,8 @@ public class SimpleCloudsConfig
 			this.shadedClouds = this.createValue(false, "shadedClouds", true, "Specifies if minimal shading should be applied to clouds. May cause performance drops");
 			
 			this.transparency = this.createValue(true, "transparency", false, "Specifies if transparent cubes should be generated for supported cloud types. May cause performance drops");
+			
+			this.atmosphericClouds = this.createValue(true, "atmosphericClouds", false, "Specifies if a purely visual 2D atmospheric cloud layer should render");
 			
 			builder.pop();
 			

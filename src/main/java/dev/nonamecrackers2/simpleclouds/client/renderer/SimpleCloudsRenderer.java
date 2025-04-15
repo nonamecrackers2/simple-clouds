@@ -98,6 +98,7 @@ import net.minecraftforge.fml.StartupMessageManager;
 import net.minecraftforge.fml.loading.ImmediateWindowHandler;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
+//TODO: Latest snapshot: use datapack cloud height + simple clouds config
 public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/SimpleCloudsRenderer");
@@ -119,6 +120,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private final CloudsRendererSettings settings;
 	private final Minecraft mc;
 	private final WorldEffects worldEffectsManager;
+	private final AtmosphericCloudsRenderHandler atmoshpericClouds;
 	private @Nullable ClientCloudManager cloudManager;
 	private ArtifactVersion openGlVersion;
 	private CloudMeshGenerator meshGenerator;
@@ -150,6 +152,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.settings = settings;
 		this.mc = mc;
 		this.worldEffectsManager = new WorldEffects(mc, this);
+		this.atmoshpericClouds = new AtmosphericCloudsRenderHandler(mc);
 	}
 	
 	public String getClientCloudManagerString()
@@ -170,6 +173,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public WorldEffects getWorldEffectsManager()
 	{
 		return this.worldEffectsManager;
+	}
+	
+	public AtmosphericCloudsRenderHandler getAtmosphericCloudRenderer()
+	{
+		return this.atmoshpericClouds;
 	}
 	
 	public CloudsRendererSettings getSettings()
@@ -374,6 +382,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			effect.setSampler("CloudsTexture", () -> this.cloudTarget.getColorTextureId());
 			effect.setSampler("CloudsDepthTexture", () -> this.cloudTarget.getDepthTextureId());
 		});
+		
+		this.atmoshpericClouds.init(manager);
 		
 		// --- Shadow Map ---
 		
@@ -585,6 +595,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		}
 		if (this.blurPostProcessing != null)
 			this.blurPostProcessing.getTempTarget("swap").setFilterMode(GL11.GL_LINEAR);
+		
+		this.atmoshpericClouds.onResize(width, height);
 	}
 		
 	public void shutdown()
@@ -625,7 +637,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			this.lightningBoltPositions.closeAndClearBinding();
 			this.lightningBoltPositions = null;
-		}	
+		}
+		
+		this.atmoshpericClouds.close();
 	}
 	
 	public void tick()
@@ -637,6 +651,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		}
 		
 		this.worldEffectsManager.tick();
+		
+		if (this.cloudManager != null)
+			this.atmoshpericClouds.setWindDirection(this.cloudManager.calculateWindDirection());
+		this.atmoshpericClouds.tick();
 		
 		if (this.meshGenerator != null)
 			this.meshGenerator.worldTick();

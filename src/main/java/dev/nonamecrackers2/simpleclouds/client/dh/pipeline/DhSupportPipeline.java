@@ -49,7 +49,21 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 	}
 	
 	@Override
-	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
+	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
+	{
+		if (SimpleCloudsConfig.CLIENT.atmosphericClouds.get())
+		{
+			ProfilerFiller p = mc.getProfiler();
+			float[] cloudCol = renderer.getCloudColor(partialTick);
+			float cloudR = (float)cloudCol[0];
+			float cloudG = (float)cloudCol[1];
+			float cloudB = (float)cloudCol[2];
+			p.push("atmospheric_clouds");
+			renderer.getAtmosphericCloudRenderer().render(stack, projMat, partialTick, camX, camY, camZ, cloudR, cloudG, cloudB);
+			mc.getMainRenderTarget().bindWrite(false);
+			p.pop();
+		}
+	}
 	
 	@Override
 	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}

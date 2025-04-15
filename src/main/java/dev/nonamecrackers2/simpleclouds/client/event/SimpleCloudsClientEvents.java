@@ -100,17 +100,21 @@ public class SimpleCloudsClientEvents
 				.setDescription(Component.translatable("simpleclouds.config.preset.low.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 20)
 				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.LOW)
-				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false).build());
+				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)
+				.setPreset(SimpleCloudsConfig.CLIENT.atmosphericClouds, false).build());
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.ultra_low"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.ultra_low.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 20)
 				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.LOW)
 				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)
-				.setPreset(SimpleCloudsConfig.CLIENT.renderStormFog, false).build());
+				.setPreset(SimpleCloudsConfig.CLIENT.renderStormFog, false)
+				.setPreset(SimpleCloudsConfig.CLIENT.atmosphericClouds, false).build());
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.classic_style"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.classic_style.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)
-				.setPreset(SimpleCloudsConfig.CLIENT.cubeNormals, true).build());
+				.setPreset(SimpleCloudsConfig.CLIENT.cubeNormals, true)
+				.setPreset(SimpleCloudsConfig.CLIENT.shadedClouds, false)
+				.setPreset(SimpleCloudsConfig.CLIENT.atmosphericClouds, false).build());
 	}
 	
 	@SubscribeEvent

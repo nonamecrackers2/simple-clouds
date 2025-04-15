@@ -1,0 +1,29 @@
+{
+    "targets": [
+        "swap"
+    ],
+    "passes": [
+        {
+            "name": "simpleclouds:atmospheric_clouds",
+            "intarget": "minecraft:main",
+            "outtarget": "swap",
+            "auxtargets": [
+            	{
+            		"name": "DiffuseDepthSampler",
+            		"id": "minecraft:main:depth"
+            	}
+            ]
+        },
+        {
+            "name": "simpleclouds:atmospheric_clouds",
+            "intarget": "swap",
+            "outtarget": "minecraft:main",
+            "auxtargets": [
+            	{
+            		"name": "DiffuseDepthSampler",
+            		"id": "minecraft:main:depth"
+            	}
+            ]
+        }
+    ]
+}
