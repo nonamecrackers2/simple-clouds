@@ -9,10 +9,10 @@ uniform float DitherScale;
 uniform float FogStart;
 uniform float FogEnd;
 uniform vec4 FogColor;
-uniform float WeightDistance;
 
 in vec4 vertexColor;
 in float fogDistance;
+in float vertexDistance;
 
 layout(location = 0) out vec4 accumColor;
 layout(location = 1) out float revealage;
@@ -29,7 +29,8 @@ void main()
 	
 	vec4 premul = vec4(color.r * color.a, color.g * color.a, color.b * color.a, color.a);
 
-	float weight = premul.a * max(0.1, WeightDistance * pow((1.0 - gl_FragCoord.z), 3.0) - 100.0);
+	float z = min(vertexDistance / 1000.0, 1.0);
+	float weight = max(premul.a * 3000.0 * pow(1.0 - z, 3.0), 0.01);
 	
     accumColor = premul * weight;
     revealage = premul.a;

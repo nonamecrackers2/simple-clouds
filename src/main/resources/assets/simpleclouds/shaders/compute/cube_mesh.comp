@@ -369,7 +369,7 @@ void main()
 	//vec3 secant = normalize(vec3(dx, dy, dz));
 	gradient = normalize(gradient);
 	float strength = dot(gradient, SHADE_DIRECTION) * 0.5 + 0.5;
-	brightness = clamp(brightness - strength * 0.1, 1.0 - group.Storminess, 1.0);
+	brightness = clamp(brightness - strength * 0.1, group.Storminess * 0.5, 1.0);
 #endif
     if (noise > 0.0)
     {

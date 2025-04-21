@@ -99,6 +99,7 @@ import net.minecraftforge.fml.loading.ImmediateWindowHandler;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
 //TODO: Latest snapshot: use datapack cloud height + simple clouds config
+//TODO: damage tilt causes weird culling issues?
 public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/SimpleCloudsRenderer");
@@ -733,13 +734,12 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		SimpleCloudsRenderer.prepareShader(shader, stack.last().pose(), projMat, fogStart, fogEnd);
 		
-		shader.safeGetUniform("WeightDistance").set(1000.0F);
-		
 		shader.apply();
 		
-		GL14.glBlendEquation(GL14.GL_FUNC_ADD);
 		GL30.glEnablei(GL11.GL_BLEND, 0);
 		GL30.glEnablei(GL11.GL_BLEND, 1);
+		GL40.glBlendEquationi(0, GL14.GL_FUNC_ADD);
+		GL40.glBlendEquationi(1, GL14.GL_FUNC_ADD);
 		GL40.glBlendFunci(0, GL11.GL_ONE, GL11.GL_ONE);
 		GL40.glBlendFunci(1, GL11.GL_ZERO, GL11.GL_ONE_MINUS_SRC_COLOR);
 		

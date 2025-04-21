@@ -176,7 +176,7 @@ public class SimpleCloudsCloudTypeProvider extends CloudTypeProvider
 		layer2.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F);
 		layer2.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.2F);
 		noise.addNoiseLayer(layer2);
-		return new CloudType(SimpleCloudsMod.id("stratocumulus"), WeatherType.NONE, 0.6F, 64.0F, 48.0F, 0.0F, noise);
+		return new CloudType(SimpleCloudsMod.id("stratocumulus"), WeatherType.NONE, 0.6F, 64.0F, 48.0F, 0.02F, noise);
 	}
 	
 	private static CloudType stratus()
