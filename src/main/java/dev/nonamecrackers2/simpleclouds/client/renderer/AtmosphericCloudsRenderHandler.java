@@ -32,6 +32,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraftforge.common.Tags;
 
+//TODO: Make transform effect camera origin not world origin
 public class AtmosphericCloudsRenderHandler
 {
 	private static final ResourceLocation SHADER_LOC = SimpleCloudsMod.id("shaders/post/atmospheric_clouds.json");

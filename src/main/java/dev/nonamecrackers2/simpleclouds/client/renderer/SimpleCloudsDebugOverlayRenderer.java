@@ -24,7 +24,7 @@ public class SimpleCloudsDebugOverlayRenderer
 {
 	public static void render(ForgeGui gui, GuiGraphics stack, float partialTicks, float width, float height)
 	{
-		if (SimpleCloudsRenderer.canRenderInDimension(gui.getMinecraft().level))
+		if (SimpleCloudsRenderer.canRenderInDimension(gui.getMinecraft().level) && gui.getMinecraft().options.renderDebug)
 		{
 			float displaySize = 50.0F;
 			if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof MultiRegionCloudMeshGenerator meshGenerator)
@@ -36,10 +36,10 @@ public class SimpleCloudsDebugOverlayRenderer
 					Matrix4f matrix4f = stack.pose().last().pose();
 					BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
 					bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-					bufferbuilder.vertex(matrix4f, width - displaySize * 2.0F, height - displaySize, -100.0F).uv(0.0F, 0.0F).endVertex();
-					bufferbuilder.vertex(matrix4f, width - displaySize * 2.0F, height, -100.0F).uv(0.0F, 1.0F).endVertex();
-					bufferbuilder.vertex(matrix4f, width - displaySize, height, -100.0F).uv(1.0F, 1.0F).endVertex();
-					bufferbuilder.vertex(matrix4f, width - displaySize, height - displaySize, -100.0F).uv(1.0F, 0.0F).endVertex();
+					bufferbuilder.vertex(matrix4f, displaySize, height - displaySize, -100.0F).uv(0.0F, 0.0F).endVertex();
+					bufferbuilder.vertex(matrix4f, displaySize, height, -100.0F).uv(0.0F, 1.0F).endVertex();
+					bufferbuilder.vertex(matrix4f, displaySize * 2.0F, height, -100.0F).uv(1.0F, 1.0F).endVertex();
+					bufferbuilder.vertex(matrix4f, displaySize * 2.0F, height - displaySize, -100.0F).uv(1.0F, 0.0F).endVertex();
 					ShaderInstance shader = RenderSystem.getShader();
 					int lod = meshGenerator.getLodConfig().getLods().length;
 					shader.safeGetUniform("LodLevel").set(lod);
@@ -57,10 +57,10 @@ public class SimpleCloudsDebugOverlayRenderer
 			Matrix4f matrix4f = stack.pose().last().pose();
 			BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
 			bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-			bufferbuilder.vertex(matrix4f, width - displaySize, height - displaySize, -100.0F).uv(0.0F, 0.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, width - displaySize, height, -100.0F).uv(0.0F, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, width, height, -100.0F).uv(1.0F, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix4f, width, height - displaySize, -100.0F).uv(1.0F, 0.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, 0.0F, height - displaySize, -100.0F).uv(0.0F, 0.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, 0.0F, height, -100.0F).uv(0.0F, 1.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, displaySize, height, -100.0F).uv(1.0F, 1.0F).endVertex();
+			bufferbuilder.vertex(matrix4f, displaySize, height - displaySize, -100.0F).uv(1.0F, 0.0F).endVertex();
 			BufferUploader.drawWithShader(bufferbuilder.end());
 		}
 	}

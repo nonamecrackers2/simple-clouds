@@ -4,11 +4,11 @@
     "type": "minecraft:biased_to_bottom",
     "value": {
       "max_inclusive": 48000,
-      "min_inclusive": 12000
+      "min_inclusive": 36000
     }
   },
   "grow_ticks": {
-    "type": "minecraft:biased_to_bottom",
+    "type": "minecraft:uniform",
     "value": {
       "max_inclusive": 10000,
       "min_inclusive": 4000
@@ -17,7 +17,7 @@
   "moves_to_player": false,
   "order_weight": 500,
   "radius": {
-    "type": "minecraft:biased_to_bottom",
+    "type": "minecraft:uniform",
     "value": {
       "max_inclusive": 10000,
       "min_inclusive": 4000

@@ -6,14 +6,14 @@ import net.minecraft.world.level.saveddata.SavedData;
 public class CloudData extends SavedData
 {
 	public static final String ID = "clouddata";
-	private final CloudManager<?> manager;
+	private final ServerCloudManager manager;
 	
-	public CloudData(CloudManager<?> manager)
+	public CloudData(ServerCloudManager manager)
 	{
 		this.manager = manager;
 	}
 	
-	public static CloudData load(CloudManager<?> manager, CompoundTag tag)
+	public static CloudData load(ServerCloudManager manager, CompoundTag tag)
 	{
 		CloudData data = new CloudData(manager);
 		if (tag.contains("Seed"))
@@ -24,6 +24,7 @@ public class CloudData extends SavedData
 			manager.setSpeed(tag.getFloat("Speed"));
 		if (tag.contains("Height"))
 			manager.setCloudHeight(tag.getInt("Height"));
+		manager.getCloudGenerator().readTag(tag.getCompound("cloud_generator"));
 		return data;
 	}
 	
@@ -34,6 +35,7 @@ public class CloudData extends SavedData
 		tag.putFloat("ScrollAngle", this.manager.getScrollAngle());
 		tag.putFloat("Speed", this.manager.getSpeed());
 		tag.putInt("Height", this.manager.getCloudHeight());
+		tag.put("cloud_generator", this.manager.getCloudGenerator().toTag());
 		return tag;
 	}
 	

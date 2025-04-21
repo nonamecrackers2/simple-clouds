@@ -25,6 +25,7 @@ import net.minecraft.util.valueproviders.ConstantInt;
 import net.minecraft.util.valueproviders.FloatProvider;
 import net.minecraft.util.valueproviders.IntProvider;
 
+//TODO: Add a max of each cloud type in region option?
 public class CloudSpawningConfig
 {
 	public static final CloudSpawningConfig EMPTY = new CloudSpawningConfig(ConstantInt.ZERO, 0, 0, ImmutableMap.of());

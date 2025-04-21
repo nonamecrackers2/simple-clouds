@@ -11,7 +11,6 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
-import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudSpawningDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.ServerCloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
@@ -34,6 +33,12 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 	public ServerCloudManager(ServerLevel level)
 	{
 		super(level, CloudTypeDataManager.getServerInstance(), CloudSpawningDataManager.getInstance()::getConfig, ServerCloudGenerator::new);
+	}
+	
+	@Override
+	public ServerCloudGenerator getCloudGenerator()
+	{
+		return (ServerCloudGenerator)super.getCloudGenerator();
 	}
 	
 	@Override

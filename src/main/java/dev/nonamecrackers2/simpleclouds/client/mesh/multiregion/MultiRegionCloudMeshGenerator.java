@@ -44,7 +44,6 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
-//TODO: Use alpha (rotation) value in periodic noise in cube_mesh
 //TODO: Cloud regions abrubtly disappear
 public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
@@ -216,8 +215,6 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			if (i == 0 || largestEndHeight < endHeight)
 				largestEndHeight = endHeight;
 		}
-		//TODO: If clouds move super fast, old chunks wont get cleared when they should be empty
-		//Will try to make this work later on (also for single cloud mesh generator as well)
 		if (empty || smallestStartHeight == largestEndHeight)
 			return skip();
 		else

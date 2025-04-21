@@ -24,6 +24,12 @@ public class ClientCloudManager extends CloudManager<ClientLevel>
 	}
 	
 	@Override
+	public ClientCloudGenerator getCloudGenerator()
+	{
+		return (ClientCloudGenerator)super.getCloudGenerator();
+	}
+	
+	@Override
 	public CloudMode getCloudMode()
 	{
 		if (this.receivedSync && SimpleCloudsConfig.SERVER_SPEC.isLoaded())

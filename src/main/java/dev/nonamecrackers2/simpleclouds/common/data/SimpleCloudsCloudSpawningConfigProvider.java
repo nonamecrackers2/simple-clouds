@@ -21,7 +21,7 @@ import net.minecraft.util.valueproviders.UniformInt;
 
 public class SimpleCloudsCloudSpawningConfigProvider extends CloudSpawningConfigProvider
 {
-	private static final IntProvider SPAWN_INTERVAL = BiasedToBottomInt.of(120, 360);
+	private static final IntProvider SPAWN_INTERVAL = BiasedToBottomInt.of(2400, 12000);
 	private static final int MAX_FORMATIONS = 5;
 	private static final int MAX_INITIAL_FORMATIONS = 3;
 	
@@ -57,7 +57,7 @@ public class SimpleCloudsCloudSpawningConfigProvider extends CloudSpawningConfig
 		);
 		this.addEntry(new CloudSpawningConfig.Info(
 				SimpleCloudsMod.id("stratus"), 
-				Weight.of(5), 
+				Weight.of(4), 
 				UniformFloat.of(0.2F, 0.4F),
 				BiasedToBottomInt.of(3000, 6000), 
 				BiasedToBottomInt.of(24000, 48000), 
@@ -68,10 +68,10 @@ public class SimpleCloudsCloudSpawningConfigProvider extends CloudSpawningConfig
 		);
 		this.addEntry(new CloudSpawningConfig.Info(
 				SimpleCloudsMod.id("stratocumulus"), 
-				Weight.of(8), 
+				Weight.of(10), 
 				UniformFloat.of(0.1F, 0.2F),
-				BiasedToBottomInt.of(5000, 8000), 
-				BiasedToBottomInt.of(12000, 36000), 
+				UniformInt.of(5000, 10000), 
+				BiasedToBottomInt.of(24000, 48000), 
 				UniformInt.of(1200, 2400), 
 				ConstantFloat.of(1.0F), 
 				false, 
@@ -81,8 +81,8 @@ public class SimpleCloudsCloudSpawningConfigProvider extends CloudSpawningConfig
 				SimpleCloudsMod.id("cumulus"), 
 				Weight.of(12), 
 				UniformFloat.of(0.1F, 0.2F),
-				BiasedToBottomInt.of(4000, 10000), 
-				BiasedToBottomInt.of(12000, 48000), 
+				UniformInt.of(6000, 10000), 
+				BiasedToBottomInt.of(36000, 48000), 
 				UniformInt.of(1200, 2400), 
 				ConstantFloat.of(1.0F), 
 				false, 
@@ -92,8 +92,8 @@ public class SimpleCloudsCloudSpawningConfigProvider extends CloudSpawningConfig
 				SimpleCloudsMod.id("small_cumulus"), 
 				Weight.of(10), 
 				UniformFloat.of(0.1F, 0.2F),
-				BiasedToBottomInt.of(4000, 10000), 
-				BiasedToBottomInt.of(12000, 48000), 
+				UniformInt.of(4000, 10000), 
+				BiasedToBottomInt.of(36000, 48000), 
 				UniformInt.of(1200, 2400), 
 				ConstantFloat.of(1.0F), 
 				false, 
@@ -103,8 +103,8 @@ public class SimpleCloudsCloudSpawningConfigProvider extends CloudSpawningConfig
 				SimpleCloudsMod.id("itty_bitty"), 
 				Weight.of(12), 
 				UniformFloat.of(0.1F, 0.2F),
-				BiasedToBottomInt.of(4000, 10000), 
-				BiasedToBottomInt.of(12000, 48000), 
+				UniformInt.of(4000, 10000), 
+				BiasedToBottomInt.of(36000, 48000), 
 				UniformInt.of(1200, 2400), 
 				ConstantFloat.of(1.0F), 
 				false, 

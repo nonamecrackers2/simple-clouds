@@ -29,6 +29,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 
+//TODO: Make the distance close thunder sounds much lower
 public abstract class CloudManager<T extends Level> implements CloudGetter
 {
 	public static final int CLOUD_HEIGHT_MAX = 2048;
@@ -42,7 +43,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	private long seed;
 	protected @Nullable RandomSource random;
 	protected float scrollAngle;
-	protected float scrollXO; //TODO: Make this periodic?
+	protected float scrollXO;
 	protected float scrollYO;
 	protected float scrollZO;
 	protected float scrollX;

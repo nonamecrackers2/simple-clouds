@@ -6,17 +6,18 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Matrix2f;
-import org.joml.Matrix3f;
 import org.joml.Vector2f;
 
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.world.SpawnRegion;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
+import nonamecrackers2.crackerslib.common.util.primitives.PrimitiveHelper;
 
 public class CloudRegion
 {
@@ -85,6 +86,35 @@ public class CloudRegion
 		this.orderWeight = buffer.readVarInt();
 	}
 	
+	public CloudRegion(CompoundTag tag) throws IllegalArgumentException
+	{
+		this.cloudTypeId = ResourceLocation.read(tag.getString("id")).resultOrPartial(e -> {
+			throw new IllegalArgumentException(e);
+		}).get();
+		this.initialRadius = tag.getFloat("initial_radius");
+		this.movementDirection = PrimitiveHelper.vec2FromTag(tag.getCompound("movement_direction"));
+		this.maxSpeed = tag.getFloat("max_speed");
+		this.accelerationFactor = tag.getFloat("acceleration_factor");
+		this.orderWeight = tag.getInt("order_weight");
+		CompoundTag vel = tag.getCompound("velocity");
+		this.velX = vel.getFloat("x");
+		this.velZ = vel.getFloat("z");
+		CompoundTag pos = tag.getCompound("pos");
+		this.posX = pos.getFloat("x");
+		this.posXO = this.posX;
+		this.posZ = pos.getFloat("z");
+		this.posZO = this.posZ;
+		this.radius = tag.getFloat("radius");
+		this.radiusO = this.radius;
+		this.stretchFactor = tag.getFloat("stretch_factor");
+		this.stretchFactorO = this.stretchFactor;
+		this.rotation = tag.getFloat("rotation");
+		this.rotationO = this.rotation;
+		this.tickCount = tag.getInt("tick_count");
+		this.existsForTicks = tag.getInt("exists_for_ticks");
+		this.growTicks = tag.getInt("grow_ticks");
+	}
+	
 	public void toPacket(FriendlyByteBuf buffer)
 	{
 		buffer.writeResourceLocation(this.cloudTypeId);
@@ -104,6 +134,32 @@ public class CloudRegion
 		buffer.writeVarInt(this.existsForTicks);
 		buffer.writeVarInt(this.growTicks);
 		buffer.writeVarInt(this.orderWeight);
+	}
+	
+	public CompoundTag toTag()
+	{
+		CompoundTag tag = new CompoundTag();
+		tag.putString("id", this.cloudTypeId.toString());
+		tag.putFloat("initial_radius", this.initialRadius);
+		tag.put("movement_direction", PrimitiveHelper.vec2ToTag(this.movementDirection));
+		tag.putFloat("max_speed", this.maxSpeed);
+		tag.putFloat("acceleration_factor", this.accelerationFactor);
+		tag.putInt("order_weight", this.orderWeight);
+		CompoundTag vel = new CompoundTag();
+		vel.putFloat("x", this.velX);
+		vel.putFloat("z", this.velZ);
+		tag.put("velocity", vel);
+		CompoundTag pos = new CompoundTag();
+		pos.putFloat("x", this.posX);
+		pos.putFloat("z", this.posZ);
+		tag.put("pos", pos);
+		tag.putFloat("radius", this.radius);
+		tag.putFloat("stretch_factor", this.stretchFactor);
+		tag.putFloat("rotation", this.rotation);
+		tag.putInt("tick_count", this.tickCount);
+		tag.putInt("exists_for_ticks", this.existsForTicks);
+		tag.putInt("grow_ticks", this.growTicks);
+		return tag;
 	}
 
 	public void tick(RandomSource random, Level level, boolean isVisible)

@@ -1,5 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.common.cloud.spawning;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -80,7 +81,7 @@ public abstract class CloudGenerator
 		return this.clouds.size();
 	}
 	
-	public void setClouds(List<CloudRegion> clouds)
+	public void setClouds(Collection<CloudRegion> clouds)
 	{
 		this.removeAllClouds();
 		clouds.forEach(r -> {
@@ -207,6 +208,7 @@ public abstract class CloudGenerator
 	protected void spawnCloud(CloudSpawningConfig config, Level level)
 	{
 		this.ticksTillNextGen = config.getSpawnInterval().sample(this.random);
+		System.out.println("next spawn attempt: " + this.ticksTillNextGen);
 		
 		SpawnRegion.randomPointForEachRegion(this.spawnRegions, this.random, SPAWN_ATTEMPTS, (r, p) -> 
 		{
@@ -243,19 +245,14 @@ public abstract class CloudGenerator
 		}
 		
 		Vec2 direction;
-		float rotation;
-		if (info.movesToPlayer())
-		{
-			float deltaX = (playerX - x) * (1.0F + random.nextFloat() * 0.1F);
-			float deltaZ = (playerZ - z) * (1.0F + random.nextFloat() * 0.1F);
-			direction = new Vec2(deltaX, deltaZ).normalized();
-			rotation = (float)Math.atan2(deltaX, deltaZ) + (float)Math.PI;
-		}
-		else
-		{
+		float deltaAdj = info.movesToPlayer() ? 0.1F : 1.0F;
+		float deltaX = (playerX - x) * (1.0F + random.nextFloat() * deltaAdj);
+		float deltaZ = (playerZ - z) * (1.0F + random.nextFloat() * deltaAdj);
+		float rotation = (float)Math.atan2(deltaX, deltaZ) + (float)Math.PI;
+		if (random.nextInt(5) == 0)
 			direction = new Vec2(random.nextFloat() * 2.0F - 1.0F, random.nextFloat() * 2.0F - 1.0F).normalized();
-			rotation = (float)Math.PI * 2.0F * random.nextFloat();
-		}
+		else
+			direction = new Vec2(deltaX, deltaZ).normalized();
 		
 		float radius = (float)info.radius().sample(random);
 		float maxSpeed = 0.1F;

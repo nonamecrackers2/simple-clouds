@@ -163,7 +163,7 @@ public class CloudPreviewerScreen extends Screen3D
 		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.25F, 5000.0F);
 		if (generator == null)
 		{
-			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(false, LevelOfDetailOptions.HIGH.getConfig(), 3, true, SimpleCloudsConstants.EMPTY).setTestFacesFacingAway(true);
+			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(true, LevelOfDetailOptions.HIGH.getConfig(), 3, true, SimpleCloudsConstants.EMPTY).setTestFacesFacingAway(true);
 			generator.init(Minecraft.getInstance().getResourceManager());
 		}
 		this.prev = prev;
@@ -472,5 +472,6 @@ public class CloudPreviewerScreen extends Screen3D
 			this.minecraft.setScreen(this.prev);
 		else
 			super.onClose();
+		destroyMeshGenerator();
 	}
 }
