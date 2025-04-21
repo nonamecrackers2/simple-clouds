@@ -174,7 +174,7 @@ public class CloudRegion
 			scale = 1.0F - (float)(this.tickCount - this.growTicks) / (float)this.existsForTicks;
 		this.radius = this.initialRadius * scale;
 		
-		this.tickCount += isVisible ? 1 : 20; //TODO: Test this
+		this.tickCount += isVisible ? 1 : 20;
 		
 		this.posXO = this.posX;
 		this.posZO = this.posZ;
