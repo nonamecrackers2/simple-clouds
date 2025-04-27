@@ -287,6 +287,8 @@ public class WorldEffects
 							continue;
 						BlockPos pos = new BlockPos(x, y, z);
 						Biome.Precipitation precipitation = biome.getPrecipitationAt(pos);
+						if (precipitation == Biome.Precipitation.NONE)
+							continue;
 						RandomSource blockRandom = RandomSource.create(pos.asLong());
 						if (!this.precipitationQuads.containsKey(pos))
 						{
