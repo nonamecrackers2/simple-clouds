@@ -8,6 +8,7 @@ import dev.nonamecrackers2.simpleclouds.client.event.SimpleCloudsClientEvents;
 import dev.nonamecrackers2.simpleclouds.client.keybind.SimpleCloudsKeybinds;
 import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
+import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsAPIImpl;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfigListeners;
 import dev.nonamecrackers2.simpleclouds.common.event.CloudManagerEvents;
@@ -64,6 +65,7 @@ public class SimpleCloudsMod
 		context.registerConfig(ModConfig.Type.COMMON, SimpleCloudsConfig.COMMON_SPEC);
 		context.registerConfig(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC);
 		ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
+		SimpleCloudsAPIImpl.bootstrap();
 	}
 	
 	private void commonInit(FMLCommonSetupEvent event)

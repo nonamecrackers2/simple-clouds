@@ -1,7 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.common.cloud;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
-import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.noise.StaticLayeredNoise;
 
 public class SimpleCloudsConstants

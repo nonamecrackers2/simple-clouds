@@ -1,7 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.common.packet.impl.update;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.packet.SimpleCloudsClientPacketHandler;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent.Context;
 import nonamecrackers2.crackerslib.common.packet.Packet;

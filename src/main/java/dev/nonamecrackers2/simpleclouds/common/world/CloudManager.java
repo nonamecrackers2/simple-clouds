@@ -10,7 +10,10 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector2f;
 
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
+import dev.nonamecrackers2.simpleclouds.api.common.event.ModifyCloudSpeedEvent;
+import dev.nonamecrackers2.simpleclouds.api.common.world.ScAPICloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -18,7 +21,6 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGetter;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
 import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudSpawningConfig;
-import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -28,9 +30,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraftforge.common.MinecraftForge;
 
 //TODO: Make the distance close thunder sounds much lower
-public abstract class CloudManager<T extends Level> implements CloudGetter
+public abstract class CloudManager<T extends Level> implements CloudGetter, ScAPICloudManager
 {
 	public static final int CLOUD_HEIGHT_MAX = 2048;
 	public static final int CLOUD_HEIGHT_MIN = 0;
@@ -58,7 +61,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	@SuppressWarnings("unchecked")
 	public static <T extends Level> CloudManager<T> get(T level)
 	{
-		return Objects.requireNonNull(((CloudManagerAccessor<T>)level).getCloudManager(), "Cloud manager is not available, this shouldn't happen!");
+		return Objects.requireNonNull(((CloudManagerHolder<T>)level).getCloudManager(), "Cloud manager is not available, this shouldn't happen!");
 	}
 	
 	public CloudManager(T level, CloudTypeSource source, Supplier<CloudSpawningConfig> configGetter, BiFunction<CloudGetter, Supplier<CloudSpawningConfig>, CloudGenerator> generatorFunc)
@@ -68,6 +71,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		this.cloudGenerator = generatorFunc.apply(this, configGetter);
 	}
 	
+	@Override
 	public CloudGenerator getCloudGenerator()
 	{
 		return this.cloudGenerator;
@@ -91,6 +95,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		return this.cloudSource.getIndexedCloudTypes();
 	}
 	
+	@Override
 	public boolean isCloudGeneratorActive()
 	{
 		return this.getCloudMode() != CloudMode.SINGLE;
@@ -129,6 +134,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		}
 	}
 	
+	//For API calls, use Level#isRainingAt
 	public boolean isRainingAt(BlockPos pos)
 	{
 		if (!this.level.canSeeSky(pos) || this.level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, pos).getY() > pos.getY())
@@ -148,6 +154,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 			return false;
 	}
 	
+	@Override
 	public float getRainLevel(float x, float y, float z)
 	{
 		var info = this.getCloudTypeAtWorldPos(x, z);
@@ -169,11 +176,13 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		this.cloudGenerator.initialize(random, this.level);
 	}
 	
+	@Override
 	public int getCloudHeight()
 	{
 		return this.cloudHeight;
 	}
 	
+	@Override
 	public void setCloudHeight(int height)
 	{
 		this.cloudHeight = height;
@@ -189,8 +198,8 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		this.scrollXO = this.scrollX;
 		this.scrollYO = this.scrollY;
 		this.scrollZO = this.scrollZ;
-		float speed = this.getSpeed();
-		speed = this.modifySpeed(speed);
+		float speed = this.getCloudSpeed();
+		speed = this.modifyCloudSpeed(speed);
 		speed *= 0.0001F;
 		this.scrollAngle += speed;
 		this.scrollX = (float)Math.cos(this.scrollAngle) * SCROLL_OFFSET;
@@ -225,6 +234,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		return useVanillaWeather(this.level, this);
 	}
 	
+	@Override
 	public final boolean shouldUseVanillaWeather()
 	{
 		return this.useVanillaWeather;
@@ -234,28 +244,34 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 	
 	protected abstract void spawnLightning(CloudType type, float fade, int x, int z, boolean soundOnly);
 	
+	@Override
 	public abstract CloudMode getCloudMode();
 	
+	@Override
 	public abstract String getSingleModeCloudTypeRawId();
 	
+	@Override
 	public void spawnLightning(int x, int z, boolean soundOnly)
 	{
 		var info = this.getCloudTypeAtWorldPos((float)x + 0.5F, (float)z + 0.5f);
 		this.spawnLightning(info.getLeft(), info.getRight(), x, z, soundOnly);
 	}
 	
+	@Override
 	public Vector2f calculateWindDirection()
 	{
 		float dirX = Mth.cos(this.scrollAngle);
 		float dirZ = Mth.sin(this.scrollAngle);
 		return new Vector2f(dirX, dirZ);
 	}
-	
+
+	@Override
 	public int getTickCount()
 	{
 		return this.tickCount;
 	}
-	
+
+	@Override
 	public long getSeed()
 	{
 		return this.seed;
@@ -267,56 +283,68 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		return RandomSource.create(seed);
 	}
 	
-	protected float modifySpeed(float speed)
+	protected float modifyCloudSpeed(float speed)
 	{
-		return speed;
+		ModifyCloudSpeedEvent event = new ModifyCloudSpeedEvent(this.level, this, speed);
+		MinecraftForge.EVENT_BUS.post(event);
+		return event.getCurrentSpeed();
 	}
-	
-	public float getSpeed()
+
+	@Override
+	public float getCloudSpeed()
 	{
 		return this.speed;
 	}
-	
-	public void setSpeed(float speed)
+
+	@Override
+	public void setCloudSpeed(float speed)
 	{
 		this.speed = Math.max(0.0F, speed);
 	}
-	
+
+	@Override
 	public float getScrollAngle()
 	{
 		return this.scrollAngle;
 	}
-	
+
+	@Override
 	public void setScrollAngle(float angle)
 	{
 		this.scrollAngle = angle;
 	}
 
+	@Override
 	public float getScrollX()
 	{
 		return this.scrollX;
 	}
 
+	@Override
 	public float getScrollY()
 	{
 		return this.scrollY;
 	}
 
+	@Override
 	public float getScrollZ()
 	{
 		return this.scrollZ;
 	}
 
+	@Override
 	public float getScrollX(float partialTicks)
 	{
 		return Mth.lerp(partialTicks, this.scrollXO, this.scrollX);
 	}
-	
+
+	@Override
 	public float getScrollY(float partialTicks)
 	{
 		return Mth.lerp(partialTicks, this.scrollYO, this.scrollY);
 	}
 	
+	@Override
 	public float getScrollZ(float partialTicks)
 	{
 		return Mth.lerp(partialTicks, this.scrollZO, this.scrollZ);

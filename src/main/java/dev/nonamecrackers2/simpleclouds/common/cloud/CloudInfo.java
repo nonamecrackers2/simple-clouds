@@ -6,8 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
-import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.util.Mth;
 
@@ -19,6 +19,8 @@ public interface CloudInfo
 	public static final float STORM_FADE_DISTANCE_MAX = 1600.0F;
 	public static final float TRANSPARENCY_FADE_MAX = 32.0F;
 	
+	NoiseSettings noiseConfig();
+	
 	WeatherType weatherType();
 	
 	float storminess();
@@ -28,8 +30,6 @@ public interface CloudInfo
 	float stormFadeDistance();
 	
 	float transparencyFade();
-	
-	NoiseSettings noiseConfig();
 	
 	default JsonObject toJson() throws JsonSyntaxException
 	{

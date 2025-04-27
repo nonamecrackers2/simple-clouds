@@ -8,15 +8,18 @@ import org.joml.Vector2i;
 
 import com.google.common.collect.Lists;
 
+import dev.nonamecrackers2.simpleclouds.api.common.world.ScAPISpawnRegion;
 import net.minecraft.util.RandomSource;
 
-public record SpawnRegion(int x, int z, int radius)
+public record SpawnRegion(int x, int z, int radius) implements ScAPISpawnRegion
 {
+	@Override
 	public boolean includesPoint(int x, int z)
 	{
 		return x >= this.getMinX() && x <= this.getMaxX() && z >= this.getMinZ() && z <= this.getMaxZ();
 	}
 	
+	@Override
 	public boolean intersectsCircle(float x, float z, float radius)
 	{
 		float dx = Math.abs(x - this.x);
@@ -32,21 +35,25 @@ public record SpawnRegion(int x, int z, int radius)
 		return cornerDist <= radius * radius;
 	}
 	
+	@Override
 	public int getMinX()
 	{
 		return this.x - this.radius;
 	}
 	
+	@Override
 	public int getMaxX()
 	{
 		return this.x + this.radius;
 	}
 	
+	@Override
 	public int getMinZ()
 	{
 		return this.z - this.radius;
 	}
 	
+	@Override
 	public int getMaxZ()
 	{
 		return this.z + this.radius;

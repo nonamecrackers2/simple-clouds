@@ -2,9 +2,9 @@ package dev.nonamecrackers2.simpleclouds.client.dh.event;
 
 import com.seibel.distanthorizons.api.DhApi;
 
+import dev.nonamecrackers2.simpleclouds.api.client.event.ModifyCloudRenderDistanceEvent;
 import dev.nonamecrackers2.simpleclouds.client.dh.pipeline.DhSupportPipeline;
 import dev.nonamecrackers2.simpleclouds.client.event.impl.DetermineCloudRenderPipelineEvent;
-import dev.nonamecrackers2.simpleclouds.client.event.impl.ModifyCloudRenderDistanceEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public class SimpleCloudsDhForgeEvents

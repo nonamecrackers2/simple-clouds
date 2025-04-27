@@ -5,13 +5,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.ScAPICloudType;
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
-import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 
-public record CloudType(ResourceLocation id, WeatherType weatherType, float storminess, float stormStart, float stormFadeDistance, float transparencyFade, NoiseSettings noiseConfig) implements CloudInfo
+public record CloudType(ResourceLocation id, WeatherType weatherType, float storminess, float stormStart, float stormFadeDistance, float transparencyFade, NoiseSettings noiseConfig) implements CloudInfo, ScAPICloudType
 {
 	private static float getOptionalRangedParam(JsonObject object, String name, float defaultValue, float min, float max) throws JsonSyntaxException
 	{

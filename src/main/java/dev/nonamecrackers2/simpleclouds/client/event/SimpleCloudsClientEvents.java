@@ -7,6 +7,7 @@ import java.util.List;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.cloud.spawning.ClientSideCloudSpawningManager;
 import dev.nonamecrackers2.simpleclouds.client.command.ClientCloudCommandHelper;
@@ -23,7 +24,6 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.settings.CloudsRendererS
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.client.world.FogRenderMode;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
@@ -255,7 +255,7 @@ public class SimpleCloudsClientEvents
 				{
 					CloudManager<ClientLevel> manager = CloudManager.get(mc.level);
 					
-					text.add("Speed: " + round(manager.getSpeed()) + "; Height: " + manager.getCloudHeight());
+					text.add("Speed: " + round(manager.getCloudSpeed()) + "; Height: " + manager.getCloudHeight());
 					text.add("Scroll XYZ: " + round(manager.getScrollX()) + " / " + round(manager.getScrollY()) + " / " + round(manager.getScrollZ()));
 					
 					WorldEffects effects = renderer.getWorldEffectsManager();

@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import dev.nonamecrackers2.simpleclouds.common.world.CloudData;
-import dev.nonamecrackers2.simpleclouds.common.world.CloudManagerAccessor;
+import dev.nonamecrackers2.simpleclouds.common.world.CloudManagerHolder;
 import dev.nonamecrackers2.simpleclouds.common.world.ServerCloudManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -17,7 +17,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 
 @Mixin(ServerLevel.class)
-public abstract class MixinServerLevel implements CloudManagerAccessor<ServerLevel>
+public abstract class MixinServerLevel implements CloudManagerHolder<ServerLevel>
 {
 	@Unique
 	private ServerCloudManager cloudManager;

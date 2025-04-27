@@ -81,7 +81,7 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 	{
 		CommandSourceStack source = context.getSource();
 		T manager = this.getCloudManager(context);
-		source.sendSuccess(() -> Component.translatable("command.simpleclouds.speed.get", manager.getSpeed()), false);
+		source.sendSuccess(() -> Component.translatable("command.simpleclouds.speed.get", manager.getCloudSpeed()), false);
 		return 0;
 	}
 	
@@ -89,7 +89,7 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 	{
 		T manager = this.getCloudManager(context);
 		float speed = FloatArgumentType.getFloat(context, "amount");
-		manager.setSpeed(speed);
+		manager.setCloudSpeed(speed);
 		this.onValueUpdated(manager, SyncType.MOVEMENT);
 		return 0;
 	}

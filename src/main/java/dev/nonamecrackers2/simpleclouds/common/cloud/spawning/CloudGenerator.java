@@ -15,6 +15,7 @@ import org.joml.Vector2i;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import dev.nonamecrackers2.simpleclouds.common.api.ScAPICloudGeneratorImplHelper;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGetter;
@@ -24,7 +25,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 
-public abstract class CloudGenerator
+public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 {
 	public static final int SPAWN_RADIUS = 10000; 
 	public static final int SPAWN_ATTEMPTS = 10; 
@@ -44,16 +45,19 @@ public abstract class CloudGenerator
 		this.spawnConfig = spawnConfig;
 	}
 	
+	@Override
 	public final List<CloudRegion> getClouds()
 	{
 		return ImmutableList.copyOf(this.clouds);
 	}
 	
+	@Override
 	public final List<SpawnRegion> getSpawnRegions()
 	{
 		return ImmutableList.copyOf(this.spawnRegions);
 	}
 	
+	@Override
 	public List<CloudRegion> getCloudsInRegion(SpawnRegion region)
 	{
 		List<CloudRegion> clouds = Lists.newArrayList();
@@ -65,6 +69,7 @@ public abstract class CloudGenerator
 		return clouds;
 	}
 	
+	@Override
 	public List<SpawnRegion> getRegionsThatOccupyCloud(CloudRegion cloud)
 	{
 		List<SpawnRegion> regions = Lists.newArrayList();
@@ -76,11 +81,13 @@ public abstract class CloudGenerator
 		return regions;
 	}
 	
+	@Override
 	public final int getTotalCloudRegions()
 	{
 		return this.clouds.size();
 	}
 	
+	@Override
 	public void setClouds(Collection<CloudRegion> clouds)
 	{
 		this.removeAllClouds();
@@ -89,11 +96,13 @@ public abstract class CloudGenerator
 		});
 	}
 	
+	@Override
 	public boolean removeAllClouds()
 	{
 		return this.removeClouds(r -> true);
 	}
 	
+	@Override
 	public boolean removeClouds(Predicate<CloudRegion> predicate)
 	{
 		boolean anyPassed = false;
@@ -110,6 +119,7 @@ public abstract class CloudGenerator
 		return anyPassed;
 	}
 	
+	@Override
 	public boolean addCloud(CloudRegion region, CloudGenerator.Order order)
 	{
 		if (!this.cloudGetter.doesCloudTypeExist(region.getCloudTypeId()))

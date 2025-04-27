@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Queues;
 
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -28,7 +28,6 @@ import net.minecraftforge.network.PacketDistributor;
 public class ServerCloudManager extends CloudManager<ServerLevel>
 {
 	private Queue<SyncType> toSync = Queues.newArrayDeque();
-	private float speedRamp;
 	
 	public ServerCloudManager(ServerLevel level)
 	{
@@ -61,40 +60,40 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 		if (!this.useVanillaWeather)
 			this.level.setRainLevel(0.0F);
 		
-		boolean allSleeping = true;
-		for (ServerPlayer player : this.level.getServer().getPlayerList().getPlayers())
-		{
-			if (!player.isSleeping())
-				allSleeping = false;
-		}
-		if (allSleeping)
-		{
-			if (this.speedRamp < 1000.0F)
-			{
-				this.queueSync(SyncType.MOVEMENT);
-				this.speedRamp += 10.0F;
-			}
-		}
-		else
-		{
-			if (this.speedRamp > 0.0F)
-			{
-				this.queueSync(SyncType.MOVEMENT);
-				this.speedRamp -= 50.0F;
-			}
-		}
-		this.speedRamp = Math.max(0.0F, this.speedRamp);
+//		boolean allSleeping = true;
+//		for (ServerPlayer player : this.level.getServer().getPlayerList().getPlayers())
+//		{
+//			if (!player.isSleeping())
+//				allSleeping = false;
+//		}
+//		if (allSleeping)
+//		{
+//			if (this.speedRamp < 1000.0F)
+//			{
+//				this.queueSync(SyncType.MOVEMENT);
+//				this.speedRamp += 10.0F;
+//			}
+//		}
+//		else
+//		{
+//			if (this.speedRamp > 0.0F)
+//			{
+//				this.queueSync(SyncType.MOVEMENT);
+//				this.speedRamp -= 50.0F;
+//			}
+//		}
+//		this.speedRamp = Math.max(0.0F, this.speedRamp);
 		
 		//TODO: Test cloud generator when modifying dimension whitelist
 		if (this.isCloudGeneratorActive() && ((ServerCloudGenerator)this.getCloudGenerator()).checkAndResetSync())
 			this.queueSync(SyncType.CLOUD_FORMATIONS);
 	}
-	
-	@Override
-	protected float modifySpeed(float speed)
-	{
-		return speed + this.speedRamp;
-	}
+//	
+//	@Override
+//	protected float modifySpeed(float speed)
+//	{
+//		return speed + this.speedRamp;
+//	}
 	
 	@Override
 	protected void resetVanillaWeather()

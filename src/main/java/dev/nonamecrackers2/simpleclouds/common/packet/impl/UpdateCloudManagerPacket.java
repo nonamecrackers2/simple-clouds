@@ -18,7 +18,7 @@ public class UpdateCloudManagerPacket extends Packet
 	public UpdateCloudManagerPacket(CloudManager<ServerLevel> manager)
 	{
 		super(true);
-		this.speed = manager.getSpeed();
+		this.speed = manager.getCloudSpeed();
 		this.scrollAngle = manager.getScrollAngle();
 		this.cloudHeight = manager.getCloudHeight();
 	}

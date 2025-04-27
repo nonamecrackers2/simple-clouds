@@ -1,10 +1,10 @@
 package dev.nonamecrackers2.simpleclouds.client.world;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.cloud.region.ClientCloudGenerator;
 import dev.nonamecrackers2.simpleclouds.client.cloud.spawning.ClientSideCloudSpawningManager;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
@@ -102,9 +102,9 @@ public class ClientCloudManager extends CloudManager<ClientLevel>
 	}
 	
 	@Override
-	public float getSpeed()
+	public float getCloudSpeed()
 	{
-		return this.receivedSync ? super.getSpeed() : SimpleCloudsConfig.CLIENT.speedModifier.get().floatValue();
+		return this.receivedSync ? super.getCloudSpeed() : SimpleCloudsConfig.CLIENT.speedModifier.get().floatValue();
 	}
 	
 	@Override

@@ -21,7 +21,7 @@ public class CloudData extends SavedData
 		if (tag.contains("ScrollAngle"))
 			manager.setScrollAngle(tag.getFloat("ScrollAngle"));
 		if (tag.contains("Speed"))
-			manager.setSpeed(tag.getFloat("Speed"));
+			manager.setCloudSpeed(tag.getFloat("Speed"));
 		if (tag.contains("Height"))
 			manager.setCloudHeight(tag.getInt("Height"));
 		manager.getCloudGenerator().readTag(tag.getCompound("cloud_generator"));
@@ -33,7 +33,7 @@ public class CloudData extends SavedData
 	{
 		tag.putLong("Seed", this.manager.getSeed());
 		tag.putFloat("ScrollAngle", this.manager.getScrollAngle());
-		tag.putFloat("Speed", this.manager.getSpeed());
+		tag.putFloat("Speed", this.manager.getCloudSpeed());
 		tag.putInt("Height", this.manager.getCloudHeight());
 		tag.put("cloud_generator", this.manager.getCloudGenerator().toTag());
 		return tag;

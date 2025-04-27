@@ -6,10 +6,10 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
-import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import net.minecraft.resources.ResourceLocation;
 
 public class ClientSideCloudTypeManager implements CloudTypeSource

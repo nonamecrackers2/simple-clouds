@@ -10,12 +10,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
-import dev.nonamecrackers2.simpleclouds.common.world.CloudManagerAccessor;
+import dev.nonamecrackers2.simpleclouds.common.world.CloudManagerHolder;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.RandomSource;
 
 @Mixin(ClientLevel.class)
-public class MixinClientLevel implements CloudManagerAccessor<ClientLevel>
+public class MixinClientLevel implements CloudManagerHolder<ClientLevel>
 {
 	@Unique
 	private ClientCloudManager cloudManager;

@@ -8,6 +8,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Matrix2f;
 import org.joml.Vector2f;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.region.ScAPICloudRegion;
+import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionTickEvent;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.world.SpawnRegion;
 import net.minecraft.nbt.CompoundTag;
@@ -17,16 +19,17 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
+import net.minecraftforge.common.MinecraftForge;
 import nonamecrackers2.crackerslib.common.util.primitives.PrimitiveHelper;
 
-public class CloudRegion
+public class CloudRegion implements ScAPICloudRegion
 {
 	private final ResourceLocation cloudTypeId;
 	private final float initialRadius;
-	private final Vec2 movementDirection;
-	private final float maxSpeed;
-	private final float accelerationFactor;
 	private final int orderWeight;
+	private Vec2 movementDirection;
+	private float maxSpeed;
+	private float accelerationFactor;
 	private float velX;
 	private float velZ;
 	private float posX;
@@ -164,6 +167,18 @@ public class CloudRegion
 
 	public void tick(RandomSource random, Level level, boolean isVisible)
 	{
+		CloudRegionTickEvent event = new CloudRegionTickEvent(level, this);
+		MinecraftForge.EVENT_BUS.post(event);
+		Vec2 movementDirection = this.movementDirection;
+		float maxSpeed = this.maxSpeed;
+		float accelerationFactor = this.accelerationFactor;
+		if (event.getModifiedMovementDirection() != null)
+			movementDirection = event.getModifiedMovementDirection();
+		if (event.getModifiedMaxSpeed() >= 0.0F)
+			maxSpeed = event.getModifiedMaxSpeed();
+		if (event.getModifiedAccelerationFactor() >= 0.0F)
+			accelerationFactor = event.getModifiedAccelerationFactor();
+		
 		this.radiusO = this.radius;
 		this.stretchFactorO = this.stretchFactor;
 		this.rotationO = this.rotation;
@@ -181,10 +196,10 @@ public class CloudRegion
 
 		if (isVisible)
 		{
-			float targetVelX = Math.abs(this.movementDirection.x * this.maxSpeed);
-			float targetVelZ = Math.abs(this.movementDirection.y * this.maxSpeed);
-			this.velX = Mth.clamp(this.velX + this.movementDirection.x * this.accelerationFactor, -targetVelX, targetVelX);
-			this.velZ = Mth.clamp(this.velZ + this.movementDirection.y * this.accelerationFactor, -targetVelZ, targetVelZ);
+			float targetVelX = Math.abs(movementDirection.x * maxSpeed);
+			float targetVelZ = Math.abs(movementDirection.y * maxSpeed);
+			this.velX = Mth.clamp(this.velX + movementDirection.x * accelerationFactor, -targetVelX, targetVelX);
+			this.velZ = Mth.clamp(this.velZ + movementDirection.y * accelerationFactor, -targetVelZ, targetVelZ);
 			this.posX += this.velX;
 			this.posZ += this.velZ;
 		}
@@ -192,11 +207,13 @@ public class CloudRegion
 		this.priorVisible = isVisible;
 	}
 	
+	@Override
 	public ResourceLocation getCloudTypeId()
 	{
 		return this.cloudTypeId;
 	}
 	
+	@Override
 	public int getOrderWeight()
 	{
 		return this.orderWeight;
@@ -207,96 +224,175 @@ public class CloudRegion
 		return region.intersectsCircle(this.getWorldX(), this.getWorldZ(), this.getWorldRadius() + (float)SimpleCloudsConstants.CLOUD_SCALE / SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR);
 	}
 	
+	@Override
 	public boolean isDead()
 	{
 		return this.tickCount > this.existsForTicks;
 	}
 	
+	@Override
 	public Vec2 getMovementDirection()
 	{
 		return this.movementDirection;
 	}
-
+	
+	@Override
+	public void setMovementDirection(Vec2 direction)
+	{
+		this.movementDirection = direction;
+	}
+	
+	@Override
 	public float getMaxSpeed()
 	{
 		return this.maxSpeed;
 	}
-
+	
+	@Override
+	public void setMaxSpeed(float speed)
+	{
+		this.maxSpeed = speed;
+	}
+	
+	@Override
 	public float getAccelerationFactor()
 	{
 		return this.accelerationFactor;
 	}
 	
+	@Override
+	public void setAccelerationFactor(float factor)
+	{
+		this.accelerationFactor = factor;
+	}
+	
+	@Override
 	public float getPosX(float partialTick)
 	{
 		return Mth.lerp(partialTick, this.posXO, this.posX);
 	}
 	
-	public float getPosZ(float partialTick)
-	{
-		return Mth.lerp(partialTick, this.posZO, this.posZ);
-	}
-	
-	public float getRadius(float partialTick)
-	{
-		return Mth.lerp(partialTick, this.radiusO, this.radius);
-	}
-	
-	public float getStretch(float partialTick)
-	{
-		return Mth.lerp(partialTick, this.stretchFactorO, this.stretchFactor);
-	}
-	
-	public float getRotation(float partialTick)
-	{
-		return Mth.lerp(partialTick, this.rotationO, this.rotation);
-	}
-
+	@Override
 	public float getPosX()
 	{
 		return this.posX;
 	}
 	
+	@Override
 	public float getWorldX()
 	{
 		return this.posX * (float)SimpleCloudsConstants.CLOUD_SCALE;
 	}
-
+	
+	@Override
+	public float getPosZ(float partialTick)
+	{
+		return Mth.lerp(partialTick, this.posZO, this.posZ);
+	}
+	
+	@Override
 	public float getPosZ()
 	{
 		return this.posZ;
 	}
 	
+	@Override
 	public float getWorldZ()
 	{
 		return this.posZ * (float)SimpleCloudsConstants.CLOUD_SCALE;
 	}
-
+	
+	@Override
+	public void moveTo(float x, float z)
+	{
+		this.posX = x;
+		this.posXO = x;
+		this.posZ = z;
+		this.posZO = z;
+	}
+	
+	@Override
+	public void moveToWorldPos(float x, float z)
+	{
+		this.moveTo(x / (float)SimpleCloudsConstants.CLOUD_SCALE, z / (float)SimpleCloudsConstants.CLOUD_SCALE);
+	}
+	
+	@Override
+	public float getRadius(float partialTick)
+	{
+		return Mth.lerp(partialTick, this.radiusO, this.radius);
+	}
+	
+	@Override
 	public float getRadius()
 	{
 		return this.radius;
 	}
 	
+	@Override
 	public float getWorldRadius()
 	{
 		return this.radius * (float)SimpleCloudsConstants.CLOUD_SCALE;
 	}
 	
+	@Override
+	public void setRadius(float radius)
+	{
+		this.radius = radius;
+		this.radiusO = radius;
+	}
+	
+	@Override
+	public void setWorldRadius(float radius)
+	{
+		this.setRadius(radius / (float)SimpleCloudsConstants.CLOUD_SCALE);
+	}
+	
+	@Override
+	public float getStretch(float partialTick)
+	{
+		return Mth.lerp(partialTick, this.stretchFactorO, this.stretchFactor);
+	}
+	
+	@Override
 	public float getStretch()
 	{
 		return this.stretchFactor;
 	}
 	
+	@Override
+	public void setStretchFactor(float factor)
+	{
+		this.stretchFactor = factor;
+		this.stretchFactorO = factor;
+	}
+	
+	@Override
+	public float getRotation(float partialTick)
+	{
+		return Mth.lerp(partialTick, this.rotationO, this.rotation);
+	}
+	
+	@Override
 	public float getRotation()
 	{
 		return this.rotation;
 	}
 	
+	@Override
+	public void setRotation(float rotation)
+	{
+		this.rotation = rotation;
+		this.rotationO = rotation;
+	}
+	
+	@Override
 	public boolean wasPriorVisible()
 	{
 		return this.priorVisible;
 	}
 	
+	@Override
 	public Matrix2f createTransform(float partialTick)
 	{
 		Matrix2f transform = new Matrix2f().identity();
