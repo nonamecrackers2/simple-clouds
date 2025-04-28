@@ -574,14 +574,7 @@ public abstract class CloudMeshGenerator
 		}
 		else
 		{
-			//We read these SSBOs here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
-			this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4);
-			this.shader.getShaderStorageBuffer(SIDES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
-			if (this.useTransparency)
-			{
-				this.shader.getShaderStorageBuffer(TRANSPARENT_TOTAL_CUBES_NAME).readWriteData(b -> {}, 4);
-				this.shader.getShaderStorageBuffer(TRANSPARENT_CUBES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
-			}
+			this.onOffGen();
 		}
 		
 		//If there are mesh gen tasks, we do mesh genning
@@ -746,6 +739,18 @@ public abstract class CloudMeshGenerator
 				chunkCount++;
 		}
 		return Mth.ceil((float)chunkCount / (float)genInterval);
+	}
+	
+	protected void onOffGen()
+	{
+		//We read these SSBOs here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
+		this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4);
+		this.shader.getShaderStorageBuffer(SIDES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
+		if (this.useTransparency)
+		{
+			this.shader.getShaderStorageBuffer(TRANSPARENT_TOTAL_CUBES_NAME).readWriteData(b -> {}, 4);
+			this.shader.getShaderStorageBuffer(TRANSPARENT_CUBES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
+		}
 	}
 	
 	/**

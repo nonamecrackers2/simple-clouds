@@ -26,7 +26,6 @@ import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
-import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetail;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
@@ -350,6 +349,15 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		this.runRegionGenerator(meshGenOffsetX, meshGenOffsetZ, partialTick);
 		
 		return super.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, interval, partialTick);
+	}
+	
+	@Override
+	protected void onOffGen()
+	{
+		super.onOffGen();
+		
+		if (this.regionTextureGenerator != null)
+			this.regionTextureGenerator.getShaderStorageBuffer("CloudRegions").readData(buf -> {}, BYTES_PER_REGION * MAX_CLOUD_FORMATIONS);
 	}
 	
 	@Override
