@@ -17,6 +17,6 @@ public class MixinLevel
 	{
 		CloudManager<?> manager = CloudManager.get((Level)(Object)this);
 		if (!manager.shouldUseVanillaWeather())
-			ci.setReturnValue(manager.isRainingAt(pos));
+			ci.setReturnValue(manager.hasPrecipitationAt(pos));
 	}
 }

@@ -134,43 +134,41 @@ public abstract class CloudManager<T extends Level> implements CloudGetter, ScAP
 		}
 	}
 	
+	public Pair<Boolean, Biome.Precipitation> getPrecipitationAt(BlockPos pos)
+	{
+		if (!this.level.canSeeSky(pos) || this.level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, pos).getY() > pos.getY())
+			return Pair.of(false, Biome.Precipitation.NONE);
+
+		Biome.Precipitation precipitation = this.level.getBiome(pos).value().getPrecipitationAt(pos);
+
+		var info = this.getCloudTypeAtWorldPos((float)pos.getX() + 0.5F, (float)pos.getZ() + 0.5F);
+		CloudType type = info.getLeft();
+		if ((float)pos.getY() + 0.5F > type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 128.0F)
+			return Pair.of(false, Biome.Precipitation.NONE);
+
+		if (info.getLeft().weatherType().includesRain() && info.getRight() < SimpleCloudsConstants.RAIN_THRESHOLD - 0.01F)
+			return Pair.of(true, precipitation);
+		else
+			return Pair.of(false, Biome.Precipitation.NONE);
+	}
+	
 	//For API calls, use Level#isRainingAt
 	public boolean isRainingAt(BlockPos pos)
 	{
-		if (!this.level.canSeeSky(pos) || this.level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, pos).getY() > pos.getY())
-			return false;
-		
-		if (this.level.getBiome(pos).value().getPrecipitationAt(pos) != Biome.Precipitation.RAIN)
-			return false;
-		
-		var info = this.getCloudTypeAtWorldPos((float)pos.getX() + 0.5F, (float)pos.getZ() + 0.5F);
-		CloudType type = info.getLeft();
-		if ((float)pos.getY() + 0.5F > type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 128.0F)
-			return false;
-		
-		if (info.getLeft().weatherType().includesRain() && info.getRight() < SimpleCloudsConstants.RAIN_THRESHOLD - 0.01F)
-			return true;
-		else
-			return false;
+		Pair<Boolean, Biome.Precipitation> val = this.getPrecipitationAt(pos);
+		return val.getLeft() && val.getRight() != Biome.Precipitation.RAIN;
 	}
-
+	
 	public boolean isSnowingAt(BlockPos pos)
 	{
-		if (!this.level.canSeeSky(pos) || this.level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, pos).getY() > pos.getY())
-			return false;
-
-		if (this.level.getBiome(pos).value().getPrecipitationAt(pos) != Biome.Precipitation.SNOW)
-			return false;
-
-		var info = this.getCloudTypeAtWorldPos((float)pos.getX() + 0.5F, (float)pos.getZ() + 0.5F);
-		CloudType type = info.getLeft();
-		if ((float)pos.getY() + 0.5F > type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 128.0F)
-			return false;
-
-		if (info.getLeft().weatherType().includesRain() && info.getRight() < SimpleCloudsConstants.RAIN_THRESHOLD - 0.01F)
-			return true;
-		else
-			return false;
+		Pair<Boolean, Biome.Precipitation> val = this.getPrecipitationAt(pos);
+		return val.getLeft() && val.getRight() == Biome.Precipitation.SNOW;
+	}
+	
+	public boolean hasPrecipitationAt(BlockPos pos)
+	{
+		Pair<Boolean, Biome.Precipitation> val = this.getPrecipitationAt(pos);
+		return val.getLeft() && val.getRight() != Biome.Precipitation.NONE;
 	}
 	
 	@Override
