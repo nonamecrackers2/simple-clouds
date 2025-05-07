@@ -367,7 +367,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		int span = this.meshGenerator.getLodConfig().getEffectiveChunkSpan() * SimpleCloudsConstants.CHUNK_SIZE * SimpleCloudsConstants.CLOUD_SCALE;
 		this.stormFogShadowMap = new ShadowMapBuffer(span, span, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, 0.0F, 10000.0F, true, false);
 		
-		if (SimpleCloudsConfig.CLIENT.distantShadows.get())
+		if (SimpleCloudsConfig.CLIENT.distantShadows.get() && SimpleCloudsMod.dhLoaded())
 		{
 			int distantShadowSpan = SimpleCloudsConfig.CLIENT.shadowDistance.get() * 2;
 			distantShadowSpan = Math.min(distantShadowSpan, span);

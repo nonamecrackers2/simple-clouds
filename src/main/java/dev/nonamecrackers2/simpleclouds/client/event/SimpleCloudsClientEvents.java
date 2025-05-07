@@ -150,6 +150,11 @@ public class SimpleCloudsClientEvents
 					event.setCanceled(true);
 				}
 			}
+			if (!SimpleCloudsMod.dhLoaded())
+			{
+				if (event.isValue(SimpleCloudsConfig.CLIENT.distantShadows) || event.isValue(SimpleCloudsConfig.CLIENT.shadowDistance))
+					event.setCanceled(true);
+			}
 		}
 	}
 	
