@@ -47,10 +47,11 @@ import net.minecraft.server.packs.resources.ResourceManager;
 public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");
+
 	private static final ResourceLocation REGION_GENERATOR_LOC = SimpleCloudsMod.id("cloud_regions");
 	private static final String LOD_SCALES_NAME = "LodScales";
 	private static final String CLOUD_REGIONS_NAME = "CloudRegions";
-	public static final int MAX_CLOUD_TYPES = 32;
+	public static final int MAX_CLOUD_TYPES = 64;
 	public static final int MAX_CLOUD_FORMATIONS = 10;
 	private static final int BYTES_PER_REGION = 32;
 	private int requiredRegionTexSize; 
