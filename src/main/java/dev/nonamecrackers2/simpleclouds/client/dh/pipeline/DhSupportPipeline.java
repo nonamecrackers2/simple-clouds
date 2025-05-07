@@ -1,7 +1,5 @@
 package dev.nonamecrackers2.simpleclouds.client.dh.pipeline;
 
-import javax.annotation.Nullable;
-
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
@@ -37,19 +35,10 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 	private DhSupportPipeline() {}
 	
 	@Override
-	public void prepare(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
-	{
-		mc.getProfiler().push("shadow_map");
-		
-		PoseStack shadowMapStack = new PoseStack();
-		shadowMapStack.setIdentity();
-		renderer.renderShadowMap(shadowMapStack, camX, camY, camZ);
-		
-		mc.getProfiler().pop();
-	}
+	public void prepare(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
 	
 	@Override
-	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
+	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
 	{
 		if (SimpleCloudsConfig.CLIENT.atmosphericClouds.get())
 		{
@@ -66,13 +55,13 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 	}
 	
 	@Override
-	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
+	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
 	
 	@Override
-	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
+	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
 	
 	@Override
-	public void beforeDistantHorizonsApplyShader(Minecraft mc, SimpleCloudsRenderer renderer, @Nullable PoseStack shadowMapStack, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum, int dhFbo)
+	public void beforeDistantHorizonsApplyShader(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum, int dhFbo)
 	{
 		RenderTarget cloudTarget = renderer.getCloudTarget();
 		cloudTarget.clear(Minecraft.ON_OSX);
@@ -88,7 +77,7 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 	}
 	
 	@Override
-	public void afterDistantHorizonsRender(Minecraft mc, SimpleCloudsRenderer renderer, @Nullable PoseStack shadowMapStack, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum, int dhFbo)
+	public void afterDistantHorizonsRender(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum, int dhFbo)
 	{
 		float[] cloudCol = renderer.getCloudColor(partialTick);
 		float cloudR = (float)cloudCol[0];
@@ -133,6 +122,10 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 		
 		stack.popPose();
 		
+		p.push("cloud_shadows");
+		renderer.doCloudShadowProcessing(stack, partialTick, projMat, camX, camY, camZ, cloudTarget.getDepthTextureId());
+		p.pop();
+		
 		// Render everything on to the main screen using a final composite shader
 		p.push("clouds_composite");
 		renderer.doFinalCompositePass(stack, partialTick, projMat);
@@ -147,7 +140,7 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 			p.push("storm_fog");
 			
 			// Renders the storm fog at a lower resolution
-			renderer.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
+			renderer.doStormPostProcessing(stack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
 			
 			// Next we blit the storm fog to a higher resolution texture and apply a box blur
 			RenderTarget target = renderer.getBlurTarget();
@@ -181,7 +174,7 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 		stack.translate(-camX, -camY, -camZ);
 		renderLightning(renderer.getWorldEffectsManager(), renderer, mc, stack, partialTick, camX, camY, camZ);
 		stack.popPose();
-		
+
 		RenderSystem.setProjectionMatrix(oldMcProjMat, VertexSorting.DISTANCE_TO_ORIGIN);
 		GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL11.GL_TEXTURE_2D, mc.getMainRenderTarget().getDepthTextureId(), 0);
 	}

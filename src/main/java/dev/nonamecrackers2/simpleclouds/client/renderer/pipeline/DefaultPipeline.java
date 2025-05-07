@@ -1,7 +1,5 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer.pipeline;
 
-import javax.annotation.Nullable;
-
 import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -26,19 +24,10 @@ public class DefaultPipeline implements CloudsRenderPipeline
 	protected DefaultPipeline() {}
 	
 	@Override
-	public void prepare(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
-	{
-		mc.getProfiler().push("shadow_map");
-		
-		PoseStack shadowMapStack = new PoseStack();
-		shadowMapStack.setIdentity();
-		renderer.renderShadowMap(shadowMapStack, camX, camY, camZ);
-		
-		mc.getProfiler().pop();
-	}
+	public void prepare(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
 
 	@Override
-	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) 
+	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) 
 	{
 		ProfilerFiller p = mc.getProfiler();
 		
@@ -114,7 +103,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 			p.push("storm_fog");
 			
 			// Renders the storm fog at a lower resolution
-			renderer.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
+			renderer.doStormPostProcessing(stack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
 			
 			// Next we blit the storm fog to a higher resolution texture and apply a box blur
 			RenderTarget target = renderer.getBlurTarget();
@@ -143,7 +132,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 	}
 	
 	@Override
-	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
+	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
 	{
 		if (SimpleCloudsConfig.CLIENT.fogMode.get() == FogRenderMode.SCREEN_SPACE && mc.gameRenderer.getMainCamera().getFluidInCamera() == FogType.NONE)
 		{
@@ -153,7 +142,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 	}
 
 	@Override
-	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
+	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
 	{
 //		mc.getProfiler().push("clouds_debug");
 //		stack.pushPose();

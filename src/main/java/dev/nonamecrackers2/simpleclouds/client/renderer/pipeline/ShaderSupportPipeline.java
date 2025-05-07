@@ -23,12 +23,6 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 	@Override
 	public void prepare(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
 	{
-		mc.getProfiler().push("shadow_map");
-		PoseStack shadowMapStack = new PoseStack();
-		shadowMapStack.setIdentity();
-		renderer.renderShadowMap(shadowMapStack, camX, camY, camZ);
-		mc.getProfiler().pop();
-		
 		float[] cloudCol = renderer.getCloudColor(partialTick);
 		float cloudR = (float)cloudCol[0];
 		float cloudG = (float)cloudCol[1];
@@ -36,7 +30,7 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 	
 		if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
 		{
-			renderer.doStormPostProcessing(stack, shadowMapStack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
+			renderer.doStormPostProcessing(stack, partialTick, projMat, camX, camY, camZ, cloudR, cloudG, cloudB);
 			renderer.getBlurTarget().clear(Minecraft.ON_OSX);
 			renderer.getBlurTarget().bindWrite(true);
 			FrameBufferUtils.blitTargetPreservingAlpha(renderer.getStormFogTarget(), mc.getWindow().getWidth(), mc.getWindow().getHeight());
@@ -47,7 +41,7 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 	}
 
 	@Override
-	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
+	public void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
 	{
 		if (SimpleCloudsConfig.CLIENT.renderStormFog.get())
 		{
@@ -67,10 +61,10 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 	}
 	
 	@Override
-	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
+	public void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
 
 	@Override
-	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
+	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum)
 	{
 		float[] cloudCol = renderer.getCloudColor(partialTick);
 		float cloudR = (float)cloudCol[0];

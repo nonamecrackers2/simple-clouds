@@ -95,20 +95,25 @@ public class SimpleCloudsClientEvents
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.medium"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.medium.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 10)
-				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.MEDIUM).build());
+				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.MEDIUM)
+				.setPreset(SimpleCloudsConfig.CLIENT.shadowDistance, 2500).build());
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.low"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.low.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 20)
 				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.LOW)
 				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)
-				.setPreset(SimpleCloudsConfig.CLIENT.atmosphericClouds, false).build());
+				.setPreset(SimpleCloudsConfig.CLIENT.atmosphericClouds, false)
+				.setPreset(SimpleCloudsConfig.CLIENT.shadowDistance, 2500)
+				.setPreset(SimpleCloudsConfig.CLIENT.distantShadows, false).build());
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.ultra_low"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.ultra_low.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 20)
 				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.LOW)
 				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)
 				.setPreset(SimpleCloudsConfig.CLIENT.renderStormFog, false)
-				.setPreset(SimpleCloudsConfig.CLIENT.atmosphericClouds, false).build());
+				.setPreset(SimpleCloudsConfig.CLIENT.atmosphericClouds, false)
+				.setPreset(SimpleCloudsConfig.CLIENT.shadowDistance, 1000)
+				.setPreset(SimpleCloudsConfig.CLIENT.distantShadows, false).build());
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.classic_style"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.classic_style.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)

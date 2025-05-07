@@ -17,13 +17,13 @@ public interface CloudsRenderPipeline
 	
 	void prepare(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum);
 	
-	void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum);
+	void afterSky(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum);
 	
-	void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum);
+	void beforeWeather(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum);
 	
-	void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, @Nullable PoseStack shadowMapStack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum);
+	void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum);
 	
-	default void beforeDistantHorizonsApplyShader(Minecraft mc, SimpleCloudsRenderer renderer, @Nullable PoseStack shadowMapStack, PoseStack dhModelViewStack, Matrix4f dhProjMat, float partialTick, double camX, double camY, double camZ, Frustum frustum, int dhFrameBufferId) {}
+	default void beforeDistantHorizonsApplyShader(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack dhModelViewStack, Matrix4f dhProjMat, float partialTick, double camX, double camY, double camZ, Frustum frustum, int dhFrameBufferId) {}
 	
-	default void afterDistantHorizonsRender(Minecraft mc, SimpleCloudsRenderer renderer, @Nullable PoseStack shadowMapStack, PoseStack dhModelViewStack, Matrix4f dhProjMat, float partialTick, double camX, double camY, double camZ, Frustum frustum, int dhFrameBufferId) {}
+	default void afterDistantHorizonsRender(Minecraft mc, SimpleCloudsRenderer renderer, PoseStack dhModelViewStack, Matrix4f dhProjMat, float partialTick, double camX, double camY, double camZ, Frustum frustum, int dhFrameBufferId) {}
 }

@@ -2,7 +2,6 @@ package dev.nonamecrackers2.simpleclouds.client.renderer;
 
 import java.awt.Color;
 import java.io.IOException;
-import java.nio.IntBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -23,7 +22,6 @@ import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
@@ -35,7 +33,6 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -53,6 +50,7 @@ import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.event.impl.DetermineCloudRenderPipelineEvent;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.CloudRenderTarget;
+import dev.nonamecrackers2.simpleclouds.client.framebuffer.ShadowMapBuffer;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.WeightedBlendingTarget;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
@@ -92,6 +90,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.StartupMessageManager;
@@ -108,11 +107,13 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private static final ResourceLocation STORM_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/storm_post.json");
 	private static final ResourceLocation BLUR_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/blur_post.json");
 	private static final ResourceLocation SCREEN_SPACE_WORLD_FOG_LOC = SimpleCloudsMod.id("shaders/post/screen_space_world_fog.json");
+	private static final ResourceLocation CLOUD_SHADOWS_LOC = SimpleCloudsMod.id("shaders/post/cloud_shadows.json");
 	private static final ResourceLocation FINAL_COMPOSITE_LOC = SimpleCloudsMod.id("shaders/post/final_composite.json");
 	private static final ResourceLocation FINAL_COMPOSITE_NO_TRANSPARENCY_LOC = SimpleCloudsMod.id("shaders/post/final_composite_no_transparency.json");
 	private static final ResourceLocation DITHER_TEXTURE = SimpleCloudsMod.id("textures/shader/bayer_matrix.png");
 	private static final ArtifactVersion REQUIRED_OPENGL_VERSION = new DefaultArtifactVersion("4.3");
 	public static final int SHADOW_MAP_SIZE = 1024;
+	public static final int SHADOW_MAP_SPAN = 10000;
 	public static final int MAX_LIGHTNING_BOLTS = 16;
 	public static final int BYTES_PER_LIGHTNING_BOLT = 16;
 	public static final float CHUNK_FADE_IN_ALPHA_PER_TICK = 0.2F;
@@ -126,7 +127,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private ArtifactVersion openGlVersion;
 	private CloudMeshGenerator meshGenerator;
 	private @Nullable CloudsRenderPipeline renderPipelineThisPass;
-	private Matrix4f shadowMapProjMat;
 	private @Nullable RenderTarget cloudTarget;
 	private @Nullable WeightedBlendingTarget cloudTransparencyTarget;
 	private @Nullable RenderTarget stormFogTarget;
@@ -136,13 +136,15 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable PostChain stormPostProcessing;
 	private @Nullable PostChain blurPostProcessing;
 	private @Nullable PostChain screenSpaceWorldFog;
+	private @Nullable PostChain cloudShadows;
 	private @Nullable ShaderStorageBufferObject lightningBoltPositions;
+	private @Nullable ShadowMapBuffer stormFogShadowMap;
+	private Optional<ShadowMapBuffer> shadowMap = Optional.empty();
+	private @Nullable Frustum shadowMapFrustum;
 	private @Nullable Frustum cullFrustum;
-	private int shadowMapBufferId = -1;
-	private int shadowMapDepthTextureId = -1;
-	private int shadowMapColorTextureId = -1;
 	private float fogStart;
 	private float fogEnd;
+	private @Nullable PoseStack stormFogShadowMapStack;
 	private @Nullable PoseStack shadowMapStack;
 	private boolean failedToCopyDepthBuffer;
 	private boolean needsReload;
@@ -191,9 +193,24 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		return this.initialInitializationResult;
 	}
 	
-	public int getShadowMapTextureId()
+	public ShadowMapBuffer getStormFogShadowMap()
 	{
-		return this.shadowMapColorTextureId;
+		return this.stormFogShadowMap;
+	}
+	
+	public Optional<ShadowMapBuffer> getShadowMap()
+	{
+		return this.shadowMap;
+	}
+	
+	public @Nullable PoseStack getStormFogShadowMapStack()
+	{
+		return this.stormFogShadowMapStack;
+	}
+	
+	public @Nullable PoseStack getShadowMapStack()
+	{
+		return this.shadowMapStack;
 	}
 	
 	public RenderTarget getBlurTarget()
@@ -234,11 +251,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public @Nullable Frustum getCullFrustum()
 	{
 		return this.cullFrustum;
-	}
-	
-	public @Nullable PoseStack getShadowMapStack()
-	{
-		return this.shadowMapStack;
 	}
 	
 	public void onCloudManagerChange(ClientCloudManager manager)
@@ -338,6 +350,34 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.initialInitializationResult == null)
 			this.initialInitializationResult = result;
 		
+		// --- Shadow Map ---
+		
+		StartupMessageManager.addModMessage("Shadow map");
+		
+		if (this.stormFogShadowMap != null)
+		{
+			this.stormFogShadowMap.close();
+			this.stormFogShadowMap = null;
+		}
+		
+		this.shadowMap.ifPresent(buffer -> {
+			buffer.close();
+		});
+		
+		int span = this.meshGenerator.getLodConfig().getEffectiveChunkSpan() * SimpleCloudsConstants.CHUNK_SIZE * SimpleCloudsConstants.CLOUD_SCALE;
+		this.stormFogShadowMap = new ShadowMapBuffer(span, span, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, 0.0F, 10000.0F, true, false);
+		
+		if (SimpleCloudsConfig.CLIENT.distantShadows.get())
+		{
+			int distantShadowSpan = SimpleCloudsConfig.CLIENT.shadowDistance.get() * 2;
+			distantShadowSpan = Math.min(distantShadowSpan, span);
+			this.shadowMap = Optional.of(new ShadowMapBuffer(distantShadowSpan, distantShadowSpan, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, 0.0F, 10000.0F, false, true));
+		}
+		else
+		{
+			this.shadowMap = Optional.empty();
+		}
+		
 		// --- Post Processing Shaders ---
 		
 		StartupMessageManager.addModMessage("Post processing shaders");
@@ -356,8 +396,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.stormPostProcessing = this.createPostChain(manager, STORM_POST_PROCESSING_LOC, this.stormFogTarget, 0.25F, 0.25F, pass -> 
 		{
 			EffectInstance effect = pass.getEffect();
-			effect.setSampler("ShadowMap", () -> this.shadowMapDepthTextureId);
-			effect.setSampler("ShadowMapColor", () -> this.shadowMapColorTextureId);
+			effect.setSampler("ShadowMap", () -> this.stormFogShadowMap.getDepthTexId());
+			effect.setSampler("ShadowMapColor", () -> this.stormFogShadowMap.getColorTexId());
 			effect.setSampler("DepthSampler", () -> this.cloudTarget.getDepthTextureId());
 			this.lightningBoltPositions.optionalBindToProgram("LightningBolts", effect.getId());
 		});
@@ -384,58 +424,18 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			effect.setSampler("CloudsDepthTexture", () -> this.cloudTarget.getDepthTextureId());
 		});
 		
+		if (this.shadowMap.isPresent())
+		{
+			ShadowMapBuffer map = this.shadowMap.get();
+			this.cloudShadows = this.createPostChain(manager, CLOUD_SHADOWS_LOC, this.mc.getMainRenderTarget(), 1.0F, 1.0F, pass -> 
+			{
+				EffectInstance effect = pass.getEffect();
+				effect.setSampler("ShadowMap", () -> this.shadowMap.get().getDepthTexId());
+				effect.safeGetUniform("ShadowSpan").set((float)Math.min(map.getViewWidth(), map.getViewHeight()));
+			});
+		}
+		
 		this.atmoshpericClouds.init(manager);
-		
-		// --- Shadow Map ---
-		
-		StartupMessageManager.addModMessage("Shadow map");
-		
-		int span = this.meshGenerator.getLodConfig().getEffectiveChunkSpan() * SimpleCloudsConstants.CHUNK_SIZE * SimpleCloudsConstants.CLOUD_SCALE;
-		this.shadowMapProjMat = new Matrix4f().setOrtho(0.0F, span, span, 0.0F, 0.0F, 10000.0F);
-		
-		if (this.shadowMapDepthTextureId != -1)
-		{
-			TextureUtil.releaseTextureId(this.shadowMapDepthTextureId);
-			this.shadowMapBufferId = -1;
-		}
-		
-		if (this.shadowMapColorTextureId != -1)
-		{
-			TextureUtil.releaseTextureId(this.shadowMapColorTextureId);
-			this.shadowMapColorTextureId = -1;
-		}
-		
-		if (this.shadowMapBufferId != -1)
-		{
-			GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
-			GlStateManager._glDeleteFramebuffers(this.shadowMapBufferId);
-			this.shadowMapBufferId = -1;
-		}
-		
-		GlStateManager._enableDepthTest();
-		this.shadowMapBufferId = GlStateManager.glGenFramebuffers();
-		this.shadowMapDepthTextureId = TextureUtil.generateTextureId();
-		this.shadowMapColorTextureId = TextureUtil.generateTextureId();
-		GlStateManager._bindTexture(this.shadowMapDepthTextureId);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL14.GL_TEXTURE_COMPARE_MODE, 0);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
-		GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_DEPTH_COMPONENT, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, 0, GL11.GL_DEPTH_COMPONENT, GL11.GL_FLOAT, (IntBuffer)null);
-		GlStateManager._bindTexture(this.shadowMapColorTextureId);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL14.GL_TEXTURE_COMPARE_MODE, 0);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
-		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
-		GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB8, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, 0, GL11.GL_RGB, GL11.GL_FLOAT, (IntBuffer)null);
-		GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, this.shadowMapBufferId);
-		GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL11.GL_TEXTURE_2D, this.shadowMapDepthTextureId, 0);
-		GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, this.shadowMapColorTextureId, 0);
-		GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
-		checkFrameBufferStatus();
-		GlStateManager._bindTexture(0);
 		
 		// --- Final debug ---
 		
@@ -621,17 +621,16 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.meshGenerator != null)
 			this.meshGenerator.close();
 		
-		if (this.shadowMapDepthTextureId != -1)
+		if (this.stormFogShadowMap != null)
 		{
-			TextureUtil.releaseTextureId(this.shadowMapDepthTextureId);
-			this.shadowMapBufferId = -1;
+			this.stormFogShadowMap.close();
+			this.stormFogShadowMap = null;
 		}
 		
-		if (this.shadowMapBufferId != -1)
+		if (this.shadowMap.isPresent())
 		{
-			GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
-			GlStateManager._glDeleteFramebuffers(this.shadowMapBufferId);
-			this.shadowMapBufferId = -1;
+			this.shadowMap.get().close();
+			this.shadowMap = Optional.empty();
 		}
 		
 		if (this.lightningBoltPositions != null)
@@ -764,7 +763,56 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 	}
 	
-	public void renderShadowMap(PoseStack stack, double camX, double camY, double camZ)
+	private PoseStack createShadowMapStack(ShadowMapBuffer shadowMap, double camX, double camY, double camZ, Consumer<PoseStack> transformApplier)
+	{
+		PoseStack stack = new PoseStack();
+		stack.setIdentity();
+		double depthCenter = ((double)shadowMap.getNear() + (double)shadowMap.getFar()) * -0.5D;
+		stack.translate((double)shadowMap.getViewWidth() / 2.0D, (double)shadowMap.getViewHeight() / 2.0D, depthCenter);
+		transformApplier.accept(stack);
+		float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * (float)SimpleCloudsConstants.CLOUD_SCALE;
+		float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
+		float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
+		stack.translate(-camOffsetX, -(double)this.cloudManager.getCloudHeight(), -camOffsetZ);
+		return stack;
+	}
+	
+	private void renderShadowMap(ShadowMapBuffer shadowMap, PoseStack stack, SingleSSBOShaderInstance shader, @Nullable Frustum frustum)
+	{
+		RenderSystem.assertOnRenderThread();
+		
+		stack.pushPose();
+		this.translateClouds(stack, 0.0D, 0.0D, 0.0D);
+		
+		RenderSystem.setShader(() -> shader);
+		prepareShader(shader, stack.last().pose(), shadowMap.getProjMatrix(), this.fogStart, this.fogEnd);
+		shader.apply();
+		
+		shadowMap.bind();
+		shadowMap.clear(Minecraft.ON_OSX);
+		
+		this.meshGenerator.forRenderableMeshChunks(frustum == null ? this.cullFrustum : frustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
+		{
+			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), opaqueBuffers.getBufferId());
+			this.meshGenerator.getSideMesh().drawInstanced(opaqueBuffers.getElementCount());
+		});
+		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), 0);
+		GL30.glBindVertexArray(0);
+		
+		shadowMap.unbind();
+		
+		shader.clear();
+		
+		stack.popPose();
+	}
+	
+	private float determineShadowMapAngle(float partialTick)
+	{
+		float timeOfDay = this.mc.level.getTimeOfDay(partialTick);
+		return 45.0F * Mth.sin(2.0F * (float)Math.PI * timeOfDay);
+	}
+	
+	private void renderShadowMaps(double camX, double camY, double camZ, float partialTick)
 	{
 		RenderSystem.assertOnRenderThread();
 		
@@ -775,51 +823,36 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 		RenderSystem.disableCull();
 		
-		GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, this.shadowMapBufferId);
-		GlStateManager._viewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
-		GlStateManager._clearColor(0.0F, 0.0F, 0.0F, 0.0F);
-		GlStateManager._clearDepth(1.0D);
-		RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT, Minecraft.ON_OSX);
-		
-		int span = this.meshGenerator.getLodConfig().getEffectiveChunkSpan() * SimpleCloudsConstants.CHUNK_SIZE * SimpleCloudsConstants.CLOUD_SCALE;
-		stack.translate(span / 2.0D, span / 2.0D, -5000.0D);
-		Vector2f direction = this.cloudManager.calculateWindDirection();
-		float yaw = (float)Mth.atan2((double)direction.x, (double)direction.y);
-		stack.mulPose(Axis.XP.rotationDegrees(SimpleCloudsConfig.CLIENT.stormFogAngle.get().floatValue()));
-		stack.mulPose(Axis.YP.rotation(yaw));
-		float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * (float)SimpleCloudsConstants.CLOUD_SCALE;
-		float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
-		float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
-		stack.translate(-camOffsetX, -(double)this.cloudManager.getCloudHeight(), -camOffsetZ);
-		
-		stack.pushPose();
-		this.translateClouds(stack, 0.0D, 0.0D, 0.0D);
-		
-		SingleSSBOShaderInstance shader = SimpleCloudsShaders.getCloudsShadowMapShader();
-		RenderSystem.setShader(() -> shader);
-		prepareShader(shader, stack.last().pose(), this.shadowMapProjMat, this.fogStart, this.fogEnd);
-		shader.apply();
-		
-		this.meshGenerator.forRenderableMeshChunks(this.cullFrustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
+		this.stormFogShadowMapStack = this.createShadowMapStack(this.stormFogShadowMap, camX, camY, camZ, s -> 
 		{
-			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), opaqueBuffers.getBufferId());
-			this.meshGenerator.getSideMesh().drawInstanced(opaqueBuffers.getElementCount());
+			Vector2f direction = this.cloudManager.calculateWindDirection();
+			float yaw = (float)Mth.atan2((double)direction.x, (double)direction.y);
+			s.mulPose(Axis.XP.rotationDegrees(SimpleCloudsConfig.CLIENT.stormFogAngle.get().floatValue()));
+			s.mulPose(Axis.YP.rotation(yaw));
 		});
-		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), 0);
+		this.renderShadowMap(this.stormFogShadowMap, this.stormFogShadowMapStack, SimpleCloudsShaders.getStormFogShadowMapShader(), null);
 		
-		GL30.glBindVertexArray(0);
+		this.shadowMapStack = this.shadowMap.map(buffer -> 
+		{
+			PoseStack stack = this.createShadowMapStack(buffer, camX, camY, camZ, s -> {
+				s.mulPose(Axis.XP.rotationDegrees(90.0F));
+				s.mulPose(Axis.ZN.rotationDegrees(this.determineShadowMapAngle(partialTick)));
+			});
+			this.shadowMapFrustum = new Frustum(stack.last().pose(), buffer.getProjMatrix());
+			float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * (float)SimpleCloudsConstants.CLOUD_SCALE;
+			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
+			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
+			this.shadowMapFrustum.prepare(-camOffsetX, -(double)this.cloudManager.getCloudHeight(), -camOffsetZ);
+			this.renderShadowMap(buffer, stack, SimpleCloudsShaders.getCloudsShadowMapShader(), this.shadowMapFrustum);
+			return stack;
+		}).orElse(null);
 		
-		shader.clear();
+		if (this.shadowMapStack == null)
+			this.shadowMapFrustum = null;
 		
 		RenderSystem.enableCull();
 		
-		stack.popPose();
-		
-		GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
-		
 		this.mc.getMainRenderTarget().bindWrite(true);
-		
-		this.shadowMapStack = stack;
 	}
 	
 	public static void renderCloudsDebug(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, float fogStart, float fogEnd, @Nullable Frustum frustum, boolean chunkBoundaries, boolean noiseBoundaries)
@@ -948,16 +981,23 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		double originZ = camZ / scale;
 		this.cullFrustum.prepare(originX, originY, originZ);
 		
+		ProfilerFiller p = mc.getProfiler();
+		
 		if (SimpleCloudsConfig.CLIENT.generateMesh.get())
 		{
-			this.mc.getProfiler().push("mesh_generation");
+			p.push("mesh_generation");
 			this.prepareMeshGenerator(partialTick);
 			this.meshGenerator.genTick(originX, originY, originZ, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? this.cullFrustum : null, partialTick);
-			this.mc.getProfiler().pop();
+			p.pop();
 		}
 		
 		if (SimpleCloudsConfig.CLIENT.renderClouds.get())
+		{
+			p.push("shadow_map");
+			this.renderShadowMaps(camX, camY, camZ, partialTick);
 			this.getRenderPipeline().prepare(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
+			p.pop();
+		}
 			
 		this.mc.getProfiler().pop();
 	}
@@ -965,21 +1005,21 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public void renderAfterSky(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds_after_sky");
-		this.getRenderPipeline().afterSky(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
+		this.getRenderPipeline().afterSky(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
 	}
 	
 	public void renderBeforeWeather(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds_before_weather");
-		this.getRenderPipeline().beforeWeather(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
+		this.getRenderPipeline().beforeWeather(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
 	}
 	
 	public void renderAfterLevel(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
 		this.mc.getProfiler().push("simple_clouds");
-		this.getRenderPipeline().afterLevel(this.mc, this, stack, this.shadowMapStack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
+		this.getRenderPipeline().afterLevel(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
 		
 		this.mc.getProfiler().push("world_effects");
@@ -1054,64 +1094,94 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		}
 	}
 	
-	public void doStormPostProcessing(PoseStack stack, PoseStack shadowMapStack, float partialTick, Matrix4f projMat, double camX, double camY, double camZ, float r, float g, float b)
+	public void doStormPostProcessing(PoseStack stack, float partialTick, Matrix4f projMat, double camX, double camY, double camZ, float r, float g, float b)
 	{
-		if (this.stormPostProcessing != null)
+		if (this.stormPostProcessing == null || this.stormFogShadowMapStack == null || this.stormFogShadowMapStack == null)
+			return;
+		
+		RenderSystem.disableBlend();
+		RenderSystem.disableDepthTest();
+		RenderSystem.resetTextureMatrix();
+		RenderSystem.depthMask(false);
+		
+		this.stormFogTarget.clear(Minecraft.ON_OSX);
+		this.stormFogTarget.bindWrite(true);
+		
+		MutableInt size = new MutableInt();
+		boolean flag = SimpleCloudsConfig.CLIENT.stormFogLightningFlashes.get();
+		if (flag)
 		{
-			RenderSystem.disableBlend();
-			RenderSystem.disableDepthTest();
-			RenderSystem.resetTextureMatrix();
-			RenderSystem.depthMask(false);
-			
-			this.stormFogTarget.clear(Minecraft.ON_OSX);
-			this.stormFogTarget.bindWrite(true);
-			
-			MutableInt size = new MutableInt();
-			boolean flag = SimpleCloudsConfig.CLIENT.stormFogLightningFlashes.get();
-			if (flag)
+			List<LightningBolt> lightningBolts = this.worldEffectsManager.getLightningBolts();
+			size.setValue(Math.min(lightningBolts.size(), MAX_LIGHTNING_BOLTS));
+			if (size.getValue() > 0)
 			{
-				List<LightningBolt> lightningBolts = this.worldEffectsManager.getLightningBolts();
-				size.setValue(Math.min(lightningBolts.size(), MAX_LIGHTNING_BOLTS));
-				if (size.getValue() > 0)
+				this.lightningBoltPositions.writeData(buffer -> 
 				{
-					this.lightningBoltPositions.writeData(buffer -> 
+					for (int i = 0; i < size.getValue(); i++)
 					{
-						for (int i = 0; i < size.getValue(); i++)
-						{
-							LightningBolt bolt = lightningBolts.get(i);
-							Vector3f pos = bolt.getPosition();
-							buffer.putFloat(pos.x);
-							buffer.putFloat(pos.y);
-							buffer.putFloat(pos.z);
-							buffer.putFloat(bolt.getFade(partialTick));
-						}
-						buffer.rewind();
-					}, size.getValue() * BYTES_PER_LIGHTNING_BOLT);
-				}
+						LightningBolt bolt = lightningBolts.get(i);
+						Vector3f pos = bolt.getPosition();
+						buffer.putFloat(pos.x);
+						buffer.putFloat(pos.y);
+						buffer.putFloat(pos.z);
+						buffer.putFloat(bolt.getFade(partialTick));
+					}
+					buffer.rewind();
+				}, size.getValue() * BYTES_PER_LIGHTNING_BOLT);
 			}
-			
-			Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
-			Matrix4f invertedModelViewMat = new Matrix4f(stack.last().pose()).invert();
-			for (PostPass pass : ((MixinPostChain)this.stormPostProcessing).simpleclouds$getPostPasses())
-			{
-				EffectInstance effect = pass.getEffect();
-				effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
-				effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
-				effect.safeGetUniform("ShadowProjMat").set(this.shadowMapProjMat);
-				effect.safeGetUniform("ShadowModelViewMat").set(shadowMapStack.last().pose());
-				effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
-				effect.safeGetUniform("FogStart").set(this.fogEnd / 2.0F);
-				effect.safeGetUniform("FogEnd").set(this.fogEnd);
-				effect.safeGetUniform("ColorModulator").set(r, g, b, 1.0F);
-				float factor = this.worldEffectsManager.getDarkenFactor(partialTick);
-				effect.safeGetUniform("CutoffDistance").set(1000.0F * factor);
-				effect.safeGetUniform("TotalLightningBolts").set(size.getValue());
-			}
-			
-			this.stormPostProcessing.process(partialTick);
-			
-			RenderSystem.depthMask(true);
 		}
+		
+		Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
+		Matrix4f invertedModelViewMat = new Matrix4f(stack.last().pose()).invert();
+		for (PostPass pass : ((MixinPostChain)this.stormPostProcessing).simpleclouds$getPostPasses())
+		{
+			EffectInstance effect = pass.getEffect();
+			effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
+			effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
+			effect.safeGetUniform("ShadowProjMat").set(this.stormFogShadowMap.getProjMatrix());
+			effect.safeGetUniform("ShadowModelViewMat").set(this.stormFogShadowMapStack.last().pose());
+			effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
+			effect.safeGetUniform("FogStart").set(this.fogEnd / 2.0F);
+			effect.safeGetUniform("FogEnd").set(this.fogEnd);
+			effect.safeGetUniform("ColorModulator").set(r, g, b, 1.0F);
+			float factor = this.worldEffectsManager.getDarkenFactor(partialTick);
+			effect.safeGetUniform("CutoffDistance").set(1000.0F * factor);
+			effect.safeGetUniform("TotalLightningBolts").set(size.getValue());
+		}
+		
+		this.stormPostProcessing.process(partialTick);
+		
+		RenderSystem.depthMask(true);
+	}
+	
+	public void doCloudShadowProcessing(PoseStack stack, float partialTick, Matrix4f projMat, double camX, double camY, double camZ, int depthBufferId)
+	{
+		if (this.cloudShadows == null || this.shadowMap.isEmpty() || this.shadowMapStack == null)
+			return;
+		
+		RenderSystem.disableBlend();
+		RenderSystem.disableDepthTest();
+		RenderSystem.resetTextureMatrix();
+		RenderSystem.depthMask(false);
+		
+		Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
+		Matrix4f invertedModelViewMat = new Matrix4f(stack.last().pose()).invert();
+		float minimumRadius = this.mc.gameRenderer.getRenderDistance();
+		for (PostPass pass : ((MixinPostChain)this.cloudShadows).simpleclouds$getPostPasses())
+		{
+			EffectInstance effect = pass.getEffect();
+			effect.setSampler("DepthSampler", () -> depthBufferId);
+			effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
+			effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
+			effect.safeGetUniform("ShadowProjMat").set(this.shadowMap.get().getProjMatrix());
+			effect.safeGetUniform("ShadowModelViewMat").set(this.shadowMapStack.last().pose());
+			effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
+			effect.safeGetUniform("MinimumRadius").set(minimumRadius);
+		}
+		
+		this.cloudShadows.process(partialTick);
+		
+		RenderSystem.depthMask(true);
 	}
 	
 	public static void prepareShader(ShaderInstance shader, Matrix4f modelView, Matrix4f projMat, float fogStart, float fogEnd)
@@ -1234,9 +1304,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		category.setDetail("Transparency Target Active", this.cloudTransparencyTarget != null);
 		category.setDetail("Post Chains", this.postChains.toString());
 		category.setDetail("Lightning Bolt SSBO", this.lightningBoltPositions);
-		category.setDetail("Shadow Map Buffer ID", this.shadowMapBufferId);
-		category.setDetail("Shadow Map Depth Texture ID", this.shadowMapDepthTextureId);
-		category.setDetail("Shadow Map Color Texture ID", this.shadowMapColorTextureId);
+		category.setDetail("Clouds Shadow Map", this.stormFogShadowMap);
+		category.setDetail("Storm Fog Shadow Map", this.stormFogShadowMap);
 		category.setDetail("Failed to copy depth buffer", this.failedToCopyDepthBuffer);
 		category.setDetail("Needs Reload", this.needsReload);
 		
@@ -1269,29 +1338,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public static Optional<SimpleCloudsRenderer> getOptionalInstance()
 	{
 		return Optional.ofNullable(instance);
-	}
-	
-	private static void checkFrameBufferStatus()
-	{
-		RenderSystem.assertOnRenderThreadOrInit();
-		int i = GlStateManager.glCheckFramebufferStatus(36160);
-		if (i != 36053)
-		{
-			if (i == 36054)
-				throw new RuntimeException("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-			else if (i == 36055)
-				throw new RuntimeException("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-			else if (i == 36059)
-				throw new RuntimeException("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
-			else if (i == 36060)
-				throw new RuntimeException("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
-			else if (i == 36061)
-				throw new RuntimeException("GL_FRAMEBUFFER_UNSUPPORTED");
-			else if (i == 1285)
-				throw new RuntimeException("GL_OUT_OF_MEMORY");
-			else
-				throw new RuntimeException("glCheckFramebufferStatus returned unknown status:" + i);
-		}
 	}
 	
 	public static boolean canRenderInDimension(@Nullable ClientLevel level)

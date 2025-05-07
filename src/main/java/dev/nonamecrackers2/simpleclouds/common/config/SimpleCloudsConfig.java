@@ -67,6 +67,9 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds;
 		public final ForgeConfigSpec.ConfigValue<Boolean> transparency;
 		public final ForgeConfigSpec.ConfigValue<Boolean> atmosphericClouds;
+		//Distant Horizons
+		public final ForgeConfigSpec.ConfigValue<Boolean> distantShadows;
+		public final ForgeConfigSpec.ConfigValue<Integer> shadowDistance;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -155,6 +158,14 @@ public class SimpleCloudsConfig
 			this.singleModeFadeStartPercentage = this.createRangedIntValue(80, 0, 100, "singleModeFadeStartPercentage", false, "Specifies the percentage of the cloud render distance that the clouds should begin to fade away, when using the single cloud type mode (e.x. 50 would start to make the clouds fade away at half of the cloud render distance)");
 			
 			this.singleModeFadeEndPercentage = this.createRangedIntValue(100, 0, 100, "singleModeFadeEndPercentage", false, "Specifies the percentage of the cloud render distance that the clouds will be fully faded away, when using the single cloud type mode (e.x. 50 would make the clouds completely disappear past half the cloud render distance)");
+			
+			builder.pop();
+			
+			builder.comment("Distant Horizons").push("distant_horizons");
+			
+			this.distantShadows = this.createValue(true, "distantShadows", false, "Toggles shadows that appear on distant terrain");
+			
+			this.shadowDistance = this.createRangedIntValue(5000, 500, 15000, "shadowDistance", false, "Specifies the distance shadows can render");
 			
 			builder.pop();
 		}

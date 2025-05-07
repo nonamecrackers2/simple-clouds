@@ -34,6 +34,6 @@ public class SimpleCloudsBeforeDhRenderHandler extends DhApiBeforeApplyShaderRen
 		
 		int fbo = SimpleCloudsDhCompatHandler._getDhFramebufferId();
 		
-		pipeline.beforeDistantHorizonsApplyShader(mc, renderer, renderer.getShadowMapStack(), stack, projMat, params.partialTicks, camPos.x, camPos.y, camPos.z, renderer.getCullFrustum(), fbo);
+		pipeline.beforeDistantHorizonsApplyShader(mc, renderer, stack, projMat, params.partialTicks, camPos.x, camPos.y, camPos.z, renderer.getCullFrustum(), fbo);
 	}
 }

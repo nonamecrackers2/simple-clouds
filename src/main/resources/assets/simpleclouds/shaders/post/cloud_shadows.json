@@ -4,7 +4,7 @@
 	],
 	"passes": [
 		{
-			"name": "simpleclouds:storm_shadows",
+			"name": "simpleclouds:cloud_shadows",
 			"intarget": "minecraft:main",
 			"outtarget": "out"
 		},

@@ -13,6 +13,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
+import dev.nonamecrackers2.simpleclouds.client.framebuffer.ShadowMapBuffer;
 import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import net.minecraft.client.gui.GuiGraphics;
@@ -52,7 +53,7 @@ public class SimpleCloudsDebugOverlayRenderer
 					BufferUploader.drawWithShader(bufferbuilder.end());
 				}
 			}
-			RenderSystem.setShaderTexture(0, SimpleCloudsRenderer.getInstance().getShadowMapTextureId());
+			RenderSystem.setShaderTexture(0, SimpleCloudsRenderer.getInstance().getStormFogShadowMap().getColorTexId());
 			RenderSystem.setShader(GameRenderer::getPositionTexShader);
 			Matrix4f matrix4f = stack.pose().last().pose();
 			BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();

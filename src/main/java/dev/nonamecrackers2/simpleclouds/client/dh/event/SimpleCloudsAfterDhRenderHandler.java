@@ -31,7 +31,7 @@ public class SimpleCloudsAfterDhRenderHandler extends DhApiAfterRenderEvent
 		
 		int fbo = SimpleCloudsDhCompatHandler._getDhFramebufferId();
 		
-		pipeline.afterDistantHorizonsRender(mc, renderer, renderer.getShadowMapStack(), stack, projMat, partialTick, camPos.x, camPos.y, camPos.z, renderer.getCullFrustum(), fbo);
+		pipeline.afterDistantHorizonsRender(mc, renderer, stack, projMat, partialTick, camPos.x, camPos.y, camPos.z, renderer.getCullFrustum(), fbo);
 		
 		SimpleCloudsDhCompatHandler._updateDhFramebufferId(0);
 		SimpleCloudsDhCompatHandler._updateCachedDhState(null, null);
