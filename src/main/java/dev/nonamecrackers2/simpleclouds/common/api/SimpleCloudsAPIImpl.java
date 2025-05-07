@@ -17,7 +17,6 @@ import net.minecraft.world.phys.Vec2;
 public class SimpleCloudsAPIImpl implements SimpleCloudsAPI
 {
 	public static final SimpleCloudsAPIImpl INSTANCE;
-	private static final ArtifactVersion VERSION = new DefaultArtifactVersion("0.4"); //TODO: Perhaps not include this here?
 	
 	static 
 	{
@@ -26,12 +25,6 @@ public class SimpleCloudsAPIImpl implements SimpleCloudsAPI
 	}
 	
 	public static void bootstrap() {}
-	
-	@Override
-	public ArtifactVersion getApiVersion()
-	{
-		return VERSION;
-	}
 	
 	@Override
 	public ArtifactVersion getSimpleCloudsVersion()

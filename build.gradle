@@ -134,11 +134,6 @@ repositories {
         name "nonamecrackers2Maven"
         url "https://maven.nonamecrackers2.dev/releases"
     }
-    //
-    maven {
-    	name "apiLocal"
-        url "file://C:/Users/nonam/git/Simple-Clouds-API-1.20.1/mcmodsrepo"
-    }
 }
 
 dependencies {
@@ -161,14 +156,14 @@ dependencies {
     //runtimeOnly fg.deobf("me.cortex.nvidium:acedium:0.2.7:beta")
     
     jarJar("nonamecrackers2:crackerslib-forge:${crackerslib_version}") {
-    	jarJar.ranged(it, "${crackerslib_version_range}")
+    	jarJar.ranged(it, crackerslib_version_range)
     }
     implementation fg.deobf("nonamecrackers2:crackerslib-forge:${crackerslib_version}")
 
-	jarJar("nonamecrackers2:simplecloudsapi-forge:0.4-1.20.1") {
-		jarJar.ranged(it, "[0.4-1.20.1,)")
+	jarJar("nonamecrackers2:simplecloudsapi-forge:${api_version}") {
+		jarJar.ranged(it, api_version_range)
 	}
-	implementation fg.deobf("nonamecrackers2:simplecloudsapi-forge:0.4-1.20.1")
+	implementation fg.deobf("nonamecrackers2:simplecloudsapi-forge:${api_version}")
 	
 	implementation fg.deobf("maven.modrinth:DistantHorizonsApi:${dh_api_version}")
 	implementation fg.deobf("maven.modrinth:DistantHorizons:${dh_version}-${minecraft_version}")
