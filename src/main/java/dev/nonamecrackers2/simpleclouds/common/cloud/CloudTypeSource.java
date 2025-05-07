@@ -12,6 +12,11 @@ public interface CloudTypeSource
 	
 	CloudType[] getIndexedCloudTypes();
 	
+	default boolean doesCloudTypeExist(ResourceLocation id)
+	{
+		return this.getCloudTypeForId(id) != null;
+	}
+	
 	default Optional<CloudType> getCloudTypeFromRawId(String id)
 	{
 		ResourceLocation loc = ResourceLocation.tryParse(id);

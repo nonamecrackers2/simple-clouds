@@ -1,40 +1,40 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Queue;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
-import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
-import org.lwjgl.system.MemoryUtil;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.PoseStack;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
-import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
-import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
+import dev.nonamecrackers2.simpleclouds.client.mesh.chunk.MeshChunk;
+import dev.nonamecrackers2.simpleclouds.client.mesh.instancing.InstanceableMesh;
+import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
+import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
+import dev.nonamecrackers2.simpleclouds.mixin.MixinFrustumAccessor;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.resources.ResourceLocation;
@@ -42,65 +42,140 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 
+/**
+ * Abstract mesh generator class that generates a cloud vertex mesh using computer shaders. Implementations are only available on the render thread.
+ * <p><p>
+ * Use {@link CloudMeshGenerator#init} to initialize the mesh generator. <b>This will initialize all needed buffers</b>. Note
+ * that this is an expensive class and having multiple instances in one environment can cause GPU memory to run out quick (including
+ * available SSBO bindings).
+ * <p><p>
+ * Use {@link CloudMeshGenerator#tick} each frame to generate the mesh at a fixed interval of frames 
+ * (defined by {@link CloudMeshGenerator#setMeshGenInterval}) or use {@link CloudMeshGenerator#generateMesh} to generate
+ * it in a single call.
+ * <p><p>
+ * Use {@link CloudMeshGenerator#render} to render the currently generated cloud mesh.
+ * 
+ * @author nonamecrackers2
+ */
 public abstract class CloudMeshGenerator
 {
-	public static final int MAX_NOISE_LAYERS = 4;
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudMeshGenerator");
+	
 	public static final ResourceLocation MAIN_CUBE_MESH_GENERATOR = SimpleCloudsMod.id("cube_mesh");
+	public static final int MAX_NOISE_LAYERS = 4;
 	public static final int VERTICAL_CHUNK_SPAN = 8;
-	public static final int WORK_SIZE = 4;
 	public static final int LOCAL_SIZE = 8;
-	public static final int MAX_SIDE_BUFFER_SIZE = 335544320;
-	public static final int BYTES_PER_VERTEX = 20;
-	public static final int BYTES_PER_SIDE = BYTES_PER_VERTEX * 4;
-	public static final int MAX_INDEX_BUFFER_SIZE = 100663296;
+	public static final int WORK_SIZE = SimpleCloudsConstants.CHUNK_SIZE / LOCAL_SIZE;
+	public static final int TICKS_UNTIL_FADE_RESET = 120;
+	
+	//Opaque
+	public static final int BYTES_PER_SIDE_INFO = 24;
+	public static final int MAX_SIDE_INFO_BUFFER_SIZE = 50331648;
+	public static final String SIDE_INFO_BUFFER_NAME = "SideInfoBuffer";
+	public static final String TOTAL_SIDES_NAME = "TotalSides";
+	public static final String SIDES_PER_CHUNK_NAME = "SidesPerChunk";
+	//Transparent
+	public static final int BYTES_PER_CUBE_INFO = 24;
+	public static final int MAX_TRANSPARENT_CUBE_INFO_BUFFER_SIZE = 50331648;
+	public static final String TRANSPARENT_CUBE_INFO_BUFFER_NAME = "TransparentCubeInfoBuffer";
+	public static final String TRANSPARENT_TOTAL_CUBES_NAME = "TotalTransparentCubes";
+	public static final String TRANSPARENT_CUBES_PER_CHUNK_NAME = "TransparentCubesPerChunk";
+	
+	public static final String NOISE_LAYERS_NAME = "NoiseLayers";
+	public static final String LAYER_GROUPINGS_NAME = "LayerGroupings";
+	
 	protected final ResourceLocation meshShaderLoc;
-	protected final Queue<Runnable> chunkGenTasks = Queues.newArrayDeque();
-	protected CloudMeshGenerator.LevelOfDetailConfig lodConfig;
+	protected final int shaderType;
+	protected final boolean fadeNearOrigin;
+	protected final boolean shadedClouds;
+	protected final boolean useTransparency;
+	protected final LevelOfDetailConfig lodConfig;
+	protected @Nullable List<MeshChunk> chunks;
+	protected final List<CloudMeshGenerator.ChunkGenTask> completedGenTasks = Lists.newArrayList();
+	protected final Queue<CloudMeshGenerator.ChunkGenTask> chunkGenTasks = Queues.newArrayDeque();
 	protected int meshGenInterval;
 	protected int tasksPerTick;
 	protected @Nullable ComputeShader shader;
+	
+	protected @Nullable InstanceableMesh sideMesh;
+	protected @Nullable InstanceableMesh cubeMesh;
+	
+	// Left is for opaque geometry, right is for transparent
+	protected Pair<CloudMeshGenerator.MeshGenStatus, CloudMeshGenerator.MeshGenStatus> meshGenStatus = Pair.of(CloudMeshGenerator.MeshGenStatus.NOT_INITIALIZED, CloudMeshGenerator.MeshGenStatus.NOT_INITIALIZED);
 	protected float scrollX;
 	protected float scrollY;
 	protected float scrollZ;
-	protected int arrayObjectId = -1;
-	protected int vertexBufferId = -1;
-	protected int indexBufferId = -1;
-	private @Nullable ByteBuffer vertexBuffer;
-	private @Nullable ByteBuffer indexBuffer;
-	protected int totalIndices;
-	protected int totalSides;
 	protected boolean testFacesFacingAway;
-	private double currentCamX;
-	private double currentCamY;
-	private double currentCamZ;
-	private float currentScale;
+	private float fadeStart;
+	private float fadeEnd;
 	private float cullDistance;
-	private boolean lodConfigWasChanged;
-	private int sideBufferSize;
-	private int indexBufferSize;
+	private int transparencyDistance;
 	
-	public CloudMeshGenerator(ResourceLocation meshShaderLoc, CloudMeshGenerator.LevelOfDetailConfig lodConfig, int meshGenInterval)
+	private int opaqueBufferSize;
+	private int opaqueBufferBytesUsed;
+	private int transparentBufferSize;
+	private int transparentBufferBytesUsed;
+	private int opaqueBytesPerChunk;
+	private int transparentBytesPerChunk;
+	
+	/**
+	 * Creates a cloud mesh generator, <b>but does not initialize it for generating</b> (use {@link CloudMeshGenerator#init})
+	 * 
+	 * @param meshShaderLoc
+	 * The location of the cloud mesh generator compute shader
+	 * @param lodConfig
+	 * A level of detail configuration
+	 * @param meshGenInterval
+	 * The frame interval at which the generate the cloud mesh
+	 */
+	public CloudMeshGenerator(ResourceLocation meshShaderLoc, int shaderType, boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency)
 	{
 		this.meshShaderLoc = meshShaderLoc;
-		this.setLodConfig(lodConfig);
+		this.shaderType = shaderType;
+		this.fadeNearOrigin = fadeNearOrigin;
+		this.shadedClouds = shadedClouds;
+		
+		this.lodConfig = lodConfig;
 		this.setMeshGenInterval(meshGenInterval);
+		this.useTransparency = useTransparency;
+		
+		float maxRadius = this.getCloudAreaMaxRadius();
+		this.fadeStart = 0.9F * maxRadius;
+		this.fadeEnd = maxRadius;
+		this.transparencyDistance = (int)maxRadius / 2;
 	}
 	
-	public void setLodConfig(CloudMeshGenerator.LevelOfDetailConfig config)
+	public boolean fadeNearOriginEnabled()
 	{
-		if (config != this.lodConfig)
-		{
-			this.lodConfig = Objects.requireNonNull(config);
-			this.lodConfigWasChanged = true;
-		}
+		return this.fadeNearOrigin;
 	}
 	
-	public CloudMeshGenerator.LevelOfDetailConfig getLodConfig()
+	public boolean shadedCloudsEnabled()
+	{
+		return this.shadedClouds;
+	}
+	
+	public boolean transparencyEnabled()
+	{
+		return this.useTransparency;
+	}
+	
+	public LevelOfDetailConfig getLodConfig()
 	{
 		return this.lodConfig;
 	}
 	
+	/**
+	 * Sets the frame interval at which to generate the cloud mesh by when using
+	 * {@link CloudMeshGenerator#tick}.
+	 * <p><p>
+	 * The mesh gen interval will spread out the amount of chunks to generate
+	 * meshes for across the amount of frames specified by interval evenly. This
+	 * decreases the load on the GPU and can improve performance at higher numbers,
+	 * at a cost of some stuttery-ness in the way the clouds update.
+	 * 
+	 * @param interval
+	 */
 	public void setMeshGenInterval(int interval)
 	{
 		if (interval <= 0)
@@ -108,10 +183,57 @@ public abstract class CloudMeshGenerator
 		this.meshGenInterval = interval;
 	}
 	
+	/**
+	 * Specifies if faces not facing the camera should be tested during
+	 * mesh generation on the GPU for whether they should be generated or not.
+	 * <p><p>
+	 * Enabling can improve performance at the cost of some visual artifacts
+	 * or an incomplete cloud mesh
+	 * 
+	 * @param flag
+	 * @return
+	 */
 	public CloudMeshGenerator setTestFacesFacingAway(boolean flag)
 	{
 		this.testFacesFacingAway = flag;
 		return this;
+	}
+	
+	/**
+	 * Sets the fade start and end distances. One (1.0) unit is equivalent to one
+	 * cube in the cloud mesh.
+	 * 
+	 * @param fadeStart
+	 * @param fadeEnd
+	 */
+	public CloudMeshGenerator setFadeDistances(float fadeStart, float fadeEnd)
+	{
+		float fs = fadeStart;
+		float fe = fadeEnd;
+		if (fs > fe)
+		{
+			fs = fadeEnd;
+			fe = fadeStart;
+		}
+		this.fadeStart = fs * (float)this.getCloudAreaMaxRadius();
+		this.fadeEnd = fe * (float)this.getCloudAreaMaxRadius();
+		return this;
+	}
+	
+	public CloudMeshGenerator setTransparencyRenderDistance(float percentage)
+	{
+		this.transparencyDistance = Mth.floor(percentage * (float)this.getCloudAreaMaxRadius());
+		return this;
+	}
+	
+	public float getFadeStart()
+	{
+		return this.fadeStart;
+	}
+	
+	public float getFadeEnd()
+	{
+		return this.fadeEnd;
 	}
 	
 	public int getCloudAreaMaxRadius()
@@ -131,105 +253,157 @@ public abstract class CloudMeshGenerator
 		this.cullDistance = 0.0F;
 	}
 	
+	public void setScroll(float x, float y, float z)
+	{
+		this.scrollX = x;
+		this.scrollY = y;
+		this.scrollZ = z;
+	}
+	
+	public Pair<CloudMeshGenerator.MeshGenStatus, CloudMeshGenerator.MeshGenStatus> getMeshGenStatus()
+	{
+		return this.meshGenStatus;
+	}
+	
+	public @Nullable InstanceableMesh getSideMesh()
+	{
+		return this.sideMesh;
+	}
+	
+	public @Nullable InstanceableMesh getCubeMesh()
+	{
+		return this.cubeMesh;
+	}
+	
+	public int getOpaqueBufferSize()
+	{
+		return this.opaqueBufferSize;
+	}
+	
+	public int getOpaqueBufferBytesUsed()
+	{
+		return this.opaqueBufferBytesUsed;
+	}
+	
+	public int getTransparentBufferSize()
+	{
+		return this.transparentBufferSize;
+	}
+	
+	public int getTransparentBufferBytesUsed()
+	{
+		return this.transparentBufferBytesUsed;
+	}
+	
+	public int getOpaqueBytesPerChunk()
+	{
+		return this.opaqueBytesPerChunk;
+	}
+	
+	public int getTransparentBytesPerChunk()
+	{
+		return this.transparentBytesPerChunk;
+	}
+	
+	public int getTotalMeshChunks()
+	{
+		if (this.chunks == null)
+			return 0;
+		return this.chunks.size();
+	}
+	
 	public void close()
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
 		
+		this.opaqueBufferBytesUsed = 0;
+		this.opaqueBufferSize = 0;
+		this.opaqueBytesPerChunk = 0;
+		this.transparentBufferBytesUsed = 0;
+		this.transparentBufferSize = 0;
+		this.transparentBytesPerChunk = 0;
+		
 		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
 		this.chunkGenTasks.clear();
+		this.completedGenTasks.clear();
 		
 		if (this.shader != null)
 			this.shader.close();
 		this.shader = null;
 		
-		if (this.arrayObjectId >= 0)
+		if (this.chunks != null)
 		{
-			RenderSystem.glDeleteVertexArrays(this.arrayObjectId);
-			this.arrayObjectId = -1;
+			for (MeshChunk chunk : this.chunks)
+				chunk.destroy();
+			this.chunks = null;
 		}
 		
-		if (this.vertexBufferId >= 0)
+		if (this.sideMesh != null)
 		{
-			RenderSystem.glDeleteBuffers(this.vertexBufferId);
-			this.vertexBufferId = -1;
+			this.sideMesh.destroy();
+			this.sideMesh = null;
 		}
 		
-		if (this.indexBufferId >= 0)
+		if (this.cubeMesh != null)
 		{
-			RenderSystem.glDeleteBuffers(this.indexBufferId);
-			this.indexBufferId = -1;
+			this.cubeMesh.destroy();
+			this.cubeMesh = null;
 		}
 	}
 	
-	protected ComputeShader createShader(ResourceManager manager) throws IOException
+	public boolean canRender()
 	{
-		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE);
+		return this.chunks != null;
 	}
 	
-	protected void setupShader()
+	public final RendererInitializeResult init(ResourceManager manager)
 	{
-		ShaderStorageBufferObject buffer = this.shader.bindShaderStorageBuffer("Counter", GL15.GL_DYNAMIC_COPY);
-		buffer.allocateBuffer(4);
-		buffer.writeData(b -> {
-			b.putInt(0, 0);
-		}, 4);
-		this.sideBufferSize = this.shader.bindShaderStorageBuffer("SideDataBuffer", GL15.GL_DYNAMIC_COPY).allocateBuffer(MAX_SIDE_BUFFER_SIZE); //Vertex data, arbitrary size
-		this.indexBufferSize = this.shader.bindShaderStorageBuffer("IndexBuffer", GL15.GL_DYNAMIC_COPY).allocateBuffer(MAX_SIDE_BUFFER_SIZE); //Index data, arbitrary size
-	}
-	
-	public final GeneratorInitializeResult init(ResourceManager manager)
-	{
-		GeneratorInitializeResult.Builder builder = GeneratorInitializeResult.builder();
+		RendererInitializeResult.Builder builder = RendererInitializeResult.builder();
 				
 		if (!RenderSystem.isOnRenderThreadOrInit())
-			return builder.errorUnknown(new IllegalStateException("Init not called on render thread"), "Head").build();
+			return builder.errorUnknown(new IllegalStateException("Init not called on render thread"), "Mesh Generator; Head").build();
+		
+		this.opaqueBufferBytesUsed = 0;
+		this.opaqueBufferSize = 0;
+		this.opaqueBytesPerChunk = 0;
+		this.transparentBufferBytesUsed = 0;
+		this.transparentBufferSize = 0;
+		this.transparentBytesPerChunk = 0;
 		
 		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
 		this.chunkGenTasks.clear();
+		this.completedGenTasks.clear();
 		
 		LOGGER.debug("Beginning mesh generator initialization");
-		
-		this.totalIndices = 0;
-		this.totalSides = 0;
-		
-		if (this.arrayObjectId >= 0)
-		{
-			LOGGER.debug("Freeing VBA");
-			RenderSystem.glDeleteVertexArrays(this.arrayObjectId);
-			this.arrayObjectId = -1;
-		}
-		
-		if (this.vertexBufferId >= 0)
-		{
-			LOGGER.debug("Freeing vertex buffer");
-			RenderSystem.glDeleteBuffers(this.vertexBufferId);
-			this.vertexBufferId = -1;
-		}
-		
-		if (this.vertexBuffer != null)
-		{
-			MemoryUtil.memFree(this.vertexBuffer);
-			this.vertexBuffer = null;
-		}
-		
-		if (this.indexBufferId >= 0)
-		{
-			LOGGER.debug("Freeing index buffer");
-			RenderSystem.glDeleteBuffers(this.indexBufferId);
-			this.indexBufferId = -1;
-		}
-		
-		if (this.indexBuffer != null)
-		{
-			MemoryUtil.memFree(this.vertexBuffer);
-			this.indexBuffer = null;
-		}
 		
 		if (this.shader != null)
 		{
 			LOGGER.debug("Freeing mesh compute shader");
 			this.shader.close();
 			this.shader = null;
+		}
+		
+		if (this.chunks != null)
+		{
+			for (MeshChunk chunk : this.chunks)
+				chunk.destroy();
+			this.chunks = null;
+		}
+		
+		try
+		{
+			LOGGER.debug("Creating mesh compute shader...");
+			this.shader = this.createShader(manager);
+			this.setupShader();
+		}
+		catch (IOException e)
+		{
+			//LOGGER.warn("Failed to load compute shader", e);
+			builder.errorCouldNotLoadMeshScript(e, "Mesh Generator; Compute Shader");
+		}
+		catch (Exception e)
+		{
+			builder.errorRecommendations(e, "Mesh Generator; Compute Shader");
 		}
 		
 		try
@@ -241,52 +415,24 @@ public abstract class CloudMeshGenerator
 			builder.errorUnknown(e, "Init Extra");
 		}
 		
-		try
-		{
-			LOGGER.debug("Creating mesh compute shader...");
-			this.shader = this.createShader(manager);
-			this.setupShader();
-			this.onLodConfigChanged();
-			this.lodConfigWasChanged = false;
-		}
-		catch (IOException e)
-		{
-			//LOGGER.warn("Failed to load compute shader", e);
-			builder.errorCouldNotLoadMeshScript(e, "Compute Shader");
-		}
-		catch (Exception e)
-		{
-			builder.errorRecommendations(e, "Compute Shader");
-		}
+		List<PreparedChunk> preparedChunks = this.getLodConfig().getPreparedChunks();
+		ImmutableList.Builder<MeshChunk> meshChunks = ImmutableList.builder();
+		int totalPreparedChunks = preparedChunks.size();
+		this.opaqueBytesPerChunk = Mth.ceil(this.opaqueBufferSize / totalPreparedChunks) * 4;
+		this.transparentBytesPerChunk = Mth.ceil(this.transparentBufferSize / totalPreparedChunks) * 4;
+		for (PreparedChunk chunk : preparedChunks)
+			meshChunks.add(new MeshChunk(chunk, this.opaqueBytesPerChunk, this.transparentBytesPerChunk, this.useTransparency));
+		this.chunks = meshChunks.build();
 		
-		this.arrayObjectId = GL30.glGenVertexArrays();
-		this.vertexBufferId = GL15.glGenBuffers();
-		this.indexBufferId = GL15.glGenBuffers();
+		LOGGER.debug("Opaque buffer size: {} bytes, transparent buffer size: {} bytes", this.opaqueBufferSize, this.transparentBufferSize);
 		
-		GL30.glBindVertexArray(this.arrayObjectId);
+		if (this.sideMesh != null)
+			this.sideMesh.destroy();
+		this.sideMesh = InstanceableMesh.defaultSide();
 		
-		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vertexBufferId);
-		this.vertexBuffer = MemoryTracker.create(this.sideBufferSize);
-		GlStateManager._glBufferData(GL15.GL_ARRAY_BUFFER, this.vertexBuffer, GL15.GL_DYNAMIC_DRAW);
-//		//Vertex position
-//		GL20.glEnableVertexAttribArray(0);
-//		GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 20, 0);
-//		//Vertex brightness
-//		GL20.glEnableVertexAttribArray(1);
-//		GL20.glVertexAttribPointer(1, 1, GL11.GL_FLOAT, true, 20, 12);
-//		//Vertex normal index
-//		GL20.glEnableVertexAttribArray(2);
-//		//GL30.glVertexAttribIPointer(2, 1, GL11.GL_INT, 20, 16);
-//		GL30.glVertexAttribIPointer(2, 1, GL11.GL_INT, 20, 16);
-		SimpleCloudsShaders.POSITION_BRIGHTNESS_NORMAL_INDEX.setupBufferState();
-		
-		GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBufferId);
-		this.indexBuffer = MemoryTracker.create(this.indexBufferSize);
-		GlStateManager._glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, this.indexBuffer, GL15.GL_DYNAMIC_DRAW);
-		
-		GL30.glBindVertexArray(0);
-		
-		LOGGER.debug("Created VBA with vertex buffer size {} and index buffer size {}", this.sideBufferSize, this.indexBufferSize);
+		if (this.cubeMesh != null)
+			this.cubeMesh.destroy();
+		this.cubeMesh = InstanceableMesh.defaultCube();
 		
 		ComputeShader.printDebug();
 		
@@ -295,226 +441,499 @@ public abstract class CloudMeshGenerator
 		return builder.build();
 	}
 	
-	protected void initExtra(ResourceManager manager) {}
-	
-	protected void copyDataOver(int totalSides)
+	protected ComputeShader createShader(ResourceManager manager) throws IOException
 	{
-		if (this.vertexBufferId != -1 && this.indexBufferId != -1 && this.shader != null && this.shader.isValid())
+		ImmutableMap<String, String> parameters = ImmutableMap.of(
+				"TYPE", String.valueOf(this.shaderType),
+				"FADE_NEAR_ORIGIN", this.fadeNearOrigin ? "1" : "0",
+				"STYLE", this.shadedClouds ? "1" : "0",
+				"TRANSPARENCY", this.useTransparency ? "1" : "0"
+		);
+		return ComputeShader.loadShader(this.meshShaderLoc, manager, LOCAL_SIZE, LOCAL_SIZE, LOCAL_SIZE, parameters);
+	}
+	
+	protected void setupShader()
+	{
+		this.opaqueBufferSize = this.createBuffers(
+				TOTAL_SIDES_NAME, 
+				SIDES_PER_CHUNK_NAME, 
+				SIDE_INFO_BUFFER_NAME,
+				MAX_SIDE_INFO_BUFFER_SIZE
+		);
+		
+		if (this.useTransparency)
 		{
-			GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
+			this.transparentBufferSize = this.createBuffers(
+					TRANSPARENT_TOTAL_CUBES_NAME, 
+					TRANSPARENT_CUBES_PER_CHUNK_NAME,
+					TRANSPARENT_CUBE_INFO_BUFFER_NAME,
+					MAX_TRANSPARENT_CUBE_INFO_BUFFER_SIZE
+			);
+		}
+		
+		this.shader.forUniform("TotalLodLevels", (id, loc) -> {
+			GL41.glProgramUniform1i(id, loc, this.lodConfig.getLods().length);
+		});
+		
+		this.uploadFadeData();
+	}
+	
+	private void uploadFadeData()
+	{
+		if (this.shader == null || !this.shader.isValid())
+			return;
+		
+		this.shader.forUniform("TransparencyDistance", (id, loc) -> {
+			GL41.glProgramUniform1i(id, loc, this.transparencyDistance);
+		});
+		this.shader.forUniform("FadeStart", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, this.fadeStart);
+		});
+		this.shader.forUniform("FadeEnd", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, this.fadeEnd);
+		});
+	}
+	
+	private int createBuffers(String totalCounterName, String countPerChunkName, String elementInfoBufferName, int maxSize)
+	{
+		ShaderStorageBufferObject totalCountBuffer = this.shader.bindShaderStorageBuffer(totalCounterName, GL15.GL_DYNAMIC_COPY);
+		totalCountBuffer.allocateBuffer(4);
+		totalCountBuffer.writeData(b -> {
+			b.putInt(0, 0);
+		}, 4);
+		
+		int bufferSize = this.shader.bindShaderStorageBuffer(elementInfoBufferName, GL15.GL_DYNAMIC_COPY).allocateBuffer(maxSize);
+		
+		int totalChunks = this.getLodConfig().getPreparedChunks().size();
+		int countPerChunkBufferSize = totalChunks * 4;
+		ShaderStorageBufferObject countPerChunkBuffer = this.shader.bindShaderStorageBuffer(countPerChunkName, GL15.GL_DYNAMIC_COPY);
+		countPerChunkBuffer.allocateBuffer(countPerChunkBufferSize);
+		countPerChunkBuffer.writeData(b -> 
+		{
+			for (int i = 0; i < totalChunks; i++)
+				b.putInt(0);
+			b.rewind();
+		}, countPerChunkBufferSize);
+		
+		return bufferSize;
+	}
+	
+	protected void initExtra(ResourceManager manager) throws IOException {}
+	
+	/**
+	 * Generates the entire cloud mesh at the origin at once
+	 */
+	public void generateMesh()
+	{
+		RenderSystem.assertOnRenderThread();
+		
+		if (this.shader == null || !this.shader.isValid())
+			return;
+		
+		this.prepareMeshGen(0.0D, 0.0D, 0.0D, 0.0F, 0.0F, null, 1, 1.0F);
+		
+		if (!this.chunkGenTasks.isEmpty())
+			this.doMeshGenning(this.chunkGenTasks.size());
+		
+		this.meshGenStatus = this.finalizeMeshGen();
+		this.completedGenTasks.clear();
+	}
+	
+	public void worldTick()
+	{
+		if (this.chunks != null)
+			this.chunks.forEach(MeshChunk::tick);
+	}
+	
+	/**
+	 * Generates the cloud mesh on a per-frame basis
+	 * 
+	 * @param originX
+	 * @param originY
+	 * @param originZ
+	 * @param frustum
+	 */
+	public void genTick(double originX, double originY, double originZ, @Nullable Frustum frustum, float partialTick)
+	{
+		RenderSystem.assertOnRenderThread();
+		
+		if (this.shader == null || !this.shader.isValid())
+			return;
+
+		float chunkSize = (float)SimpleCloudsConstants.CHUNK_SIZE;
+		float meshGenOffsetX = (float)Mth.floor(originX / chunkSize) * chunkSize;
+		float meshGenOffsetZ = (float)Mth.floor(originZ / chunkSize) * chunkSize;
+		
+		if (this.chunkGenTasks.isEmpty()) //If we have no chunk gen tasks
+		{
+			this.meshGenStatus = this.finalizeMeshGen(); //Split the combined mesh data from the GPU, and store them in the VBOs for each chunk that was generated
+			this.completedGenTasks.clear(); //Clear the chunk gen tasks
 			
-			this.totalSides = totalSides;
-			this.totalIndices = this.totalSides * 6;
-			
-			if (this.totalSides > 0)
+			//Prepare the next batch of chunks to generate meshes for
+			this.tasksPerTick = this.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, this.meshGenInterval, partialTick);
+		}
+		else
+		{
+			this.onOffGen();
+		}
+		
+		//If there are mesh gen tasks, we do mesh genning
+		if (!this.chunkGenTasks.isEmpty())
+			this.doMeshGenning(this.tasksPerTick);
+	}
+	
+	private static CloudMeshGenerator.MeshGenStatus iterateAndCopyToChunkBuffer(int copyBufferId, int copyBufferSizeBytes, Collection<MeshChunk> chunks, Function<MeshChunk, Integer> chunkBufferId, Function<MeshChunk, Integer> bytesToCopyPerChunk, Function<MeshChunk, Integer> bufferSizeBytesPerChunk)
+	{
+		CloudMeshGenerator.MeshGenStatus result = CloudMeshGenerator.MeshGenStatus.NORMAL;
+		
+		GlStateManager._glBindBuffer(GL31.GL_COPY_READ_BUFFER, copyBufferId);
+		
+		int currentBytes = 0;
+		for (MeshChunk chunk : chunks)
+		{
+			int totalBytes = bytesToCopyPerChunk.apply(chunk);
+			if (totalBytes > 0) //If the chunk has data that needs copying over
 			{
-				int vertexBufferId = this.shader.getShaderStorageBuffer("SideDataBuffer").getId();
-				int indexBufferId = this.shader.getShaderStorageBuffer("IndexBuffer").getId();
-				GlStateManager._glBindBuffer(GL31.GL_COPY_READ_BUFFER, vertexBufferId);
-				GlStateManager._glBindBuffer(GL31.GL_COPY_WRITE_BUFFER, this.vertexBufferId);
-				GL31.glCopyBufferSubData(GL31.GL_COPY_READ_BUFFER, GL31.GL_COPY_WRITE_BUFFER, 0, 0, this.totalSides * BYTES_PER_SIDE);
-				GlStateManager._glBindBuffer(GL31.GL_COPY_READ_BUFFER, indexBufferId);
-				GlStateManager._glBindBuffer(GL31.GL_COPY_WRITE_BUFFER, this.indexBufferId);
-				GL31.glCopyBufferSubData(GL31.GL_COPY_READ_BUFFER, GL31.GL_COPY_WRITE_BUFFER, 0, 0, this.totalIndices * 4);
-				GlStateManager._glBindBuffer(GL31.GL_COPY_READ_BUFFER, 0);
-				GlStateManager._glBindBuffer(GL31.GL_COPY_WRITE_BUFFER, 0);
+				int lastBytesOffset = totalBytes;
+				int maxSize = bufferSizeBytesPerChunk.apply(chunk);
+				if (lastBytesOffset > maxSize) //Make sure we don't go over the maximum the chunk buffer can hold
+				{
+					lastBytesOffset = maxSize;
+					result = CloudMeshGenerator.MeshGenStatus.CHUNK_OVERFLOW;
+				}
+				boolean stop = false;
+				if (currentBytes + lastBytesOffset > copyBufferSizeBytes) //If the the byte offset will go over the size of the copy buffer, clamp
+				{
+					lastBytesOffset = copyBufferSizeBytes - currentBytes;
+					if (lastBytesOffset <= 0) // If it becomes negative however, we don't want to attempt to copy data over
+						return CloudMeshGenerator.MeshGenStatus.TOO_MANY_VERTICES;
+					stop = true; // After copying this data over we will stop, since there is no more space in the copy buffer to read data from
+				}
+				
+				GlStateManager._glBindBuffer(GL31.GL_COPY_WRITE_BUFFER, chunkBufferId.apply(chunk));
+				GL31.glCopyBufferSubData(GL31.GL_COPY_READ_BUFFER, GL31.GL_COPY_WRITE_BUFFER, currentBytes, 0, lastBytesOffset);
+				
+				currentBytes += totalBytes;
+				
+				if (stop)
+					return CloudMeshGenerator.MeshGenStatus.TOO_MANY_VERTICES;
 			}
 		}
+		
+		return result;
 	}
 	
-	public void setScroll(float x, float y, float z)
+	protected Pair<CloudMeshGenerator.MeshGenStatus, CloudMeshGenerator.MeshGenStatus> finalizeMeshGen()
 	{
-		this.scrollX = x;
-		this.scrollY = y;
-		this.scrollZ = z;
+		if (this.shader == null || !this.shader.isValid() || this.chunks == null)
+			return Pair.of(CloudMeshGenerator.MeshGenStatus.NOT_INITIALIZED, CloudMeshGenerator.MeshGenStatus.NOT_INITIALIZED);
+		
+		if (this.completedGenTasks.isEmpty())
+			return Pair.of(CloudMeshGenerator.MeshGenStatus.NO_TASKS, CloudMeshGenerator.MeshGenStatus.NO_TASKS);
+		
+		RenderSystem.assertOnRenderThread();
+		
+		GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
+			
+		CloudMeshGenerator.MeshGenStatus opaqueResult = CloudMeshGenerator.MeshGenStatus.NORMAL;
+		CloudMeshGenerator.MeshGenStatus transparentResult = CloudMeshGenerator.MeshGenStatus.NORMAL;
+		
+		opaqueResult = this.copyMeshData(
+				TOTAL_SIDES_NAME, 
+				SIDES_PER_CHUNK_NAME, 
+				SIDE_INFO_BUFFER_NAME, 
+				MeshChunk::getOpaqueBuffers,
+				BYTES_PER_SIDE_INFO,
+				this.opaqueBufferSize
+		);
+		
+		if (this.useTransparency)
+		{
+			transparentResult = this.copyMeshData(
+					TRANSPARENT_TOTAL_CUBES_NAME, 
+					TRANSPARENT_CUBES_PER_CHUNK_NAME, 
+					TRANSPARENT_CUBE_INFO_BUFFER_NAME, 
+					c -> c.getTransparentBuffers().get(),
+					BYTES_PER_CUBE_INFO,
+					this.transparentBufferSize
+			);
+		}
+		
+		this.opaqueBufferBytesUsed = 0;
+		this.transparentBufferBytesUsed = 0;
+		for (MeshChunk chunk : this.chunks)
+		{
+			this.opaqueBufferBytesUsed += chunk.getOpaqueBuffers().getElementCount() * BYTES_PER_SIDE_INFO;
+			chunk.getTransparentBuffers().ifPresent(bufferSet -> {
+				this.transparentBufferBytesUsed += bufferSet.getElementCount() * BYTES_PER_CUBE_INFO;
+			});
+		}
+		
+		return Pair.of(opaqueResult, transparentResult);
 	}
 	
-	protected void generateChunk(int lodLevel, int lodScale, int x, int y, int z, float offsetX, float offsetY, float offsetZ, float scale, float camOffsetX, float camOffsetZ, int noOcclusionDirectionIndex)
+	private CloudMeshGenerator.MeshGenStatus copyMeshData(String totalCountBufferName, String countPerChunkBufferName, String elementBufferName, Function<MeshChunk, MeshChunk.BufferSet> bufferSetFunction, int bytesPerElement, int elementBufferSize)
 	{
-		this.shader.forUniform("LodLevel", (id, loc) -> {
-			GL41.glProgramUniform1i(id, loc, lodLevel);
-		});
-		this.shader.forUniform("RenderOffset", (id, loc) -> {
-			GL41.glProgramUniform3f(id, loc, offsetX / scale + camOffsetX / scale, offsetY / scale, offsetZ / scale + camOffsetZ / scale);
-		});
-		this.shader.forUniform("Scale", (id, loc) -> {
-			GL41.glProgramUniform1f(id, loc, lodScale);
-		});
-		this.shader.forUniform("DoNotOccludeSide", (id, loc) -> {
-			GL41.glProgramUniform1i(id, loc, noOcclusionDirectionIndex);
-		});
-		this.shader.dispatch(WORK_SIZE, WORK_SIZE, WORK_SIZE, false);
+		CloudMeshGenerator.MeshGenStatus status = CloudMeshGenerator.MeshGenStatus.NORMAL;
+		
+		//Get the total amount of sides and indices across all chunks and reset
+		this.shader.getShaderStorageBuffer(totalCountBufferName).writeData(b -> {
+			b.putInt(0, 0);
+		}, 4); 
+		
+		//Get the amount of total sides each chunk has and reset each counter
+		this.shader.getShaderStorageBuffer(countPerChunkBufferName).readWriteData(buffer -> 
+		{
+			for (CloudMeshGenerator.ChunkGenTask gennedChunk : this.completedGenTasks)
+			{
+				int index = gennedChunk.index() * 4;
+				int count = buffer.getInt(index);
+				MeshChunk.BufferSet bufferSet = bufferSetFunction.apply(gennedChunk.chunk());
+				bufferSet.setTotalElementCount(count);
+				buffer.putInt(index, 0);
+			}
+		}, this.chunks.size() * 4);
+		
+		List<MeshChunk> completedChunks = this.completedGenTasks.stream().map(CloudMeshGenerator.ChunkGenTask::chunk).toList();
+		
+		int elementBufferId = this.shader.getShaderStorageBuffer(elementBufferName).getId();
+		status = iterateAndCopyToChunkBuffer(elementBufferId, elementBufferSize, completedChunks, bufferSetFunction.andThen(MeshChunk.BufferSet::getBufferId), bufferSetFunction.andThen(c -> c.getElementCount() * bytesPerElement), bufferSetFunction.andThen(MeshChunk.BufferSet::getBufferSize));
+		
+		GlStateManager._glBindBuffer(GL31.GL_COPY_READ_BUFFER, 0);
+		GlStateManager._glBindBuffer(GL31.GL_COPY_WRITE_BUFFER, 0);
+		
+		return status;
 	}
 	
-	protected void doMeshGenning(double camX, double camY, double camZ, float scale, int tasksPerTick)
+	/**
+	 * Queues a list of chunk gen tasks for each chunk in this mesh generator
+	 * 
+	 * @param meshGenOffsetX
+	 * @param meshGenOffsetZ
+	 * @param frustum
+	 * Culling frustum, null for no culling
+	 * @param genInterval
+	 * How many frames mesh genning should take
+	 * @return
+	 */
+	protected int prepareMeshGen(double originX, double originY, double originZ, float meshGenOffsetX, float meshGenOffsetZ, @Nullable Frustum frustum, int genInterval, float partialTick)
 	{
 		this.shader.forUniform("Scroll", (id, loc) -> {
 			GL41.glProgramUniform3f(id, loc, this.scrollX, this.scrollY, this.scrollZ);
 		});
+		this.shader.forUniform("Wiggle", (id, loc) -> {
+			GL41.glProgramUniform1f(id, loc, (this.scrollX + this.scrollY + this.scrollZ) / 5.0F);
+		});
 		this.shader.forUniform("Origin", (id, loc) -> {
-			GL41.glProgramUniform3f(id, loc, (float)camX / scale, (float)camY / scale, (float)camZ / scale);
+			GL41.glProgramUniform3f(id, loc, (float)originX, (float)originY, (float)originZ);
 		});
 		this.shader.forUniform("TestFacesFacingAway", (id, loc) -> {
 			GL41.glProgramUniform1i(id, loc, this.testFacesFacingAway ? 1 : 0);
 		});
+		this.uploadFadeData();
 		
-		for (int i = 0; i < tasksPerTick; i++)
-		{
-			Runnable task = this.chunkGenTasks.poll();
-			if (task != null)
-				task.run();
-			else
-				break;
-		}
-	}
-	
-	public void generateMesh(float scale)
-	{
-		RenderSystem.assertOnRenderThread();
-		
-		if (this.shader == null || !this.shader.isValid())
-			return;
-		
-		if (this.lodConfigWasChanged)
-		{
-			this.onLodConfigChanged();
-			this.lodConfigWasChanged = false;
-		}
-		
-		this.populateChunkGenTasks(0.0D, 0.0D, 0.0D, scale, null, 1);
-		
-		if (!this.chunkGenTasks.isEmpty())
-			this.doMeshGenning(0.0D, 0.0D, 0.0D, scale, this.chunkGenTasks.size());
-		
-		MutableInt totalSides = new MutableInt();
-		this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {
-			totalSides.setValue(b.getInt(0));
-			b.putInt(0, 0);
-		}, 4);
-		this.copyDataOver(totalSides.getValue());
-	}
-	
-	public void tick(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum)
-	{
-		RenderSystem.assertOnRenderThread();
-		
-		if (this.shader == null || !this.shader.isValid())
-			return;
-		
-		if (this.chunkGenTasks.isEmpty())
-		{
-			MutableInt totalSides = new MutableInt();
-			this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {
-				totalSides.setValue(b.getInt(0));
-				b.putInt(0, 0);
-			}, 4);
-			this.copyDataOver(totalSides.getValue());
-			
-			if (this.lodConfigWasChanged)
-			{
-				this.onLodConfigChanged();
-				this.lodConfigWasChanged = false;
-			}
-			this.tasksPerTick = this.populateChunkGenTasks(camX, camY, camZ, scale, frustum, this.meshGenInterval);
-			this.currentCamX = camX;
-			this.currentCamY = camY;
-			this.currentCamZ = camZ;
-			this.currentScale = scale;
-		}
-		else
-		{
-			this.shader.getShaderStorageBuffer("Counter").readWriteData(b -> {}, 4);
-		}
-		
-		if (!this.chunkGenTasks.isEmpty())
-			this.doMeshGenning(this.currentCamX, this.currentCamY, this.currentCamZ, this.currentScale, this.tasksPerTick);
-	}
-	
-	protected void onLodConfigChanged()
-	{
-		this.shader.forUniform("TotalLodLevels", (id, loc) -> {
-			GL41.glProgramUniform1i(id, loc, this.lodConfig.getLods().length);
-		});
-	}
-	
-	protected int populateChunkGenTasks(double camX, double camY, double camZ, float scale, @Nullable Frustum frustum, int genInterval)
-	{
 		int chunkCount = 0;
-		float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * scale;
-		float globalOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
-		float globalOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
-		for (CloudMeshGenerator.PreparedChunk chunk : this.lodConfig.preparedChunks)
+		for (int i = 0; i < this.chunks.size(); i++)
 		{
-			if (chunk.checkIfVisibleAndQueue(this, camX, camY, camZ, scale, globalOffsetX, globalOffsetZ, frustum))
+			if (this.queueChunkMeshGenTask(this.chunks.get(i), i, meshGenOffsetX, meshGenOffsetZ, frustum))
 				chunkCount++;
 		}
 		return Mth.ceil((float)chunkCount / (float)genInterval);
 	}
 	
-	public void render(PoseStack stack, Matrix4f projMat, float partialTick, float r, float g, float b)
+	protected void onOffGen()
 	{
-		RenderSystem.assertOnRenderThread();
-	
-		if (this.arrayObjectId != -1 && this.totalIndices > 0)
+		//We read these SSBOs here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
+		this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4);
+		this.shader.getShaderStorageBuffer(SIDES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
+		if (this.useTransparency)
 		{
-			BufferUploader.reset();
-			
-			RenderSystem.disableBlend();
-			RenderSystem.enableDepthTest();
-			RenderSystem.setShaderColor(r, g, b, 1.0F);
-			
-			GL30.glBindVertexArray(this.arrayObjectId);
-			
-			RenderSystem.setShader(SimpleCloudsShaders::getCloudsShader);
-			SimpleCloudsRenderer.prepareShader(RenderSystem.getShader(), stack.last().pose(), projMat);
-			RenderSystem.getShader().apply();
-			RenderSystem.drawElements(GL11.GL_TRIANGLES, this.totalIndices, GL11.GL_UNSIGNED_INT);
-			RenderSystem.getShader().clear();
-			
-			GL30.glBindVertexArray(0);
-			
-			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+			this.shader.getShaderStorageBuffer(TRANSPARENT_TOTAL_CUBES_NAME).readWriteData(b -> {}, 4);
+			this.shader.getShaderStorageBuffer(TRANSPARENT_CUBES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
 		}
 	}
 	
-	public int getArrayObjectId()
+	/**
+	 * Queues a given chunk for mesh genning
+	 * 
+	 * @param chunk
+	 * The given {@link MeshChunk} to generate a mesh for
+	 * @param chunkIndex
+	 * The index of the mesh chunk in {@code this.chunks}
+	 * @param meshGenOffsetX
+	 * @param meshGenOffsetZ
+	 * @param frustum
+	 * For frustum culling, null for no culling
+	 * @return
+	 */
+	protected boolean queueChunkMeshGenTask(MeshChunk chunk, int chunkIndex, float meshGenOffsetX, float meshGenOffsetZ, @Nullable Frustum frustum)
 	{
-		return this.arrayObjectId;
+		PreparedChunk chunkInfo = chunk.getChunkInfo();
+		AABB bounds = chunkInfo.bounds();
+		float minX = (float)bounds.minX + meshGenOffsetX;
+		float minZ = (float)bounds.minZ + meshGenOffsetZ;
+		float maxX = (float)bounds.maxX + meshGenOffsetX;
+		float maxZ = (float)bounds.maxZ + meshGenOffsetZ;
+		
+		if (frustum == null || ((MixinFrustumAccessor)frustum).simpleclouds$cubeInFrustum(minX, bounds.minY, minZ, maxX, bounds.maxY, maxZ))
+		{
+			double nearestCornerX = Math.max(Math.max(bounds.minX, -bounds.maxX), 0.0D);
+			double nearestCornerZ = Math.max(Math.max(bounds.minZ, -bounds.maxZ), 0.0D);
+			double dist =  Math.sqrt(nearestCornerX * nearestCornerX + nearestCornerZ * nearestCornerZ);
+			
+			if (this.cullDistance <= 0.0F || dist < this.cullDistance)
+			{
+				CloudMeshGenerator.ChunkGenSettings settings = this.determineChunkGenSettings(minX, minZ, maxX, maxZ);
+				this.chunkGenTasks.add(new CloudMeshGenerator.ChunkGenTask(chunk, settings.skipChunk(), minX, (float)bounds.minY, minZ, maxX, (float)bounds.maxY, maxZ, chunkIndex, minX, 0.0F, minZ, settings.minimumHeight(), settings.maximumHeight()));
+				return true;
+			}
+		}
+		return false;
 	}
 	
-	public int getTotalIndices()
+	protected abstract CloudMeshGenerator.ChunkGenSettings determineChunkGenSettings(float minX, float minZ, float maxX, float maxZ);
+	
+	/**
+	 * Does mesh generating for a given amount of chunks defined by tasksPerTick
+	 * 
+	 * @param tasksPerTick
+	 */
+	protected void doMeshGenning(int tasksPerTick)
 	{
-		return this.totalIndices;
+		for (int i = 0; i < tasksPerTick; i++)
+		{
+			CloudMeshGenerator.ChunkGenTask task = this.chunkGenTasks.poll();
+			if (task != null)
+			{
+				if (task.clear())
+					this.clearChunk(task);
+				else
+					this.generateChunk(task);
+				this.updateMeshChunkAfterGeneration(task.chunk(), task);
+				this.completedGenTasks.add(task);
+			}
+			else
+			{
+				break;
+			}
+		}
 	}
 	
-	public int getTotalSides()
+	protected void updateMeshChunkAfterGeneration(MeshChunk chunk, CloudMeshGenerator.ChunkGenTask task)
 	{
-		return this.totalSides;
+		chunk.setBounds(task.minX(), task.minY(), task.minZ(), task.maxX(), task.maxY(), task.maxZ());
+		chunk.setHeights(task.startY(), task.endY());
+		chunk.resetLastGenTime();
 	}
 	
-	public int getSideBufferSize()
+	/**
+	 * Generates a given chunk, or completes a chunk gen task
+	 * 
+	 * @param task
+	 * @param scale
+	 * @param globalOffsetX
+	 * @param globalOffsetZ
+	 */
+	protected void generateChunk(CloudMeshGenerator.ChunkGenTask task)
 	{
-		return this.sideBufferSize;
+		PreparedChunk chunkInfo = task.chunk().getChunkInfo();
+		
+		int lodScale = chunkInfo.lodScale();
+		int lowestY = task.startY();
+		int height = Mth.ceil((float)(task.endY() - lowestY) / (float)lodScale);
+		int localHeightInvocations = Mth.ceil((float)height / (float)LOCAL_SIZE);
+		
+		if (localHeightInvocations > 0)
+		{
+			this.shader.forUniform("ChunkIndex", (id, loc) -> {
+				GL41.glProgramUniform1i(id, loc, task.index());
+			});
+			this.shader.forUniform("LodLevel", (id, loc) -> {
+				GL41.glProgramUniform1i(id, loc, chunkInfo.lodLevel());
+			});
+			this.shader.forUniform("RenderOffset", (id, loc) -> {
+				GL41.glProgramUniform3f(id, loc, task.x(), task.y() + lowestY, task.z());
+			});
+			this.shader.forUniform("Scale", (id, loc) -> {
+				GL41.glProgramUniform1f(id, loc, lodScale);
+			});
+			this.shader.forUniform("DoNotOccludeSide", (id, loc) -> {
+				GL41.glProgramUniform1i(id, loc, chunkInfo.noOcclusionDirectionIndex());
+			});
+			
+			this.shader.dispatch(WORK_SIZE, localHeightInvocations, WORK_SIZE, false);
+			GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
+		}
 	}
 	
-	public int getIndexBufferSize()
+	protected void clearChunk(CloudMeshGenerator.ChunkGenTask task)
 	{
-		return this.indexBufferSize;
+		Consumer<String> clear = countPerChunkBufferName -> 
+		{
+			//Clear count. This will cause the given chunk to not render in the render pass
+			this.shader.getShaderStorageBuffer(countPerChunkBufferName).writeData(buffer -> {
+				buffer.putInt(task.index() * 4, 0);
+			}, task.index() * 4 + 4);
+		};
+		clear.accept(SIDES_PER_CHUNK_NAME);
+		if (this.transparencyEnabled())
+			clear.accept(TRANSPARENT_CUBES_PER_CHUNK_NAME);
+	}
+	
+	public void forRenderableMeshChunks(@Nullable Frustum frustum, Function<MeshChunk, MeshChunk.BufferSet> bufferSetFunction, BiConsumer<MeshChunk, MeshChunk.BufferSet> function)
+	{
+		this.forRenderableMeshChunks(frustum, bufferSetFunction, function, false);
+	}
+	
+	public void forRenderableMeshChunks(@Nullable Frustum frustum, Function<MeshChunk, MeshChunk.BufferSet> bufferSetFunction, BiConsumer<MeshChunk, MeshChunk.BufferSet> function, boolean updateFade)
+	{
+		for (MeshChunk chunk : this.chunks)
+		{
+			MeshChunk.BufferSet bufferSet = bufferSetFunction.apply(chunk);
+			if (bufferSet.getElementCount() > 0)
+			{
+				if (updateFade && chunk.getTicksSinceLastGen() > TICKS_UNTIL_FADE_RESET)
+				{
+					chunk.resetAlpha();
+					chunk.setFadeEnabled(false);
+				}
+				
+				boolean render = true;
+				if (frustum != null)
+					render = ((MixinFrustumAccessor)frustum).simpleclouds$cubeInFrustum(chunk.getBoundsMinX(), chunk.getBoundsMinY(), chunk.getBoundsMinZ(), chunk.getBoundsMaxX(), chunk.getBoundsMaxY(), chunk.getBoundsMaxZ());
+				
+				if (render)
+				{
+					PreparedChunk chunkInfo = chunk.getChunkInfo();
+					AABB bounds = chunkInfo.bounds();
+					double nearestCornerX = Math.max(Math.max(bounds.minX, -bounds.maxX), 0.0D);
+					double nearestCornerZ = Math.max(Math.max(bounds.minZ, -bounds.maxZ), 0.0D);
+					double dist =  Math.sqrt(nearestCornerX * nearestCornerX + nearestCornerZ * nearestCornerZ);
+					if (this.cullDistance <= 0.0F || this.cullDistance > dist)
+					{
+						if (updateFade)
+							chunk.setFadeEnabled(true);
+						function.accept(chunk, bufferSet);
+					}
+				}
+			}
+		}
 	}
 	
 	public void fillReport(CrashReportCategory category)
 	{
+		category.setDetail("Shader Type", this.shaderType);
+		category.setDetail("Shaded Clouds", this.shadedClouds);
+		category.setDetail("Transparency Enabled", this.useTransparency);
+		category.setDetail("Fade Near Origin", this.fadeNearOrigin);
 		category.setDetail("Compute Shader", this.shader);
-		category.setDetail("Level Of Details", 1 + this.lodConfig.lods.length);
+		category.setDetail("Level Of Details", 1 + this.lodConfig.getLods().length);
 		category.setDetail("Generation Frame Interval", this.meshGenInterval);
-		category.setDetail("Total Prepared Chunks", this.lodConfig.preparedChunks.size());
+		category.setDetail("Total Prepared Chunks", this.lodConfig.getPreparedChunks().size());
 		category.setDetail("Tasks Per Frame", this.tasksPerTick);
 		category.setDetail("Scroll", String.format("X: %s, Y: %s, Z: %s", this.scrollX, this.scrollY, this.scrollZ));
-		category.setDetail("Array Object ID", this.arrayObjectId);
-		category.setDetail("Vertex Buffer ID", this.vertexBufferId);
-		category.setDetail("Index Buffer ID", this.indexBufferId);
-		category.setDetail("Total Indices", this.totalIndices);
-		category.setDetail("Total Triangles", this.totalSides * 2);
+		category.setDetail("Total Mesh Chunks", this.chunks != null ? this.chunks.size() : "null");
+		category.setDetail("Mesh Gen Status", this.meshGenStatus);
 		category.setDetail("Test Occluded Faces", this.testFacesFacingAway);
 	}
 	
@@ -524,176 +943,38 @@ public abstract class CloudMeshGenerator
 		return String.format("%s[shader_name=%s]", this.getClass().getSimpleName(), this.meshShaderLoc);
 	}
 	
-	public static class LevelOfDetailConfig
+	protected static CloudMeshGenerator.ChunkGenSettings skip()
 	{
-		private final CloudMeshGenerator.LevelOfDetail[] lods;
-		private final int primaryChunkSpan;
-		private final int effectiveChunkSpan;
-		private List<CloudMeshGenerator.PreparedChunk> preparedChunks;
-		private int primaryChunkCount;
-		
-		public LevelOfDetailConfig(int primaryChunkSpan, CloudMeshGenerator.LevelOfDetail... lods)
-		{
-			this.primaryChunkSpan = primaryChunkSpan;
-			this.lods = lods;
-			int radius = primaryChunkSpan / 2;
-			for (var lod : this.lods)
-				radius += lod.chunkScale() * lod.spread();
-			this.effectiveChunkSpan = radius * 2;
-			this.prepareChunks();
-		}
-		
-		private void prepareChunks()
-		{
-			ImmutableList.Builder<CloudMeshGenerator.PreparedChunk> builder = ImmutableList.builder();
-			
-			int currentRadius = this.primaryChunkSpan / 2;
-			int primaryChunkCount = 0;
-			for (int r = 0; r <= currentRadius; r++)
-			{
-				for (int y = 0; y < VERTICAL_CHUNK_SPAN; y++)
-				{
-					for (int x = -r; x < r; x++)
-					{
-						builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, x, y, -r, -1));
-						builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, x, y, r - 1, -1));
-						primaryChunkCount += 2;
-					}
-					for (int z = -r + 1; z < r - 1; z++)
-					{
-						builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, -r, y, z, -1));
-						builder.add(new CloudMeshGenerator.PreparedChunk(0, 1, r - 1, y, z, -1));
-						primaryChunkCount += 2;
-					}
-				}
-			}
-			
-			for (int i = 0; i < this.lods.length; i++)
-			{
-				CloudMeshGenerator.LevelOfDetail config = this.lods[i];
-				int chunkCount = 0;
-				int lodLevel = i + 1;
-				for (int deltaR = 1; deltaR <= config.spread(); deltaR++)
-				{
-					int ySpan = Mth.ceil((float)VERTICAL_CHUNK_SPAN / (float)config.chunkScale());
-					boolean noOcclusion = deltaR == 1;
-					for (int y = 0; y < ySpan; y++)
-					{
-						int r = currentRadius / config.chunkScale() + deltaR;
-						for (int x = -r; x < r; x++)
-						{
-							builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), x, y, -r, noOcclusion ? 5 : -1));
-							builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), x, y, r - 1, noOcclusion ? 4 : -1));
-							chunkCount += 2;
-						}
-						for (int z = -r + 1; z < r - 1; z++)
-						{
-							builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), -r, y, z, noOcclusion ? 1 : -1));
-							builder.add(new CloudMeshGenerator.PreparedChunk(lodLevel, config.chunkScale(), r - 1, y, z, noOcclusion ? 0 : -1));
-							chunkCount += 2;
-						}
-					}
-				}
-				currentRadius = currentRadius + config.spread() * config.chunkScale();
-				config.setChunkCount(chunkCount);
-			}
-			
-			this.primaryChunkCount = primaryChunkCount;
-			this.preparedChunks = builder.build();
-		}
-		
-		public CloudMeshGenerator.LevelOfDetail[] getLods()
-		{
-			return this.lods;
-		}
-		
-		public int getPrimaryChunkSpan()
-		{
-			return this.primaryChunkSpan;
-		}
-		
-		public int getEffectiveChunkSpan()
-		{
-			return this.effectiveChunkSpan;
-		}
-		
-		public int getPrimaryChunkCount()
-		{
-			return this.primaryChunkCount;
-		}
+		return new CloudMeshGenerator.ChunkGenSettings(true, 0, 0);
 	}
 	
-	public static class LevelOfDetail
+	protected static CloudMeshGenerator.ChunkGenSettings heights(int min, int max)
 	{
-		private final int chunkScale;
-		private final int spread;
-		private int chunkCount;
-		
-		public LevelOfDetail(int chunkScale, int spread)
-		{
-			this.chunkScale = chunkScale;
-			this.spread = spread;
-		}
-		
-		private void setChunkCount(int count)
-		{
-			this.chunkCount = count;
-		}
-		
-		public int chunkScale()
-		{
-			return this.chunkScale;
-		}
-		
-		public int spread()
-		{
-			return this.spread;
-		}
-		
-		public int chunkCount()
-		{
-			return this.chunkCount;
-		}
+		return new CloudMeshGenerator.ChunkGenSettings(false, min, max);
 	}
 	
-	static class PreparedChunk
+	protected static record ChunkGenSettings(boolean skipChunk, int minimumHeight, int maximumHeight) {}
+	
+	protected static record ChunkGenTask(MeshChunk chunk, boolean clear, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int index, float x, float y, float z, int startY, int endY) {}
+	
+	public static enum MeshGenStatus
 	{
-		final int lodLevel;
-		final int lodScale;
-		final int x;
-		final int y;
-		final int z;
-		final int noOcclusionDirectionIndex;
+		NOT_INITIALIZED(true),
+		NO_TASKS(false),
+		NORMAL(false),
+		TOO_MANY_VERTICES(true),
+		CHUNK_OVERFLOW(true);
 		
-		PreparedChunk(int lodLevel, int lodScale, int x, int y, int z, int noOcclusionDirectionIndex)
+		private boolean isErroneous;
+		
+		private MeshGenStatus(boolean isErroneous)
 		{
-			this.lodLevel = lodLevel;
-			this.lodScale = lodScale;
-			this.x = x;
-			this.y = y;
-			this.z = z;
-			this.noOcclusionDirectionIndex = noOcclusionDirectionIndex;
+			this.isErroneous = isErroneous;
 		}
 		
-		boolean checkIfVisibleAndQueue(CloudMeshGenerator generator, double camX, double camY, double camZ, float scale, float globalOffsetX, float globalOffsetZ, @Nullable Frustum frustum)
+		public boolean isErroneous()
 		{
-			float chunkSizeLod = (float)SimpleCloudsConstants.CHUNK_SIZE * scale * this.lodScale;
-			float offsetX = (float)this.x * chunkSizeLod;
-			float offsetY = (float)this.y * chunkSizeLod;
-			float offsetZ = (float)this.z * chunkSizeLod;
-			AABB box = new AABB(offsetX, offsetY, offsetZ, offsetX + chunkSizeLod, offsetY+ chunkSizeLod, offsetZ + chunkSizeLod).inflate(0.0D, 500.0D, 0.0D).move(globalOffsetX, 0.0F, globalOffsetZ).move(-camX, -camY, -camZ);
-			if (frustum == null || frustum.isVisible(box))
-			{
-				double nearestCornerX = Math.max(Math.max(box.minX, -box.maxX), 0.0D);
-				double nearestCornerZ = Math.max(Math.max(box.minZ, -box.maxZ), 0.0D);
-				double dist =  Math.sqrt(nearestCornerX * nearestCornerX + nearestCornerZ * nearestCornerZ);
-				if (generator.cullDistance <= 0.0F || dist < generator.cullDistance)
-				{
-					generator.chunkGenTasks.add(() -> generator.generateChunk(this.lodLevel, this.lodScale, this.x, this.y, this.z, offsetX, offsetY, offsetZ, scale, globalOffsetX, globalOffsetZ, this.noOcclusionDirectionIndex));
-					return true;
-				}
-			}
-			return false;
+			return this.isErroneous;
 		}
 	}
 }

@@ -1,0 +1,17 @@
+{
+  "noise_settings": {
+    "fade_distance": 10.0,
+    "height": 32.0,
+    "height_offset": 0.0,
+    "scale_x": 30.0,
+    "scale_y": 10.0,
+    "scale_z": 30.0,
+    "value_offset": -0.5,
+    "value_scale": 1.0
+  },
+  "storm_fade_distance": 16.0,
+  "storm_start": 10.0,
+  "storminess": 0.1,
+  "transparency_fade": 0.1,
+  "weather_type": "none"
+}

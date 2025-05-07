@@ -23,13 +23,15 @@ public class MixinGameRenderer
 	@Inject(method = "close", at = @At("TAIL"))
 	public void simpleclouds$shutdownRenderer_close(CallbackInfo ci)
 	{
-		SimpleCloudsRenderer.getInstance().shutdown();
+		SimpleCloudsRenderer.getOptionalInstance().ifPresent(SimpleCloudsRenderer::shutdown);
 		CloudPreviewerScreen.destroyMeshGenerator();
 	}
 	
 	@Inject(method = "resize", at = @At("TAIL"))
 	public void simpleclouds$resizeRenderer_resize(int width, int height, CallbackInfo ci)
 	{
-		SimpleCloudsRenderer.getInstance().onResize(width, height);
+		SimpleCloudsRenderer.getOptionalInstance().ifPresent(renderer -> {
+			renderer.onResize(width, height);
+		});
 	}
 }

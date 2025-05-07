@@ -21,7 +21,10 @@ public class ModifiableLayeredNoise extends AbstractLayeredNoise<ModifiableNoise
 	public ModifiableLayeredNoise addNoiseLayer(ModifiableNoiseSettings layer)
 	{
 		if (!this.noiseLayers.contains(layer))
+		{
 			this.noiseLayers.add(layer);
+			this.recalculateHeights();
+		}
 		return this;
 	}
 	
@@ -33,7 +36,10 @@ public class ModifiableLayeredNoise extends AbstractLayeredNoise<ModifiableNoise
 	
 	public boolean removeNoiseLayer(ModifiableNoiseSettings layer)
 	{
-		return this.noiseLayers.remove(layer);
+		boolean flag = this.noiseLayers.remove(layer);
+		if (flag)
+			this.recalculateHeights();
+		return flag;
 	}
 	
 	public StaticLayeredNoise toStatic()

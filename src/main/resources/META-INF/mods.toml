@@ -35,6 +35,3 @@ issueTrackerURL="https://github.com/nonamecrackers2/simple-clouds/issues" #optio
     versionRange="${crackerslib_version_range}"
     ordering="NONE"
     side="BOTH"
-
-[features.${mod_id}]
-openGLVersion="[4.3,)"

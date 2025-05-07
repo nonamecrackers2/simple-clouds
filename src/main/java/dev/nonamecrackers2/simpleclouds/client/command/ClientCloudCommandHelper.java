@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 
+import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.command.CloudCommandSource;
 import dev.nonamecrackers2.simpleclouds.common.command.CloudCommands;
@@ -58,6 +59,6 @@ public class ClientCloudCommandHelper
 	
 	public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
 	{
-		 CloudCommands.register(dispatcher, "clientClouds", src -> true, SOURCE);
+		 CloudCommands.register(dispatcher, "clientClouds", src -> true, SOURCE, ClientSideCloudTypeManager.getInstance());
 	}
 }

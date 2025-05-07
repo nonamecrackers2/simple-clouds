@@ -53,6 +53,18 @@ public interface NoiseSettings
 		{
 			return DataResult.success(ops.emptyList());
 		}
+		
+		@Override
+		public int getStartHeight()
+		{
+			return 0;
+		}
+		
+		@Override
+		public int getEndHeight()
+		{
+			return 0;
+		}
 	};
 	
 	<T> DataResult<T> encode(DynamicOps<T> ops, T prefix);
@@ -60,4 +72,8 @@ public interface NoiseSettings
 	float[] packForShader();
 	
 	int layerCount();
+	
+	int getStartHeight();
+	
+	int getEndHeight();
 }

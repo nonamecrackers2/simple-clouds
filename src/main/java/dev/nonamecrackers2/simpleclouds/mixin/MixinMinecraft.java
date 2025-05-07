@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsErrorScreen;
-import dev.nonamecrackers2.simpleclouds.client.mesh.GeneratorInitializeResult;
+import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import net.minecraft.CrashReport;
@@ -35,8 +35,8 @@ public abstract class MixinMinecraft
 		var renderer = SimpleCloudsRenderer.getOptionalInstance().orElse(null);
 		if (renderer != null)
 		{
-			GeneratorInitializeResult result = renderer.getInitialInitializationResult();
-			if (result != null && result.getState() == GeneratorInitializeResult.State.ERROR)
+			RendererInitializeResult result = renderer.getInitialInitializationResult();
+			if (result != null && result.getState() == RendererInitializeResult.State.ERROR)
 			{
 				this.setScreen(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult()));
 				ci.cancel();

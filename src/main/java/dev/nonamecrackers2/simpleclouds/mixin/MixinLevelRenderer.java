@@ -66,7 +66,7 @@ public class MixinLevelRenderer
 	public void simpleclouds$injectCustomWeatherRendering_renderLevel(PoseStack stack, float partialTick, long l, boolean flag, Camera camera, GameRenderer renderer, LightTexture texture, Matrix4f projMat, CallbackInfo ci)
 	{
 		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
-			SimpleCloudsRenderer.getInstance().getWorldEffectsManager().renderWeather(texture, partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+			SimpleCloudsRenderer.getInstance().renderWeather(texture, partialTick, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
 	@Inject(method = "tick", at = @At("HEAD"))

@@ -7,7 +7,8 @@ import org.lwjgl.glfw.GLFW;
 
 import com.google.common.collect.Lists;
 
-import dev.nonamecrackers2.simpleclouds.client.mesh.GeneratorInitializeResult;
+import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
+import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -25,13 +26,13 @@ public class SimpleCloudsErrorScreen extends Screen
 {
 	private static final int PADDING = 20;
 	private static final Component DESCRIPTION = Component.translatable("gui.simpleclouds.error_screen.description");
-	private final GeneratorInitializeResult result;
+	private final RendererInitializeResult result;
 	private Path crashReportsFolder;
 	private Component openGLVersion;
 	private List<FormattedCharSequence> text;
 	private int totalTextHeight;
 	
-	public SimpleCloudsErrorScreen(GeneratorInitializeResult result)
+	public SimpleCloudsErrorScreen(RendererInitializeResult result)
 	{
 		super(Component.translatable("gui.simpleclouds.error_screen.title").withStyle(Style.EMPTY.withUnderlined(true).withBold(true)));
 		this.result = result;
@@ -48,7 +49,7 @@ public class SimpleCloudsErrorScreen extends Screen
 		this.text.addAll(this.font.split(DESCRIPTION, textMaxWidth));
 		if (!this.result.getErrors().isEmpty())
 		{
-			GeneratorInitializeResult.Error error = this.result.getErrors().get(this.result.getErrors().size() - 1);
+			RendererInitializeResult.Error error = this.result.getErrors().get(this.result.getErrors().size() - 1);
 			this.text.add(FormattedCharSequence.EMPTY);
 			this.text.addAll(this.font.split(error.text(), textMaxWidth));
 			if (this.result.getErrors().size() > 1)
@@ -97,7 +98,17 @@ public class SimpleCloudsErrorScreen extends Screen
 		
 		if (keyCode == GLFW.GLFW_KEY_R && Screen.hasControlDown())
 		{
-			this.minecraft.reloadResourcePacks();
+			this.minecraft.reloadResourcePacks().thenRunAsync(() ->
+			{
+				var renderer = SimpleCloudsRenderer.getOptionalInstance().orElse(null);
+				if (renderer == null)
+					return;
+				RendererInitializeResult result = renderer.getInitialInitializationResult();
+				if (result != null && result.getState() == RendererInitializeResult.State.ERROR)
+					this.minecraft.setScreen(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult()));
+				else
+					this.minecraft.setScreen(null);
+			}, this.minecraft);
 			return true;
 		}
 		

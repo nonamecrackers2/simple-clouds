@@ -1,0 +1,21 @@
+{
+    "vertex": "blit",
+    "fragment": "simpleclouds:clouds_composite",
+    "attributes": [ "Position" ],
+    "samplers": [
+    	{ "name": "DiffuseSampler" },
+        { "name": "CloudsTexture" },
+        { "name": "CloudsDepthTexture" },
+        { "name": "AccumTexture" },
+        { "name": "RevealageTexture" }
+    ],
+    "uniforms": [
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "InSize", "type": "float", "count": 2,  "values": [ 1.0, 1.0 ] },
+        { "name": "OutSize", "type": "float", "count": 2,  "values": [ 1.0, 1.0 ] },
+        { "name": "InverseWorldProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "InverseModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "FogStart", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "FogEnd", "type": "float", "count": 1, "values": [ 2.0 ] }
+    ]
+}

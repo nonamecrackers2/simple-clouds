@@ -1,1 +1,2 @@
 gradlew runClient
+PAUSE

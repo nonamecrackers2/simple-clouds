@@ -50,7 +50,7 @@ public class SendCloudTypesPacket extends Packet
 	@Override
 	protected void encode(FriendlyByteBuf buffer)
 	{
-		buffer.writeVarInt(this.types.size());
+		buffer.writeVarInt(this.indexed.length);
 		for (CloudType type : this.indexed)
 		{
 			buffer.writeResourceLocation(type.id());

@@ -2,36 +2,29 @@ package dev.nonamecrackers2.simpleclouds.common.world;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.saveddata.SavedData;
-import nonamecrackers2.crackerslib.common.util.primitives.PrimitiveHelper;
 
 public class CloudData extends SavedData
 {
 	public static final String ID = "clouddata";
-	private final CloudManager<?> manager;
+	private final ServerCloudManager manager;
 	
-	public CloudData(CloudManager<?> manager)
+	public CloudData(ServerCloudManager manager)
 	{
 		this.manager = manager;
 	}
 	
-	public static CloudData load(CloudManager<?> manager, CompoundTag tag)
+	public static CloudData load(ServerCloudManager manager, CompoundTag tag)
 	{
 		CloudData data = new CloudData(manager);
 		if (tag.contains("Seed"))
 			manager.setSeed(tag.getLong("Seed"));
-		if (tag.contains("Scroll", 10))
-		{
-			CompoundTag scroll = tag.getCompound("Scroll");
-			manager.setScrollX(scroll.getFloat("x"));
-			manager.setScrollY(scroll.getFloat("y"));
-			manager.setScrollZ(scroll.getFloat("z"));
-		}
-		if (tag.contains("Direction", 10))
-			manager.setDirection(PrimitiveHelper.vector3fFromTag(tag.getCompound("Direction")));
+		if (tag.contains("ScrollAngle"))
+			manager.setScrollAngle(tag.getFloat("ScrollAngle"));
 		if (tag.contains("Speed"))
-			manager.setSpeed(tag.getFloat("Speed"));
+			manager.setCloudSpeed(tag.getFloat("Speed"));
 		if (tag.contains("Height"))
 			manager.setCloudHeight(tag.getInt("Height"));
+		manager.getCloudGenerator().readTag(tag.getCompound("cloud_generator"));
 		return data;
 	}
 	
@@ -39,14 +32,10 @@ public class CloudData extends SavedData
 	public CompoundTag save(CompoundTag tag)
 	{
 		tag.putLong("Seed", this.manager.getSeed());
-		CompoundTag scroll = new CompoundTag();
-		scroll.putFloat("x", this.manager.getScrollX());
-		scroll.putFloat("y", this.manager.getScrollY());
-		scroll.putFloat("z", this.manager.getScrollZ());
-		tag.put("Scroll", scroll);
-		tag.put("Direction", PrimitiveHelper.vector3fToTag(this.manager.getDirection()));
-		tag.putFloat("Speed", this.manager.getSpeed());
+		tag.putFloat("ScrollAngle", this.manager.getScrollAngle());
+		tag.putFloat("Speed", this.manager.getCloudSpeed());
 		tag.putInt("Height", this.manager.getCloudHeight());
+		tag.put("cloud_generator", this.manager.getCloudGenerator().toTag());
 		return tag;
 	}
 	

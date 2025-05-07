@@ -44,7 +44,7 @@ public class ShaderStorageBufferObject
 		int bufferId = GlStateManager._glGenBuffers();
 		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, binding, bufferId);
 		ShaderStorageBufferObject buffer = new ShaderStorageBufferObject(bufferId, binding, usage);
-		ComputeShader.ALL_SHADER_STORAGE_BUFFERS.put(binding, buffer);
+		ComputeShader.ALL_SHADER_STORAGE_BINDINGS.add(binding);
 		return buffer;
 	}
 	
@@ -89,9 +89,10 @@ public class ShaderStorageBufferObject
 		return size;
 	}
 	
+	@SuppressWarnings("deprecation")
 	public void closeAndClearBinding()
 	{
-		ComputeShader.ALL_SHADER_STORAGE_BUFFERS.remove(this.binding);
+		ComputeShader.ALL_SHADER_STORAGE_BINDINGS.remove((Object)this.binding);
 		this.close();
 	}
 	

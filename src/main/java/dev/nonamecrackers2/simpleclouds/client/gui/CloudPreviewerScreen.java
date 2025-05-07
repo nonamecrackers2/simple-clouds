@@ -5,9 +5,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
@@ -24,16 +26,16 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.gui.widget.LayerEditor;
 import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudStyle;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
 import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
-import dev.nonamecrackers2.simpleclouds.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractLayeredNoise;
 import dev.nonamecrackers2.simpleclouds.common.noise.AbstractNoiseSettings;
@@ -125,6 +127,11 @@ public class CloudPreviewerScreen extends Screen3D
 			else
 				return CloudPreviewerScreen.this.layers.get(0);
 		}
+		
+		public float transparencyFade()
+		{
+			return 0.0F;
+		}
 	};
 	private final File directory;
 	private int toolbarHeight;
@@ -137,17 +144,18 @@ public class CloudPreviewerScreen extends Screen3D
 	
 	public static void addCloudMeshListener(RegisterClientReloadListenersEvent event)
 	{
-		event.registerReloadListener((ResourceManagerReloadListener)(manager ->
-		{
-			if (generator != null)
-				generator.init(manager);
+		event.registerReloadListener((ResourceManagerReloadListener)(manager -> {
+			destroyMeshGenerator();
 		}));
 	}
 	
 	public static void destroyMeshGenerator()
 	{
 		if (generator != null)
+		{
 			generator.close();
+			generator = null;
+		}
 	}
 	
 	public CloudPreviewerScreen(Screen prev)
@@ -155,7 +163,7 @@ public class CloudPreviewerScreen extends Screen3D
 		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.25F, 5000.0F);
 		if (generator == null)
 		{
-			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(SimpleCloudsConstants.FALLBACK, LevelOfDetailOptions.HIGH.getConfig(), 3, 0.5F, 1.0F, CloudStyle.DEFAULT).setTestFacesFacingAway(true);
+			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(true, LevelOfDetailOptions.HIGH.getConfig(), 3, true, SimpleCloudsConstants.EMPTY).setTestFacesFacingAway(true);
 			generator.init(Minecraft.getInstance().getResourceManager());
 		}
 		this.prev = prev;
@@ -189,7 +197,7 @@ public class CloudPreviewerScreen extends Screen3D
 	private void generateMesh()
 	{
 		generator.setCloudType(this.cloudType);
-		generator.generateMesh(1.0F);
+		generator.generateMesh();
 		this.needsMeshRegen = false;
 	}
 	
@@ -402,6 +410,12 @@ public class CloudPreviewerScreen extends Screen3D
 	}
 	
 	@Override
+	public void tick()
+	{
+		generator.worldTick();
+	}
+	
+	@Override
 	public void render(GuiGraphics stack, int pMouseX, int pMouseY, float pPartialTick)
 	{
 		if (SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup.get())
@@ -414,7 +428,8 @@ public class CloudPreviewerScreen extends Screen3D
 		super.render(stack, pMouseX, pMouseY, pPartialTick);
 		stack.drawString(this.font, Component.translatable("gui.simpleclouds.cloud_previewer.current_layer", Component.literal(this.layers.isEmpty() ? "NONE" : String.valueOf(this.currentLayer + 1)).withStyle(Style.EMPTY.withBold(true))), 10, 5, 0xFFFFFFFF);
 		
-		if (generator.getTotalSides() * CloudMeshGenerator.BYTES_PER_SIDE > CloudMeshGenerator.MAX_SIDE_BUFFER_SIZE)
+		Pair<CloudMeshGenerator.MeshGenStatus, CloudMeshGenerator.MeshGenStatus> status = generator.getMeshGenStatus();
+		if (Stream.of(status.getLeft(), status.getRight()).anyMatch(s -> s == CloudMeshGenerator.MeshGenStatus.TOO_MANY_VERTICES || s == CloudMeshGenerator.MeshGenStatus.CHUNK_OVERFLOW))
 			stack.drawString(this.font, WARNING_TOO_MANY_CUBES, this.width - this.font.width(WARNING_TOO_MANY_CUBES) - 5, this.height - this.font.lineHeight - 5, 0xFFFFFFFF);
 		
 		stack.drawString(this.font, WEATHER_TYPE_TITLE, this.weatherTypeButton.getX(), this.weatherTypeButton.getY() - this.font.lineHeight - 2, 0xFFFFFFFF);
@@ -428,7 +443,7 @@ public class CloudPreviewerScreen extends Screen3D
 	{
 		if (this.needsMeshRegen)
 			this.generateMesh();
-		generator.render(stack, RenderSystem.getProjectionMatrix(), partialTick, 1.0F, 1.0F, 1.0F);
+		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, RenderSystem.getProjectionMatrix(), Float.MAX_VALUE, Float.MAX_VALUE, partialTick, 1.0F, 1.0F, 1.0F, null, false);
 		
 		float radius = generator.getCloudAreaMaxRadius();
 		Tesselator tesselator = Tesselator.getInstance();
@@ -457,5 +472,6 @@ public class CloudPreviewerScreen extends Screen3D
 			this.minecraft.setScreen(this.prev);
 		else
 			super.onClose();
+		destroyMeshGenerator();
 	}
 }

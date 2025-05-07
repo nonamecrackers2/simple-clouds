@@ -1,15 +1,18 @@
 package dev.nonamecrackers2.simpleclouds.common.world;
 
 import java.util.List;
+import java.util.Queue;
 
-import org.joml.Vector2i;
+import javax.annotation.Nullable;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
+import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudSpawningDataManager;
+import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.ServerCloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.packet.SimpleCloudsPacketHandlers;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPacket;
@@ -17,16 +20,24 @@ import dev.nonamecrackers2.simpleclouds.mixin.MixinServerLevelAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
+import net.minecraft.world.entity.Entity;
 import net.minecraftforge.network.PacketDistributor;
 
 public class ServerCloudManager extends CloudManager<ServerLevel>
 {
-	private SyncType syncType = SyncType.NONE;
+	private Queue<SyncType> toSync = Queues.newArrayDeque();
 	
 	public ServerCloudManager(ServerLevel level)
 	{
-		super(level, CloudTypeDataManager.getServerInstance());
+		super(level, CloudTypeDataManager.getServerInstance(), CloudSpawningDataManager.getInstance()::getConfig, ServerCloudGenerator::new);
+	}
+	
+	@Override
+	public ServerCloudGenerator getCloudGenerator()
+	{
+		return (ServerCloudGenerator)super.getCloudGenerator();
 	}
 	
 	@Override
@@ -48,7 +59,41 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 		
 		if (!this.useVanillaWeather)
 			this.level.setRainLevel(0.0F);
+		
+//		boolean allSleeping = true;
+//		for (ServerPlayer player : this.level.getServer().getPlayerList().getPlayers())
+//		{
+//			if (!player.isSleeping())
+//				allSleeping = false;
+//		}
+//		if (allSleeping)
+//		{
+//			if (this.speedRamp < 1000.0F)
+//			{
+//				this.queueSync(SyncType.MOVEMENT);
+//				this.speedRamp += 10.0F;
+//			}
+//		}
+//		else
+//		{
+//			if (this.speedRamp > 0.0F)
+//			{
+//				this.queueSync(SyncType.MOVEMENT);
+//				this.speedRamp -= 50.0F;
+//			}
+//		}
+//		this.speedRamp = Math.max(0.0F, this.speedRamp);
+		
+		//TODO: Test cloud generator when modifying dimension whitelist
+		if (this.isCloudGeneratorActive() && ((ServerCloudGenerator)this.getCloudGenerator()).checkAndResetSync())
+			this.queueSync(SyncType.CLOUD_FORMATIONS);
 	}
+//	
+//	@Override
+//	protected float modifySpeed(float speed)
+//	{
+//		return speed + this.speedRamp;
+//	}
 	
 	@Override
 	protected void resetVanillaWeather()
@@ -62,34 +107,23 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 	@Override
 	protected void attemptToSpawnLightning()
 	{
-		List<ServerCloudManager.LightningRegion> regions = this.level.players().stream().map(player -> {
-			return new ServerCloudManager.LightningRegion(player.getBlockX(), player.getBlockZ(), SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER / 2);
-		}).toList();
+		List<SpawnRegion> regions = regionsFromEntities(this.level.players(), SimpleCloudsConstants.LIGHTNING_SPAWN_DIAMETER / 2);
 		
-		List<Vector2i> prevPositions = Lists.newArrayList();
-		for (ServerCloudManager.LightningRegion region : regions)
+		SpawnRegion.randomPointForEachRegion(regions, this.random, SimpleCloudsConstants.LIGHTNING_SPAWN_ATTEMPTS, (r, p) -> 
 		{
-			if (prevPositions.stream().anyMatch(pos -> region.includesPoint(pos.x, pos.y)))
-				continue;
-			for (int i = 0; i < SimpleCloudsConstants.LIGHTNING_SPAWN_ATTEMPTS; i++)
-			{
-				int x = this.random.nextInt(region.radius() * 2) - region.radius() + region.x();
-				int z = this.random.nextInt(region.radius() * 2) - region.radius() + region.z();
-				var info = this.getCloudTypeAtPosition((float)x + 0.5F, (float)z + 0.5F);
-				CloudType type = info.getLeft();
-				if (!isValidLightning(type, info.getRight(), this.random))
-					continue;
-				this.spawnLightning(type, info.getRight(), x, z, this.random.nextInt(3) == 0);
-				prevPositions.add(new Vector2i(x, z));
-				break;
-			}
-		}
+			var info = this.getCloudTypeAtWorldPos((float)p.x + 0.5F, (float)p.y + 0.5F);
+			CloudType type = info.getLeft();
+			if (!isValidLightning(type, info.getRight(), this.random))
+				return false;
+			this.spawnLightning(type, info.getRight(), p.x, p.y, this.random.nextInt(3) == 0);
+			return true;
+		});
 	}
 
 	@Override
 	protected void spawnLightning(CloudType type, float fade, int x, int z, boolean soundOnly)
 	{
-		int y = (int)(type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 256.0F);
+		int y = (int)(type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + this.getCloudHeight());
 		float spreadnessFactor = this.random.nextFloat();
 		float length = spreadnessFactor * 300.0F + 200.0F;
 		float minPitch = 20.0F + spreadnessFactor * 40.0F;
@@ -97,50 +131,21 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.DIMENSION.with(() -> this.level.dimension()), new SpawnLightningPacket(new BlockPos(x, y, z), soundOnly, this.random.nextInt(), 4, 2, length, 20.0F, minPitch, maxPitch));
 	}
 	
-	public void setRequiresSync(SyncType syncType)
+	public void queueSync(SyncType syncType)
 	{
-		this.syncType = syncType;
+		if (!this.toSync.contains(syncType))
+			this.toSync.add(syncType);
 	}
 	
-	public SyncType getAndResetSync()
+	public @Nullable SyncType fetchNextSyncOperation()
 	{
-		if (this.syncType != SyncType.NONE)
-		{
-			SyncType syncType = this.syncType;
-			this.syncType = SyncType.NONE;
-			return syncType;
-		}
-		else
-		{
-			return SyncType.NONE;
-		}
+		return this.toSync.poll();
 	}
 	
-	private static record LightningRegion(int x, int z, int radius)
+	public static List<SpawnRegion> regionsFromEntities(List<? extends Entity> entities, int radius)
 	{
-		public boolean includesPoint(int x, int z)
-		{
-			return x >= this.getMinX() && x <= this.getMaxX() && z >= this.getMinZ() && z <= this.getMaxZ();
-		}
-		
-		public int getMinX()
-		{
-			return this.x - this.radius;
-		}
-		
-		public int getMaxX()
-		{
-			return this.x + this.radius;
-		}
-		
-		public int getMinZ()
-		{
-			return this.z - this.radius;
-		}
-		
-		public int getMaxZ()
-		{
-			return this.z + this.radius;
-		}
+		return entities.stream().map(e -> {
+			return new SpawnRegion(e.getBlockX(), e.getBlockZ(), radius);
+		}).toList();
 	}
 }

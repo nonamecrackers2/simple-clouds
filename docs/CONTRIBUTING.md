@@ -24,6 +24,9 @@ Before opening a bug report, please do the following:
 
 ### Features/Suggestions
 
+Please **do not suggest** your idea if it pertains to:
+- Adding "fantasy" cloud types to the mod. By "fantasy" we mean cloud types that you come up with or those that do not exist in real life. You can create your own cloud types with datapacks/resourcepacks.
+
 Before opening a feature/suggestion/idea issue, please do the following:
 - Make sure your feature/suggestion/idea has not already been suggested (as outlined above) and that **it is not already planned or exists in the mod.** Make sure you are playing with the latest version to understand what all exists.
 - **Include all required information** in the feature request form.
@@ -32,20 +35,22 @@ Please ensure your suggestion, feature, or idea aligns with the core vision of S
 
 > Simple Clouds attempts to mimic real-life weather and cloud formations in a stylized, ambient, and aesthetic way that is meant to build on to the vanilla Minecraft experience.
 
-**DO NOT suggest your idea if it relates to:**
-- Making Simple Clouds more realistic,
-- Plainly stating "improve performance/optimize this" without any suggestions as to how
+> [!WARNING]
+> **DO NOT suggest your idea if it relates to:**
+> - Making Simple Clouds more realistic,
+> - Plainly stating "improve performance/optimize this" without any suggestions as to how
 
 _Failure to follow any of these requirements will result in your issue being closed and marked as invalid._
 
 ## Pull Requests
 
-When submitting a pull request, you grant nonamecrackers2 the right to license your contributions under [PolyForm Perimeter License 1.0.1](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/LICENSE.md).
+> [!IMPORTANT]
+> When submitting a pull request, you grant nonamecrackers2 the right to license your contributions under [PolyForm Perimeter License 1.0.1](https://github.com/nonamecrackers2/simple-clouds/blob/1.20.1/LICENSE.md).
 
 Please follow and replicate, to the best of your ability, the primary author nonamecrackers2's code style as outlined [in this document](https://github.com/nonamecrackers2/nonamecrackers2/blob/main/CODE_STYLE.md).
 
 Please ensure your contributions do not negatively impact performance in a noticeable way. If your change causes FPS to lower by 30 as an example, consider ways you can optimize your code, if possible.
 
-Include an accurate and full description describing the changes include in your pull request. Also link any relevant issues, whether that is fixed bug reports or implemented features, with your pull request.
+Include an accurate and full description describing the changes included in your pull request. Also link any relevant issues, whether that is fixed bug reports or implemented features, with your pull request.
 
 This document will expand to include more terms, conditions, and clarifications where necessary.

@@ -1,0 +1,23 @@
+{
+    "vertex": "blit",
+    "fragment": "simpleclouds:cloud_shadows",
+    "attributes": [ "Position" ],
+    "samplers": [
+        { "name": "ShadowMap" },
+        { "name": "DepthSampler" },
+        { "name": "DiffuseSampler" }
+    ],
+    "uniforms": [
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "OutSize", "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
+        { "name": "InverseWorldProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "InverseModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ShadowProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ShadowModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "CameraPos", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+        { "name": "ShadowColorMultiplier", "type": "float", "count": 3, "values": [ 0.7, 0.7, 0.8 ] },
+        { "name": "ShadowSpan", "type": "float", "count": 1, "values": [ 10000.0 ] },
+        { "name": "MinimumRadius", "type": "float", "count": 1, "values": [ 192.0 ] },
+        { "name": "FadeDistance", "type": "float", "count": 1, "values": [ 256.0 ] }
+    ]
+}
