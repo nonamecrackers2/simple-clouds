@@ -147,6 +147,25 @@ public abstract class CloudManager<T extends Level> implements CloudGetter
 		else
 			return false;
 	}
+
+	public boolean isSnowingAt(BlockPos pos)
+	{
+		if (!this.level.canSeeSky(pos) || this.level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, pos).getY() > pos.getY())
+			return false;
+
+		if (this.level.getBiome(pos).value().getPrecipitationAt(pos) != Biome.Precipitation.SNOW)
+			return false;
+
+		var info = this.getCloudTypeAtPosition((float)pos.getX() + 0.5F, (float)pos.getZ() + 0.5F);
+		CloudType type = info.getLeft();
+		if ((float)pos.getY() + 0.5F > type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 128.0F)
+			return false;
+
+		if (info.getLeft().weatherType().includesRain() && info.getRight() < SimpleCloudsConstants.RAIN_THRESHOLD - 0.01F)
+			return true;
+		else
+			return false;
+	}
 	
 	public float getRainLevel(float x, float y, float z)
 	{
