@@ -162,7 +162,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter, ScAP
 		if (this.level.getBiome(pos).value().getPrecipitationAt(pos) != Biome.Precipitation.SNOW)
 			return false;
 
-		var info = this.getCloudTypeAtPosition((float)pos.getX() + 0.5F, (float)pos.getZ() + 0.5F);
+		var info = this.getCloudTypeAtWorldPos((float)pos.getX() + 0.5F, (float)pos.getZ() + 0.5F);
 		CloudType type = info.getLeft();
 		if ((float)pos.getY() + 0.5F > type.stormStart() * SimpleCloudsConstants.CLOUD_SCALE + 128.0F)
 			return false;
