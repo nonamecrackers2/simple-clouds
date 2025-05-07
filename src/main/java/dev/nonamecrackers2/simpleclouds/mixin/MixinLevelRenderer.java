@@ -72,6 +72,7 @@ public class MixinLevelRenderer
 	@Inject(method = "tick", at = @At("HEAD"))
 	public void simpleclouds$tickCloudRenderer_tick(CallbackInfo ci)
 	{
+		SimpleCloudsRenderer.getInstance().baseTick();
 		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
 			SimpleCloudsRenderer.getInstance().tick();
 	}

@@ -642,14 +642,17 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.atmoshpericClouds.close();
 	}
 	
-	public void tick()
+	public void baseTick()
 	{
 		if (this.needsReload)
 		{
 			this.onResourceManagerReload(this.mc.getResourceManager());
 			this.needsReload = false;
 		}
-		
+	}
+	
+	public void tick()
+	{
 		this.worldEffectsManager.tick();
 		
 		if (this.cloudManager != null)
