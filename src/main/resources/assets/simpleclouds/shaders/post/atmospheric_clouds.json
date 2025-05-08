@@ -6,24 +6,12 @@
         {
             "name": "simpleclouds:atmospheric_clouds",
             "intarget": "minecraft:main",
-            "outtarget": "swap",
-            "auxtargets": [
-            	{
-            		"name": "DiffuseDepthSampler",
-            		"id": "minecraft:main:depth"
-            	}
-            ]
+            "outtarget": "swap"
         },
         {
             "name": "simpleclouds:atmospheric_clouds",
             "intarget": "swap",
-            "outtarget": "minecraft:main",
-            "auxtargets": [
-            	{
-            		"name": "DiffuseDepthSampler",
-            		"id": "minecraft:main:depth"
-            	}
-            ]
+            "outtarget": "minecraft:main"
         }
     ]
 }

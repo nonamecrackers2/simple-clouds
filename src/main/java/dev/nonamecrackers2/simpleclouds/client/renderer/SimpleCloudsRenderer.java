@@ -413,7 +413,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				effect.setSampler("RevealageTexture", () -> this.cloudTransparencyTarget.getRevealageTextureId());
 			}
 			effect.setSampler("CloudsTexture", () -> this.cloudTarget.getColorTextureId());
-			effect.setSampler("CloudsDepthTexture", () -> this.cloudTarget.getDepthTextureId());
 		});
 		
 		if (this.shadowMap.isPresent())
@@ -1078,17 +1077,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			RenderSystem.disableDepthTest();
 			RenderSystem.resetTextureMatrix();
 			RenderSystem.depthMask(false);
-			
-			Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
-			Matrix4f invertedModelViewMat = new Matrix4f(stack.last().pose()).invert();
-			for (PostPass pass : ((MixinPostChain)this.finalComposite).simpleclouds$getPostPasses())
-			{
-				EffectInstance effect = pass.getEffect();
-				effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
-				effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
-				effect.safeGetUniform("FogStart").set(this.fogStart);
-				effect.safeGetUniform("FogEnd").set(this.fogEnd);
-			}
 			
 			this.finalComposite.process(partialTick);
 			

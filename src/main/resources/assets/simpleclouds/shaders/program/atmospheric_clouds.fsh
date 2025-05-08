@@ -70,7 +70,6 @@ float psrdnoise(vec3 x, vec3 period, float alpha, out vec3 gradient)
 }
 
 uniform sampler2D DiffuseSampler;
-uniform sampler2D DiffuseDepthSampler;
 
 uniform mat4 InverseWorldProjMat;
 uniform mat4 InverseModelViewMat;
@@ -88,15 +87,6 @@ uniform float CloudDensity;
 in vec2 texCoord;
 in vec2 oneTexel;
 out vec4 fragColor;
-
-vec3 screenToWorldPos(vec2 coord, float depth)
-{
-	vec3 ndc = vec3(coord * 2.0 - 1.0, depth);
-  	vec4 view = InverseWorldProjMat * vec4(ndc, 1.0);
-  	view.xyz /= view.w;
-  	vec3 result = (InverseModelViewMat * view).xyz;
-  	return result;
-}
 
 vec3 getRayDirection(vec2 screenUV)
 {
