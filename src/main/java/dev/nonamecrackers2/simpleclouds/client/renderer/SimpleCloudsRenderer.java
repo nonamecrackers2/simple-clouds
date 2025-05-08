@@ -314,8 +314,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		// --- Render Targets ---
 		
-		StartupMessageManager.addModMessage("Render targets");
-		
 		boolean highPrecisionDepth = SimpleCloudsMod.dhLoaded();
 		
 		if (this.cloudTarget != null)
@@ -341,8 +339,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		// --- Mesh Generator ---
 		
-		StartupMessageManager.addModMessage("Mesh generator");
-		
 		this.setupMeshGenerator(); // Create/setup the generator
 		this.prepareMeshGenerator(0.0F); // Prepare it
 		
@@ -351,8 +347,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.initialInitializationResult = result;
 		
 		// --- Shadow Map ---
-		
-		StartupMessageManager.addModMessage("Shadow map");
 		
 		if (this.stormFogShadowMap != null)
 		{
@@ -379,8 +373,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		}
 		
 		// --- Post Processing Shaders ---
-		
-		StartupMessageManager.addModMessage("Post processing shaders");
 		
 		this.destroyPostChains();
 		
