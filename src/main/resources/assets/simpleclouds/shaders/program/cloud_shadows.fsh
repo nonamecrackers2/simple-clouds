@@ -3,7 +3,6 @@
 uniform sampler2DShadow ShadowMap;
 uniform sampler2D DepthSampler;
 uniform sampler2D DiffuseSampler;
-uniform sampler3D JitterTexture_3d;
 uniform mat4 InverseWorldProjMat;
 uniform mat4 InverseModelViewMat;
 uniform mat4 ShadowProjMat;
@@ -65,6 +64,7 @@ void main()
 	}
 	strength /= 9.0;
 	strength *= distFade;
+	strength = clamp(strength, 0.0, 1.0);
 	
 	vec3 shadowCol = col * ShadowColorMultiplier;
 	vec3 finalCol = mix(col, shadowCol, strength);

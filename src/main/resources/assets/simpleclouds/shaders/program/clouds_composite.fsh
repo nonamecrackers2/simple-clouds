@@ -34,7 +34,6 @@ float max4(vec4 col)
 void main() 
 {
 	vec4 cloudCol = texture(CloudsTexture, texCoord);
-	float cloudDepth = length(screenToWorldPos(texCoord, texture(CloudsDepthTexture, texCoord).x * 2.0 - 1.0));
 	vec3 bg = texture(DiffuseSampler, texCoord).rgb;
 	vec3 finalCol = bg;
 	finalCol = vec3(cloudCol.rgb * cloudCol.a + finalCol * (1.0 - cloudCol.a));

@@ -108,8 +108,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private static final ResourceLocation BLUR_POST_PROCESSING_LOC = SimpleCloudsMod.id("shaders/post/blur_post.json");
 	private static final ResourceLocation SCREEN_SPACE_WORLD_FOG_LOC = SimpleCloudsMod.id("shaders/post/screen_space_world_fog.json");
 	private static final ResourceLocation CLOUD_SHADOWS_LOC = SimpleCloudsMod.id("shaders/post/cloud_shadows.json");
-	private static final ResourceLocation FINAL_COMPOSITE_LOC = SimpleCloudsMod.id("shaders/post/final_composite.json");
-	private static final ResourceLocation FINAL_COMPOSITE_NO_TRANSPARENCY_LOC = SimpleCloudsMod.id("shaders/post/final_composite_no_transparency.json");
+	public static final ResourceLocation FINAL_COMPOSITE_LOC = SimpleCloudsMod.id("shaders/post/final_composite.json");
+	public static final ResourceLocation FINAL_COMPOSITE_NO_TRANSPARENCY_LOC = SimpleCloudsMod.id("shaders/post/final_composite_no_transparency.json");
 	private static final ResourceLocation DITHER_TEXTURE = SimpleCloudsMod.id("textures/shader/bayer_matrix.png");
 	private static final ArtifactVersion REQUIRED_OPENGL_VERSION = new DefaultArtifactVersion("4.3");
 	public static final int SHADOW_MAP_SIZE = 1024;
@@ -672,10 +672,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		RenderSystem.assertOnRenderThread();
 		
+		BufferUploader.reset();
+		
 		if (!generator.canRender())
 			return;
-		
-		BufferUploader.reset();
 		
 		RenderSystem.disableBlend();
 		RenderSystem.enableDepthTest();
@@ -716,12 +716,17 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public static void renderCloudsTransparency(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float fogStart, float fogEnd, float partialTick, float r, float g, float b, @Nullable Frustum frustum)
 	{
+		renderCloudsTransparency(generator, stack, projMat, fogStart, fogEnd, partialTick, r, g, b, frustum, true);
+	}
+	
+	public static void renderCloudsTransparency(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float fogStart, float fogEnd, float partialTick, float r, float g, float b, @Nullable Frustum frustum, boolean ditherFade)
+	{
 		RenderSystem.assertOnRenderThread();
+		
+		BufferUploader.reset();
 		
 		if (!generator.canRender() || !generator.transparencyEnabled())
 			return;
-		
-		BufferUploader.reset();
 		
 		RenderSystem.enableDepthTest();
 		RenderSystem.depthMask(false);
@@ -747,21 +752,28 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		generator.forRenderableMeshChunks(frustum, c -> c.getTransparentBuffers().get(), (chunk, transparentBuffers) -> 
 		{
-			RenderSystem.setShaderColor(r, g, b, chunk.getAlpha(partialTick));
-			shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
-			shader.COLOR_MODULATOR.upload();
+			if (ditherFade)
+			{
+				RenderSystem.setShaderColor(r, g, b, chunk.getAlpha(partialTick));
+				shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
+				shader.COLOR_MODULATOR.upload();
+			}
 			
 			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), transparentBuffers.getBufferId());
 			generator.getCubeMesh().drawInstanced(transparentBuffers.getElementCount());
-		});
+		}, ditherFade);
 		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), 0);
 		
 		shader.clear();
 		
 		GL30.glDisablei(GL11.GL_BLEND, 0);
 		GL30.glDisablei(GL11.GL_BLEND, 1);
+		GL40.glBlendFuncSeparatei(0, GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
+		GL40.glBlendFuncSeparatei(1, GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
 		
 		GL30.glBindVertexArray(0);
+
+		RenderSystem.depthMask(true);
 		
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 	}
@@ -794,7 +806,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		shadowMap.bind();
 		shadowMap.clear(Minecraft.ON_OSX);
 		
-		this.meshGenerator.forRenderableMeshChunks(frustum == null ? this.cullFrustum : frustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
+		this.meshGenerator.forRenderableMeshChunks(frustum, MeshChunk::getOpaqueBuffers, (chunk, opaqueBuffers) -> 
 		{
 			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), opaqueBuffers.getBufferId());
 			this.meshGenerator.getSideMesh().drawInstanced(opaqueBuffers.getElementCount());
@@ -833,7 +845,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			s.mulPose(Axis.XP.rotationDegrees(SimpleCloudsConfig.CLIENT.stormFogAngle.get().floatValue()));
 			s.mulPose(Axis.YP.rotation(yaw));
 		});
-		this.renderShadowMap(this.stormFogShadowMap, this.stormFogShadowMapStack, SimpleCloudsShaders.getStormFogShadowMapShader(), null);
+		this.renderShadowMap(this.stormFogShadowMap, this.stormFogShadowMapStack, SimpleCloudsShaders.getStormFogShadowMapShader(), this.cullFrustum);
 		
 		this.shadowMapStack = this.shadowMap.map(buffer -> 
 		{
@@ -841,12 +853,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				s.mulPose(Axis.XP.rotationDegrees(90.0F));
 				s.mulPose(Axis.ZN.rotationDegrees(this.determineShadowMapAngle(partialTick)));
 			});
-			this.shadowMapFrustum = new Frustum(stack.last().pose(), buffer.getProjMatrix());
-			float chunkSizeUpscaled = (float)SimpleCloudsConstants.CHUNK_SIZE * (float)SimpleCloudsConstants.CLOUD_SCALE;
-			float camOffsetX = ((float)Mth.floor(camX / chunkSizeUpscaled) * chunkSizeUpscaled);
-			float camOffsetZ = ((float)Mth.floor(camZ / chunkSizeUpscaled) * chunkSizeUpscaled);
-			this.shadowMapFrustum.prepare(-camOffsetX, -(double)this.cloudManager.getCloudHeight(), -camOffsetZ);
-			this.renderShadowMap(buffer, stack, SimpleCloudsShaders.getCloudsShadowMapShader(), this.shadowMapFrustum);
+			this.renderShadowMap(buffer, stack, SimpleCloudsShaders.getCloudsShadowMapShader(), null);
 			return stack;
 		}).orElse(null);
 		
@@ -984,7 +991,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		double originZ = camZ / scale;
 		this.cullFrustum.prepare(originX, originY, originZ);
 		
-		ProfilerFiller p = mc.getProfiler();
+		ProfilerFiller p = this.mc.getProfiler();
 		
 		if (SimpleCloudsConfig.CLIENT.generateMesh.get())
 		{

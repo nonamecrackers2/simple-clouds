@@ -18,6 +18,6 @@
         { "name": "ShadowColorMultiplier", "type": "float", "count": 3, "values": [ 0.7, 0.7, 0.8 ] },
         { "name": "ShadowSpan", "type": "float", "count": 1, "values": [ 10000.0 ] },
         { "name": "MinimumRadius", "type": "float", "count": 1, "values": [ 192.0 ] },
-        { "name": "FadeDistance", "type": "float", "count": 1, "values": [ 256.0 ] }
+        { "name": "FadeDistance", "type": "float", "count": 1, "values": [ 1028.0 ] }
     ]
 }

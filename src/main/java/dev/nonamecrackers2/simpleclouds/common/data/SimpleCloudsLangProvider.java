@@ -56,6 +56,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.cloud_previewer.storminess.title", "Storminess");
 		this.add("gui.simpleclouds.cloud_previewer.storm_start.title", "Storm Start Level");
 		this.add("gui.simpleclouds.cloud_previewer.storm_fade_distance.title", "Storm Fade Distance");
+		this.add("gui.simpleclouds.cloud_previewer.transparency_fade.title", "Transparency Fade");
 		this.add("gui.simpleclouds.cloud_previewer.load.title", "Load");
 		this.add("gui.simpleclouds.cloud_previewer.export.title", "Export");
 		this.add("gui.simpleclouds.cloud_previewer.popup.select.cloud_type", "Select a cloud type:");

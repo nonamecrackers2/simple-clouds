@@ -34,6 +34,7 @@
   "gui.simpleclouds.cloud_previewer.storm_start.title": "Storm Start Level",
   "gui.simpleclouds.cloud_previewer.storminess.title": "Storminess",
   "gui.simpleclouds.cloud_previewer.title": "Cloud Previewer",
+  "gui.simpleclouds.cloud_previewer.transparency_fade.title": "Transparency Fade",
   "gui.simpleclouds.cloud_previewer.warning.too_many_cubes": "Warning: Too many cubes",
   "gui.simpleclouds.cloud_previewer.weather_type.title": "Weather Type",
   "gui.simpleclouds.config.atmosphericClouds.description": "Specifies if a purely visual 2D atmospheric cloud layer should render.",

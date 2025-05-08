@@ -71,6 +71,36 @@ public class InstanceableMesh
 		});
 	}
 	
+	public static InstanceableMesh defaultNonCulledSide()
+	{
+		return new InstanceableMesh(48, 48, DefaultVertexFormat.POSITION, buffer -> 
+		{
+			buffer.putFloat(-1.0F); buffer.putFloat(-1.0F); buffer.putFloat( 1.0F);
+			buffer.putFloat(-1.0F); buffer.putFloat(-1.0F); buffer.putFloat(-1.0F);
+			buffer.putFloat(-1.0F); buffer.putFloat( 1.0F); buffer.putFloat(-1.0F);
+			buffer.putFloat(-1.0F); buffer.putFloat( 1.0F); buffer.putFloat( 1.0F);
+			buffer.rewind();
+		}, buffer ->
+		{
+			buffer.putInt(0);
+			buffer.putInt(1);
+			buffer.putInt(2);
+			buffer.putInt(0);
+			buffer.putInt(2);
+			buffer.putInt(3);
+			
+			buffer.putInt(2);
+			buffer.putInt(1);
+			buffer.putInt(0);
+			buffer.putInt(3);
+			buffer.putInt(2);
+			buffer.putInt(0);
+			
+			buffer.rewind();
+			return 12;
+		});
+	}
+	
 //	public static PreparedMesh defaultCube()
 //	{
 //		return new PreparedMesh(576, 144, SimpleCloudsShaders.POSITION_NORMAL, buffer -> {
