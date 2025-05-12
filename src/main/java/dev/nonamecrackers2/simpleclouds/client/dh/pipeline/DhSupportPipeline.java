@@ -11,6 +11,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexSorting;
 
@@ -25,8 +26,14 @@ import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinRenderTargetAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.profiling.ProfilerFiller;
+import nonamecrackers2.crackerslib.client.util.RenderUtil;
 
 public class DhSupportPipeline implements CloudsRenderPipeline
 {
@@ -174,6 +181,13 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 		stack.translate(-camX, -camY, -camZ);
 		renderLightning(renderer.getWorldEffectsManager(), renderer, mc, stack, partialTick, camX, camY, camZ);
 		stack.popPose();
+		
+//		mc.getProfiler().push("clouds_debug");
+//		stack.pushPose();
+//		renderer.translateClouds(stack, camX, camY, camZ);
+//		SimpleCloudsRenderer.renderCloudsDebug(renderer.getMeshGenerator(), stack, projMat, partialTick, renderer.getFogStart(), renderer.getFogEnd(), frustum, false, true);
+//		stack.popPose();
+//		mc.getProfiler().pop();
 
 		RenderSystem.setProjectionMatrix(oldMcProjMat, VertexSorting.DISTANCE_TO_ORIGIN);
 		GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL11.GL_TEXTURE_2D, mc.getMainRenderTarget().getDepthTextureId(), 0);

@@ -978,7 +978,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.cullFrustum = new Frustum(stack.last().pose(), projMat);
 		float scale = (float)SimpleCloudsConstants.CLOUD_SCALE;
 		double originX = camX / scale;
-		double originY = (camY - (double)this.cloudManager.getCloudHeight()) / scale;
+		double originY = (camY - (double)this.cloudManager.getCloudHeight()) / scale; //TODO: Culling is not correct for cloud types with tall height offsets
 		double originZ = camZ / scale;
 		this.cullFrustum.prepare(originX, originY, originZ);
 		
