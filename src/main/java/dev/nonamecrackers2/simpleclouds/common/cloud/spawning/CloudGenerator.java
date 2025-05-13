@@ -7,6 +7,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector2f;
@@ -67,6 +69,16 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 				clouds.add(cloud);
 		}
 		return clouds;
+	}
+	
+	public @Nullable CloudRegion getCloudAtWorldPosition(float worldX, float worldZ)
+	{
+		return this.getCloudAtPosition(worldX / (float)SimpleCloudsConstants.CLOUD_SCALE, worldZ / (float)SimpleCloudsConstants.CLOUD_SCALE);
+	}
+	
+	public @Nullable CloudRegion getCloudAtPosition(float x, float z) //TODO: Add to API
+	{
+		return CloudRegion.calculateAt(this.getClouds(), x, z).getLeft();
 	}
 	
 	@Override
