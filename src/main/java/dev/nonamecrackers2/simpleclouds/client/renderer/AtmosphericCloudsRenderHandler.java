@@ -29,6 +29,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraftforge.common.Tags;
 
@@ -121,10 +125,28 @@ public class AtmosphericCloudsRenderHandler
 			float shiftMovement = Mth.lerp(partialTick, this.shiftMovementO, this.shiftMovement);
 			float yaw = (float)Mth.atan2((double)this.windDirection.x, (double)this.windDirection.y);
 			float transition = Mth.lerp(partialTick, this.transitionO, this.transition);
+
+			float alpha = 1.0F;
+			Entity cameraEntity = this.mc.gameRenderer.getMainCamera().getEntity();
+			if (cameraEntity instanceof LivingEntity living)
+			{
+				var map = living.getActiveEffectsMap();
+				if (map.containsKey(MobEffects.BLINDNESS))
+				{
+					MobEffectInstance instance = map.get(MobEffects.BLINDNESS);
+					alpha = instance.isInfiniteDuration() ? 0.0F : 1.0F - Mth.clamp((float)instance.getDuration() / 20.0F, 0.0F, 1.0F);
+				}
+				else if (map.containsKey(MobEffects.DARKNESS))
+				{
+					MobEffectInstance instance = map.get(MobEffects.DARKNESS);
+					if (instance.getFactorData().isPresent())
+						alpha = 1.0F - Mth.clamp(instance.getFactorData().get().getFactor(living, partialTick), 0.0F, 1.0F);
+				}
+			}
 			
 			List<PostPass> passes = ((MixinPostChain)this.postProcessingShader).simpleclouds$getPostPasses();
-			updatePass(passes.get(0), invertedProjMat, invertedModelViewMat, camX, camY, camZ, yaw, shiftMovement, 1.0F - transition, this.formation, r, g, b);
-			updatePass(passes.get(1), invertedProjMat, invertedModelViewMat, camX, camY, camZ, yaw, shiftMovement, transition, this.nextFormation != null ? this.nextFormation : DEFAULT, r, g, b);
+			updatePass(passes.get(0), invertedProjMat, invertedModelViewMat, camX, camY, camZ, yaw, shiftMovement, 1.0F - transition, this.formation, r, g, b, alpha);
+			updatePass(passes.get(1), invertedProjMat, invertedModelViewMat, camX, camY, camZ, yaw, shiftMovement, transition, this.nextFormation != null ? this.nextFormation : DEFAULT, r, g, b, alpha);
 			
 			this.postProcessingShader.process(partialTick);
 			
@@ -132,7 +154,7 @@ public class AtmosphericCloudsRenderHandler
 		}
 	}
 	
-	private static void updatePass(PostPass pass, Matrix4f invertedProjMat, Matrix4f invertedModelViewMat, double camX, double camY, double camZ, float yaw, float shiftMovement, float densityMult, AtmosphericCloudsRenderHandler.Formation formation, float r, float g, float b)
+	private static void updatePass(PostPass pass, Matrix4f invertedProjMat, Matrix4f invertedModelViewMat, double camX, double camY, double camZ, float yaw, float shiftMovement, float densityMult, AtmosphericCloudsRenderHandler.Formation formation, float r, float g, float b, float a)
 	{
 		EffectInstance effect = pass.getEffect();
 		effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
@@ -144,7 +166,7 @@ public class AtmosphericCloudsRenderHandler
 		effect.safeGetUniform("Transform").setMat2x2(transform.m00, transform.m01, transform.m10, transform.m11);
 		effect.safeGetUniform("ShiftMovement").set(shiftMovement);
 		effect.safeGetUniform("CloudDensity").set(formation.density * densityMult);
-		effect.safeGetUniform("CloudColor").set(r, g, b, 1.0F);
+		effect.safeGetUniform("CloudColor").set(r, g, b, a);
 	}
 	
 	public void init(ResourceManager manager)

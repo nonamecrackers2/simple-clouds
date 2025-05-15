@@ -91,6 +91,10 @@ import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.StartupMessageManager;
@@ -971,6 +975,30 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		renderDistance = renderDistEvent.getRenderDistance();
 		this.fogStart = renderDistance / 4.0F;
 		this.fogEnd = renderDistance;
+		
+		Entity cameraEntity = this.mc.gameRenderer.getMainCamera().getEntity();
+		if (cameraEntity instanceof LivingEntity living)
+		{
+			var map = living.getActiveEffectsMap();
+			if (map.containsKey(MobEffects.BLINDNESS))
+			{
+				MobEffectInstance instance = map.get(MobEffects.BLINDNESS);
+				float effectFactor = instance.isInfiniteDuration() ? 5.0F : Mth.lerp(Math.min(1.0F, (float)instance.getDuration() / 20.0F), renderDistance, 5.0F);
+				this.fogStart = 0.0F;
+				this.fogEnd = effectFactor * 0.8F;
+			}
+			else if (map.containsKey(MobEffects.DARKNESS))
+			{
+				MobEffectInstance instance = map.get(MobEffects.DARKNESS);
+				if (instance.getFactorData().isPresent())
+				{
+					float f = Mth.lerp(instance.getFactorData().get().getFactor(living, partialTick), renderDistance, 15.0F);
+					this.fogStart = 0.0F;
+					this.fogEnd = f;
+				}
+			}
+		}
+		
 		this.meshGenerator.setCullDistance(this.fogEnd / (float)SimpleCloudsConstants.CLOUD_SCALE);
 		
 		this.mc.getProfiler().push("simple_clouds_prepare");
