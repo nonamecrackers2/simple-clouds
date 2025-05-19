@@ -1,5 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer;
 
+import java.awt.Color;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -328,6 +329,28 @@ public class WorldEffects
 		
 		this.storminessSmoothedO = this.storminessSmoothed;
 		this.storminessSmoothed += (this.storminessAtCamera - this.storminessSmoothed) / 25.0F;
+	}
+	
+
+	public Color calculateFogColor(float defaultR, float defaultG, float defaultB, float partialTick)
+	{
+		float lerp = this.getDarkenFactor(partialTick);
+		return hsbLerp(defaultR, defaultG, defaultB, 0.65F, 0.38F, -0.05F, lerp);
+	}
+	
+	public Color calculateSkyColor(float defaultR, float defaultG, float defaultB, float partialTick)
+	{
+		float lerp = this.getDarkenFactor(partialTick);
+		return hsbLerp(defaultR, defaultG, defaultB, 0.62F, 0.12F, 0.05F, lerp);
+	}
+	
+	private static Color hsbLerp(float r, float g, float b, float targetHue, float targetSaturation, float targetBrightness, float lerp)
+	{
+		float[] hsbFog = Color.RGBtoHSB((int)(r * 255.0F), (int)(g * 255.0F), (int)(b * 255.0F), null);
+		float hue = Mth.clamp(Mth.lerp(lerp, targetHue, hsbFog[0]), 0.0F, 1.0F);
+		float sat = Mth.clamp(Mth.lerp(lerp, targetSaturation, hsbFog[1]), 0.0F, 1.0F);
+		float bright = Mth.clamp(Mth.lerp(lerp, targetBrightness, hsbFog[2]), 0.0F, 1.0F);
+		return Color.getHSBColor(hue, sat, bright);
 	}
 	
 	public void reset()

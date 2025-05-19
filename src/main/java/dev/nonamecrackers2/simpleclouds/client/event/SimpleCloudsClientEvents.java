@@ -1,5 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.client.event;
 
+import java.awt.Color;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.List;
@@ -35,6 +36,7 @@ import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.FogRenderer.FogMode;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.material.FogType;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
@@ -206,13 +208,10 @@ public class SimpleCloudsClientEvents
 			SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
 			WorldEffects effects = renderer.getWorldEffectsManager();
 			float partialTick = (float)event.getPartialTick();
-			float lerp = effects.getDarkenFactor(partialTick);
-//			event.setRed(207.0F / 255.0F);
-//			event.setGreen(231.0F / 255.0F);
-//			event.setBlue(255.0F / 255.0F);
-			event.setRed(Mth.lerp(event.getRed(), 0.03F, lerp));
-			event.setGreen(Mth.lerp(event.getGreen(), 0.02F, lerp));
-			event.setBlue(Mth.lerp(event.getBlue(), 0.0F, lerp));
+			Color finalCol = effects.calculateFogColor(event.getRed(), event.getGreen(), event.getBlue(), partialTick);
+			event.setRed((float)finalCol.getRed() / 255.0F);
+			event.setGreen((float)finalCol.getGreen() / 255.0F);
+			event.setBlue((float)finalCol.getBlue() / 255.0F);
 		}
 	}
 	
