@@ -74,6 +74,7 @@ public class WorldEffects
 	private final Map<BlockPos, PrecipitationQuad> precipitationQuads = Maps.newHashMap();
 	private final Map<Biome.Precipitation, List<PrecipitationQuad>> quadsByPrecipitation = Maps.newHashMap();
 	private final RandomSource random = RandomSource.create();
+	private int rainDelay = 20;
 	
 	protected WorldEffects(Minecraft mc, SimpleCloudsRenderer renderer)
 	{
@@ -223,12 +224,12 @@ public class WorldEffects
 		this.mc.getSoundManager().playDelayed(instance, time);
 		if (!onlySound)
 		{
-			int color = LIGHTNING_COLORS.getRandomValue(random).get();
 			float r = 1.0F;
 			float g = 1.0F;
 			float b = 1.0F;
 			if (SimpleCloudsConfig.CLIENT.lightningColorVariation.get())
 			{
+				int color = LIGHTNING_COLORS.getRandomValue(random).get();
 				r = (float)FastColor.ARGB32.red(color) / 255.0F;
 				g = (float)FastColor.ARGB32.green(color) / 255.0F;
 				b = (float)FastColor.ARGB32.blue(color) / 255.0F;
@@ -248,6 +249,9 @@ public class WorldEffects
 	
 	public void tick()
 	{
+		if (this.rainDelay > 0)
+			this.rainDelay--;
+		
 		var lightning = this.lightningBolts.iterator();
 		while (lightning.hasNext())
 		{
@@ -257,7 +261,7 @@ public class WorldEffects
 			bolt.tick();
 		}
 		
-		float rainIntensity = this.mc.level.getRainLevel(0.0F);
+		float rainIntensity = this.mc.level.getRainLevel(1.0F);
 		BlockPos camPos = this.mc.gameRenderer.getMainCamera().getBlockPosition();
 		float xRot = SimpleCloudsConfig.CLIENT.rainAngle.get().floatValue() * ((float)Math.PI / 180.0F);
 		Vector2f direction = CloudManager.get(this.mc.level).calculateWindDirection();
@@ -274,7 +278,7 @@ public class WorldEffects
 		int maxZ = camPos.getZ() + radius - zOffset;
 		AABB box = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
 		Biome biome = this.mc.level.getBiome(camPos).value();
-		if (rainIntensity > 0.0F && biome.hasPrecipitation())
+		if (rainIntensity > 0.0F && biome.hasPrecipitation() && this.rainDelay == 0)
 		{
 			for (int x = minX; x < maxX; x++)
 			{
@@ -324,6 +328,13 @@ public class WorldEffects
 		
 		this.storminessSmoothedO = this.storminessSmoothed;
 		this.storminessSmoothed += (this.storminessAtCamera - this.storminessSmoothed) / 25.0F;
+	}
+	
+	public void reset()
+	{
+		this.precipitationQuads.clear();
+		this.quadsByPrecipitation.clear();
+		this.rainDelay = 20;
 	}
 	
 	public @Nullable CloudType getCloudTypeAtCamera()

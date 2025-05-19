@@ -69,6 +69,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter, ScAP
 		this.level = level;
 		this.cloudSource = source;
 		this.cloudGenerator = generatorFunc.apply(this, configGetter);
+		this.useVanillaWeather = this.determineUseVanillaWeather();
 	}
 	
 	@Override

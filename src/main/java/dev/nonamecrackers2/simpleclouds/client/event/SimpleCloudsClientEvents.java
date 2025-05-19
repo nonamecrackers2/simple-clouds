@@ -44,6 +44,7 @@ import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.config.ModConfig;
 import nonamecrackers2.crackerslib.client.event.impl.AddConfigEntryToMenuEvent;
@@ -78,7 +79,7 @@ public class SimpleCloudsClientEvents
 	
 	public static void registerConfigMenu(RegisterConfigScreensEvent event)
 	{
-		event.builder(ConfigHomeScreen.builder(ImageTitle.ofMod(SimpleCloudsMod.MODID, 192, 96, 1.0F)).crackersDefault().build(SimpleCloudsConfigScreen::new))
+		event.builder(ConfigHomeScreen.builder(ImageTitle.ofMod(SimpleCloudsMod.MODID, 192, 96, 1.0F)).crackersDefault("https://github.com/nonamecrackers2/simple-clouds").build(SimpleCloudsConfigScreen::new))
 				.addSpec(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC)
 				.addSpec(ModConfig.Type.COMMON, SimpleCloudsConfig.COMMON_SPEC)
 				.addSpec(ModConfig.Type.SERVER, SimpleCloudsConfig.SERVER_SPEC).register();
@@ -159,6 +160,13 @@ public class SimpleCloudsClientEvents
 	}
 	
 	@SubscribeEvent
+	public static void onLevelLoad(LevelEvent.Load event)
+	{
+		if (event.getLevel().isClientSide())
+			SimpleCloudsRenderer.getInstance().getWorldEffectsManager().reset();
+	}
+	
+	@SubscribeEvent
 	public static void onClientLoggingIn(ClientPlayerNetworkEvent.LoggingIn event)
 	{
 		CloudManager.get(event.getPlayer().level()).onPlayerJoin(event.getPlayer());
@@ -169,6 +177,7 @@ public class SimpleCloudsClientEvents
 	public static void onClientDisconnect(ClientPlayerNetworkEvent.LoggingOut event)
 	{
 		ClientSideCloudTypeManager.getInstance().clearSynced();
+		SimpleCloudsRenderer.getInstance().getWorldEffectsManager().reset();
 	}
 	
 	@SubscribeEvent
