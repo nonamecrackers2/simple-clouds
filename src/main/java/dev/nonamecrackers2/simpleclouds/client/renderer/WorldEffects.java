@@ -335,13 +335,13 @@ public class WorldEffects
 	public Color calculateFogColor(float defaultR, float defaultG, float defaultB, float partialTick)
 	{
 		float lerp = this.getDarkenFactor(partialTick);
-		return hsbLerp(defaultR, defaultG, defaultB, 0.65F, 0.38F, -0.05F, lerp);
+		return hsbLerp(defaultR, defaultG, defaultB, 0.68F, 0.2F, -0.05F, lerp);
 	}
 	
 	public Color calculateSkyColor(float defaultR, float defaultG, float defaultB, float partialTick)
 	{
 		float lerp = this.getDarkenFactor(partialTick);
-		return hsbLerp(defaultR, defaultG, defaultB, 0.62F, 0.12F, 0.05F, lerp);
+		return hsbLerp(defaultR, defaultG, defaultB, 0.63F, 0.1F, 0.05F, lerp);
 	}
 	
 	private static Color hsbLerp(float r, float g, float b, float targetHue, float targetSaturation, float targetBrightness, float lerp)
