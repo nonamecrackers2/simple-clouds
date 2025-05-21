@@ -18,7 +18,7 @@ public class SimpleCloudsConstants
 	public static final float RAIN_VERTICAL_FADE = 32.0F;
 	public static final int LIGHTNING_SPAWN_DIAMETER = 20000;
 	public static final int LIGHTNING_SPAWN_ATTEMPTS = 12;
-	public static final int CLOSE_THUNDER_CUTOFF = 3000;
+	public static final int CLOSE_THUNDER_CUTOFF = 2000;
 	public static final int THUNDER_PITCH_FULL_DIST = 3000;
 	public static final int THUNDER_PITCH_MINIMUM_DIST = 5000;
 	//Effects

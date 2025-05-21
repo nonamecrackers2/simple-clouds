@@ -47,7 +47,7 @@ in vec2 texCoord;
 in vec2 oneTexel;
 out vec4 fragColor;
 
-#define FOG 1 // 0 for no fog, 1 for fog
+#define FOG 0 // 0 for no fog, 1 for fog
 #define STEPS 200 //Total ray steps. More smaller steps means better accuracy and less artifacts
 #define STEP_SIZE 40.0 //Size of each individual step
 #define BG_COL vec4(0.0);
@@ -133,15 +133,18 @@ void main()
 {
 	vec3 rayDir = getRayDirection(texCoord);
 	vec4 rayStartDist = cylinderVerticalIntersect(vec3(0.0), rayDir, 500.0, CutoffDistance);
-	vec3 point = CameraPos + rayDir * -rayStartDist.x;
+	vec3 point = CameraPos + rayDir;// * -rayStartDist.x;
 	float sceneDepth = length(screenToWorldPos(texCoord, texture(DepthSampler, texCoord).r * 2.0 - 1.0));
 	float rayDepth = distance(point, CameraPos);
 	
-	vec4 finalCol = BG_COL; //Can also read from the current color texture if wanted, however in my case this texture will always be black
+	float density = 0.0;
+	vec3 colorAccum = vec3(0.0);
+	float fogSteps = 0.0;
+	
     for (int i = 0; i < STEPS; i++)
     {
-    	point += rayDir * STEP_SIZE;
-    	rayDepth += STEP_SIZE; //distance(point, CameraPos);
+    	point = CameraPos + rayDir * 0.2 * pow(float(i), 2.0);
+    	rayDepth = distance(point, CameraPos);
     	
     	//If at any point the ray intersects with any vertex in the scene, we stop
     	if (sceneDepth < rayDepth)
@@ -153,25 +156,39 @@ void main()
     	//and set the final color
     	if (col.a > 0.0 && col.r <= ColorThreshold.r && col.g <= ColorThreshold.g && col.b <= ColorThreshold.b)
     	{
-    		float alpha = clamp(1.0 + point.y / VerticalFade, 0.0, 1.0);
-			finalCol = vec4(col.rgb * ColorMultiplier * ColorModulator.rgb, alpha);
-    		break;
+    		float densityAdd = rayDepth * 0.0001;
+    		
+    		float fadeFactor = 1.0;
+    		
+    		// Distance fade
+			if (rayDepth > FogStart)
+				fadeFactor = 1.0 - min(pow((rayDepth - FogStart) / (FogEnd - FogStart), 0.05), 1.0);
+				
+			// Vertical fade to prevent the storm fog from stretching down too far
+    		fadeFactor *= clamp(1.0 + point.y / VerticalFade, 0.0, 1.0);
+    		
+    		density += densityAdd * fadeFactor;
+    		
+    		fogSteps += 1.0;
+			colorAccum += vec3(col.rgb * ColorMultiplier * ColorModulator.rgb);
     	}
+    	
+    	if (density >= 1.0)
+    		break;
     }
     
+    if (fogSteps <= 0.0)
+    {
+    	fragColor = BG_COL;
+    	return;
+    }
+    
+    vec3 avgCol = colorAccum / fogSteps;
+    vec4 finalCol = vec4(avgCol, min(density, 1.0));
+    
+    // This is technically not correct but looks ok
     float lightningMul = getNearestLightningBoltColorModifier(point);
 	finalCol.rgb *= lightningMul;
-    
-    if (finalCol.a > 0.01)
-    {
-    	float fogFactor = 1.0;
-#if FOG == 1  
-	    fogFactor -= smoothstep(FogStart, FogEnd, rayDepth);
-#endif
-	    if (sceneDepth < FogEnd)
-		    fogFactor *= smoothstep(rayDepth, rayDepth + LightTransmittenceDistance, sceneDepth);
-	    finalCol = vec4(finalCol.rgb, finalCol.a * fogFactor);
-    }
 
 	fragColor = finalCol;
 }

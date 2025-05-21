@@ -15,7 +15,7 @@
         { "name": "Light1_Direction", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] },
         { "name": "LightPower", "type": "float", "count": 1, "values": [0.4] },
         { "name": "AmbientLight", "type": "float", "count": 1, "values": [0.9] },
-       	{ "name": "DarknessColorModifier", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.1 ] },
+       	{ "name": "DarknessColorModifier", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.15 ] },
 		{ "name": "UseNormals", "type": "int", "count": 1, "values": [ 1.0 ]},
 		{ "name": "DitherScale", "type": "float", "count": 1, "values": [ 0.05 ] },
 		{ "name": "FogStart", "type": "float", "count": 1, "values": [ 1.0 ] },

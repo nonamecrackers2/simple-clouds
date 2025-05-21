@@ -871,6 +871,7 @@ public abstract class CloudMeshGenerator
 		Consumer<String> clear = countPerChunkBufferName -> 
 		{
 			//Clear count. This will cause the given chunk to not render in the render pass
+			//TODO: Instead of modifying this make the copy func ignore this
 			this.shader.getShaderStorageBuffer(countPerChunkBufferName).writeData(buffer -> {
 				buffer.putInt(task.index() * 4, 0);
 			}, task.index() * 4 + 4);

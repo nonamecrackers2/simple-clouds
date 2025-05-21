@@ -60,7 +60,7 @@ public class SimpleCloudsCloudTypeProvider extends CloudTypeProvider
 		layer3.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F);
 		layer3.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.1F);
 		noise.addNoiseLayer(layer3);
-		return new CloudType(SimpleCloudsMod.id("cumulonimbus"), WeatherType.THUNDERSTORM, 0.7F, 16.0F, 128.0F, 0.0F, noise);
+		return new CloudType(SimpleCloudsMod.id("cumulonimbus"), WeatherType.THUNDERSTORM, 0.6F, 16.0F, 128.0F, 0.0F, noise);
 	}
 	
 	private static CloudType cumulus()
@@ -136,7 +136,7 @@ public class SimpleCloudsCloudTypeProvider extends CloudTypeProvider
 		layer3.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F);
 		layer3.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.3F);
 		noise.addNoiseLayer(layer3);
-		return new CloudType(SimpleCloudsMod.id("nimbostratus"), WeatherType.THUNDERSTORM, 0.6F, 16.0F, 128.0F, 0.0F, noise);
+		return new CloudType(SimpleCloudsMod.id("nimbostratus"), WeatherType.THUNDERSTORM, 0.5F, 16.0F, 128.0F, 0.0F, noise);
 	}
 	
 	private static CloudType smallCumulus()
@@ -202,6 +202,6 @@ public class SimpleCloudsCloudTypeProvider extends CloudTypeProvider
 		layer2.setParam(AbstractNoiseSettings.Param.VALUE_OFFSET, 0.0F);
 		layer2.setParam(AbstractNoiseSettings.Param.VALUE_SCALE, 0.5F);
 		noise.addNoiseLayer(layer2);
-		return new CloudType(SimpleCloudsMod.id("stratus"), WeatherType.RAIN, 0.5F, 0.0F, 32.0F, 0.0F, noise);
+		return new CloudType(SimpleCloudsMod.id("stratus"), WeatherType.RAIN, 0.4F, 0.0F, 32.0F, 0.0F, noise);
 	}
 }
