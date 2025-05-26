@@ -1145,7 +1145,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 						buffer.putFloat(bolt.getFade(partialTick));
 					}
 					buffer.rewind();
-				}, size.getValue() * BYTES_PER_LIGHTNING_BOLT);
+				}, size.getValue() * BYTES_PER_LIGHTNING_BOLT, false);
 			}
 		}
 		

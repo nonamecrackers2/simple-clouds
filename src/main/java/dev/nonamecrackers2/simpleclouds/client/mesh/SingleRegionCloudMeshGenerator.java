@@ -67,13 +67,13 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 			float[] packed = this.type.noiseConfig().packForShader();
 			for (int i = 0; i < packed.length && i < AbstractNoiseSettings.Param.values().length * MAX_NOISE_LAYERS; i++)
 				b.putFloat(i * 4, packed[i]);
-		}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
+		}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS, false);
 		
 		this.shader.getShaderStorageBuffer(LAYER_GROUPINGS_NAME).writeData(b ->
 		{
 			this.type.packToBuffer(b, 0);
 			b.rewind();
-		}, CloudInfo.BYTES_PER_TYPE);
+		}, CloudInfo.BYTES_PER_TYPE, false);
 	}
 	
 	@Override

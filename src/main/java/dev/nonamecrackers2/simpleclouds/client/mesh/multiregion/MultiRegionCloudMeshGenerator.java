@@ -137,7 +137,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			for (LevelOfDetail l : this.lodConfig.getLods())
 				b.putFloat((float)l.chunkScale());
 			b.rewind();
-		}, lodScalesSize);
+		}, lodScalesSize, false);
 		
 		// Data for the cloud regions in world
 		this.regionTextureGenerator.bindShaderStorageBuffer(CLOUD_REGIONS_NAME, GL15.GL_STATIC_READ).allocateBuffer(MAX_CLOUD_FORMATIONS * BYTES_PER_REGION);
@@ -291,7 +291,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 						b.putFloat(f);
 				}
 				b.rewind();
-			}, count * BYTES_PER_REGION);
+			}, count * BYTES_PER_REGION, false);
 		}
 		
 		this.regionTextureGenerator.forUniform("TotalCloudRegions", (id, loc) -> {
@@ -322,7 +322,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 					previousLayerIndex = type.packToBuffer(b, previousLayerIndex);
 				}
 				b.rewind();
-			}, CloudInfo.BYTES_PER_TYPE * this.cachedTypes.length);
+			}, CloudInfo.BYTES_PER_TYPE * this.cachedTypes.length, false);
 			
 			this.shader.getShaderStorageBuffer(NOISE_LAYERS_NAME).writeData(b -> 
 			{
@@ -334,7 +334,7 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 						b.putFloat(packed[j]);
 				}
 				b.rewind();
-			}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * this.cachedTypes.length);
+			}, AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * this.cachedTypes.length, false);
 		}
 	}
 	

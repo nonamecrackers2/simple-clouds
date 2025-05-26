@@ -129,9 +129,12 @@ public class ShaderStorageBufferObject
 		this.fetchData(consumer, GL30.GL_MAP_READ_BIT, size);
 	}
 	
-	public void writeData(Consumer<ByteBuffer> consumer, int size)
+	public void writeData(Consumer<ByteBuffer> consumer, int size, boolean invalidate)
 	{
-		this.fetchData(consumer, GL30.GL_MAP_WRITE_BIT, size);
+		int access = GL30.GL_MAP_WRITE_BIT;
+		if (invalidate)
+			access |= GL30.GL_MAP_INVALIDATE_BUFFER_BIT;
+		this.fetchData(consumer, access, size);
 	}
 	
 	public void readWriteData(Consumer<ByteBuffer> consumer, int size)

@@ -500,7 +500,7 @@ public abstract class CloudMeshGenerator
 		totalCountBuffer.allocateBuffer(4);
 		totalCountBuffer.writeData(b -> {
 			b.putInt(0, 0);
-		}, 4);
+		}, 4, false);
 		
 		int bufferSize = this.shader.bindShaderStorageBuffer(elementInfoBufferName, GL15.GL_DYNAMIC_COPY).allocateBuffer(maxSize);
 		
@@ -513,7 +513,7 @@ public abstract class CloudMeshGenerator
 			for (int i = 0; i < totalChunks; i++)
 				b.putInt(0);
 			b.rewind();
-		}, countPerChunkBufferSize);
+		}, countPerChunkBufferSize, false);
 		
 		return bufferSize;
 	}
@@ -679,16 +679,21 @@ public abstract class CloudMeshGenerator
 		//Get the total amount of sides and indices across all chunks and reset
 		this.shader.getShaderStorageBuffer(totalCountBufferName).writeData(b -> {
 			b.putInt(0, 0);
-		}, 4); 
+		}, 4, true); 
 		
 		//Get the amount of total sides each chunk has and reset each counter
 		this.shader.getShaderStorageBuffer(countPerChunkBufferName).readWriteData(buffer -> 
 		{
 			for (CloudMeshGenerator.ChunkGenTask gennedChunk : this.completedGenTasks)
 			{
+				MeshChunk.BufferSet bufferSet = bufferSetFunction.apply(gennedChunk.chunk());
+				if (gennedChunk.clear())
+				{
+					bufferSet.setTotalElementCount(0);
+					continue;
+				}
 				int index = gennedChunk.index() * 4;
 				int count = buffer.getInt(index);
-				MeshChunk.BufferSet bufferSet = bufferSetFunction.apply(gennedChunk.chunk());
 				bufferSet.setTotalElementCount(count);
 				buffer.putInt(index, 0);
 			}
@@ -805,9 +810,11 @@ public abstract class CloudMeshGenerator
 			CloudMeshGenerator.ChunkGenTask task = this.chunkGenTasks.poll();
 			if (task != null)
 			{
-				if (task.clear())
-					this.clearChunk(task);
-				else
+//				if (task.clear())
+//					this.clearChunk(task);
+//				else
+//					this.generateChunk(task);
+				if (!task.clear())
 					this.generateChunk(task);
 				this.updateMeshChunkAfterGeneration(task.chunk(), task);
 				this.completedGenTasks.add(task);
@@ -866,6 +873,7 @@ public abstract class CloudMeshGenerator
 		}
 	}
 	
+	@Deprecated
 	protected void clearChunk(CloudMeshGenerator.ChunkGenTask task)
 	{
 		Consumer<String> clear = countPerChunkBufferName -> 
@@ -874,7 +882,7 @@ public abstract class CloudMeshGenerator
 			//TODO: Instead of modifying this make the copy func ignore this
 			this.shader.getShaderStorageBuffer(countPerChunkBufferName).writeData(buffer -> {
 				buffer.putInt(task.index() * 4, 0);
-			}, task.index() * 4 + 4);
+			}, task.index() * 4 + 4, false);
 		};
 		clear.accept(SIDES_PER_CHUNK_NAME);
 		if (this.transparencyEnabled())
