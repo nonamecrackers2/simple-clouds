@@ -7,7 +7,7 @@ import com.mojang.serialization.JsonOps;
 
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.ScAPICloudType;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;

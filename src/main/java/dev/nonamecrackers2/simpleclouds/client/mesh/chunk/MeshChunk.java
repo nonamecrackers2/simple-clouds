@@ -35,13 +35,13 @@ public class MeshChunk
 	private float alpha;
 	private float alphaO;
 	
-	public MeshChunk(PreparedChunk preparedChunk, int opaqueBufferSize, int transparentBufferSize, boolean useTransparency)
+	public MeshChunk(PreparedChunk preparedChunk, int opaqueElements, int opaqueElementOffset, int bytesPerOpaqueElement, int transparentElements, int transparentElementOffset, int bytesPerTransparentElement, boolean useTransparency)
 	{
 		this.preparedChunk = preparedChunk;
 		
-		this.opaqueBuffers = new MeshChunk.BufferSet(opaqueBufferSize);
+		this.opaqueBuffers = new MeshChunk.BufferSet(opaqueElements, opaqueElementOffset, bytesPerOpaqueElement);
 		if (useTransparency)
-			this.transparentBuffers = Optional.of(new MeshChunk.BufferSet(transparentBufferSize));
+			this.transparentBuffers = Optional.of(new MeshChunk.BufferSet(transparentElements, transparentElementOffset, bytesPerTransparentElement));
 		else
 			this.transparentBuffers = Optional.empty();
 		
@@ -93,6 +93,12 @@ public class MeshChunk
 	public Optional<MeshChunk.BufferSet> getTransparentBuffers()
 	{
 		return this.transparentBuffers;
+	}
+	
+	public void clearChunk()
+	{
+		this.opaqueBuffers.setTotalElementCount(0);
+		this.transparentBuffers.ifPresent(bufferSet -> bufferSet.setTotalElementCount(0));
 	}
 	
 	public void setBounds(float minX, float minY, float minZ, float maxX, float maxY, float maxZ)
@@ -178,15 +184,19 @@ public class MeshChunk
 		private @Nullable ByteBuffer buffer;
 		private int elementCount;
 		private final int bufferSize;
+		private final int maxElements;
+		private final int elementOffset;
 		
-		public BufferSet(int bufferSize)
+		public BufferSet(int maxElements, int elementOffset, int bytesPerElement)
 		{
 			this.bufferId = GL15.glGenBuffers();
-			this.buffer = MemoryTracker.create(bufferSize);
+			this.maxElements = maxElements;
+			this.elementOffset = elementOffset;
+			this.bufferSize = maxElements * bytesPerElement;
+			this.buffer = MemoryTracker.create(this.bufferSize);
 			GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.bufferId);
 			GL15.glBufferData(GL43.GL_SHADER_STORAGE_BUFFER, this.buffer, GL15.GL_DYNAMIC_DRAW);
 			GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, 0);
-			this.bufferSize = bufferSize;
 		}
 		
 		public void setTotalElementCount(int count)
@@ -197,6 +207,16 @@ public class MeshChunk
 		public int getElementCount()
 		{
 			return this.elementCount;
+		}
+		
+		public int getMaxElements()
+		{
+			return this.maxElements;
+		}
+		
+		public int getElementOffset()
+		{
+			return this.elementOffset;
 		}
 		
 		public int getBufferSize()

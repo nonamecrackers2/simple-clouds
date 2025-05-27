@@ -4,6 +4,7 @@
 #define FADE_NEAR_ORIGIN ${FADE_NEAR_ORIGIN}    //0 to disable, 1 to enable
 #define STYLE ${STYLE}     //0 for default, 1 for shaded
 #define TRANSPARENCY ${TRANSPARENCY}     //0 for no transparency, 1 for transparency
+#define FIXED_SECTION_SIZE ${FIXED_SECTION_SIZE}     //0 for false, 1 for true
 
 #define SHADE_DIRECTION normalize(vec3(0.5, 0.5, 0.5))
 
@@ -89,9 +90,11 @@ struct TransparentCubeInfo {
 
 // ----- Opaque Buffers -----
 
+#if FIXED_SECTION_SIZE == 0
 layout(std430) restrict buffer TotalSides {
 	uint totalSides;
 };
+#endif
 
 layout(std430) restrict writeonly buffer SideInfoBuffer {
     SideInfo data[];
@@ -107,9 +110,11 @@ sidesPerChunk;
 
 #if TRANSPARENCY == 1
 
+#if FIXED_SECTION_SIZE == 0
 layout(std430) restrict buffer TotalTransparentCubes {
 	uint totalTransparentCubes;
 };
+#endif
 
 layout(std430) restrict writeonly buffer TransparentCubeInfoBuffer {
     TransparentCubeInfo data[];
@@ -150,6 +155,12 @@ uniform vec3 Origin;
 uniform bool TestFacesFacingAway;
 uniform int DoNotOccludeSide = -1;
 uniform int ChunkIndex;
+
+#if FIXED_SECTION_SIZE == 1
+//Offset in number of mesh elements
+uniform int OpaqueMeshDataOffset;
+uniform int TransparentMeshDataOffset;
+#endif
 
 #if TRANSPARENCY == 1
 uniform int TransparencyDistance = 300;
@@ -274,8 +285,12 @@ bool shouldNotOcclude(int index)
 
 void createFace(vec3 center, float cubeRadius, int index, float brightness)
 {
+#if FIXED_SECTION_SIZE == 0
 	atomicAdd(sidesPerChunk.data[ChunkIndex], 1u);
 	uint currentFace = atomicAdd(totalSides, 1u);
+#elif FIXED_SECTION_SIZE == 1
+	uint currentFace = atomicAdd(sidesPerChunk.data[ChunkIndex], 1u);
+#endif
 	SideInfo side;
 	side.side = index;
 	side.x = center.x;
@@ -283,7 +298,11 @@ void createFace(vec3 center, float cubeRadius, int index, float brightness)
 	side.z = center.z;
 	side.brightness = brightness;
 	side.radius = cubeRadius;
+#if FIXED_SECTION_SIZE == 0
 	sides.data[currentFace] = side;
+#elif FIXED_SECTION_SIZE == 1
+	sides.data[OpaqueMeshDataOffset + currentFace] = side;
+#endif
 }
 
 void createCube(float x, float y, float z, float cubeRadius, float brightness, float fade, LayerGroup group)
@@ -317,8 +336,12 @@ void createCube(float x, float y, float z, float cubeRadius, float brightness, f
 
 void createTransparentCube(float x, float y, float z, float cubeRadius, float brightness, float alpha)
 {
+#if FIXED_SECTION_SIZE == 0
 	atomicAdd(transparentCubesPerChunk.data[ChunkIndex], 1u);
 	uint currentCube = atomicAdd(totalTransparentCubes, 1u);
+#elif FIXED_SECTION_SIZE == 1
+	uint currentCube = atomicAdd(transparentCubesPerChunk.data[ChunkIndex], 1u);
+#endif
 	TransparentCubeInfo cube;
 	cube.x = x + cubeRadius;
 	cube.y = y + cubeRadius;
@@ -326,7 +349,11 @@ void createTransparentCube(float x, float y, float z, float cubeRadius, float br
 	cube.brightness = brightness;
 	cube.alpha = alpha;
 	cube.radius = cubeRadius;
+#if FIXED_SECTION_SIZE == 0
 	cubesTransparent.data[currentCube] = cube;
+#elif FIXED_SECTION_SIZE == 1
+	cubesTransparent.data[TransparentMeshDataOffset + currentCube] = cube;
+#endif
 }
 
 #endif
@@ -360,13 +387,6 @@ void main()
 	float storminess = clamp(group.Storminess + fade * 0.1, 0.0, 1.0);
 	float brightness = clamp(1.0 - storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
 #if STYLE == 1
-    //float px = getNoiseForLayerGroup(group, x - 0.1, y, z) + fade;
-	//float py = getNoiseForLayerGroup(group, x, y - 0.1, z) + fade;
-	//float pz = getNoiseForLayerGroup(group, x, y, z - 0.1) + fade;
-	//float dx = (px - noise) / -0.1;
-	//float dy = (py - noise) / -0.1;
-	//float dz = (pz - noise) / -0.1;
-	//vec3 secant = normalize(vec3(dx, dy, dz));
 	gradient = normalize(gradient);
 	float strength = dot(gradient, SHADE_DIRECTION) * 0.5 + 0.5;
 	brightness = clamp(brightness - strength * 0.1, 0.0, 1.0);

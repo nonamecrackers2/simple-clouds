@@ -14,10 +14,10 @@ import dev.nonamecrackers2.simpleclouds.client.cloud.spawning.ClientSideCloudSpa
 import dev.nonamecrackers2.simpleclouds.client.command.ClientCloudCommandHelper;
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
-import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
-import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.MultiRegionCloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsDebugOverlayRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.WorldEffects;
@@ -233,10 +233,8 @@ public class SimpleCloudsClientEvents
 				var meshGenResult = generator.getMeshGenStatus();
 				CloudMeshGenerator.MeshGenStatus opaqueStatus = meshGenResult.getLeft();
 				CloudMeshGenerator.MeshGenStatus transparentStatus = meshGenResult.getRight();
-				if (opaqueStatus.isErroneous())
-					text.add(ChatFormatting.RED + "MESH ERROR OPAQUE: " + opaqueStatus);
-				if (transparentStatus.isErroneous())
-					text.add(ChatFormatting.RED + "MESH ERROR TRANSPARENT: " + transparentStatus);
+				text.add((opaqueStatus.isErroneous() ? ChatFormatting.RED : "") + "Mesh status opaque: " + opaqueStatus.getName());
+				text.add((transparentStatus.isErroneous() ? ChatFormatting.RED : "") + "Mesh status transparent: " + transparentStatus.getName());
 				
 				String opaqueGeomInfo = humanReadableByteCountSI(generator.getOpaqueBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getOpaqueBufferSize());
 				String transparentGeomInfo = humanReadableByteCountSI(generator.getTransparentBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getTransparentBufferSize());

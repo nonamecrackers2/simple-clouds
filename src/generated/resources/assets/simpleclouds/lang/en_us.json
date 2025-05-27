@@ -60,6 +60,8 @@
   "gui.simpleclouds.config.cloudMode.title": "Cloud Mode",
   "gui.simpleclouds.config.cloudSeed.description": "Specifies the seed to use for the clouds. Will apply for all servers that the user connects to with the mod on the client-side only.",
   "gui.simpleclouds.config.cloudSeed.title": "Cloud Seed",
+  "gui.simpleclouds.config.concurrentComputeDispatches.description": "EXPERIMENTAL. Uses a slightly modified algorithm that removes sync calls between chunk generator compute dispatches at the cost of higher memory usage. May result in a performance boost.",
+  "gui.simpleclouds.config.concurrentComputeDispatches.title": "Concurrent Compute Dispatches",
   "gui.simpleclouds.config.cubeNormals.description": "Specifies if normals should be applied to each individual cube in the cloud which applies a bit of shading per cube face. Helps distinguish each individual cube in a cloud.",
   "gui.simpleclouds.config.cubeNormals.title": "Cube Normals",
   "gui.simpleclouds.config.dimensionWhitelist.description": "Specifies the allowed dimensions that Simple Clouds is active in",

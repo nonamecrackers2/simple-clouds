@@ -1,6 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.common.noise;
 
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.CloudMeshGenerator;
 import net.minecraft.util.Mth;
 
 public abstract class AbstractNoiseSettings<T extends AbstractNoiseSettings<T>> implements NoiseSettings

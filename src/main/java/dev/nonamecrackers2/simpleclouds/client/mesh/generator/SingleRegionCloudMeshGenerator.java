@@ -1,4 +1,4 @@
-package dev.nonamecrackers2.simpleclouds.client.mesh;
+package dev.nonamecrackers2.simpleclouds.client.mesh.generator;
 
 import javax.annotation.Nullable;
 
@@ -11,14 +11,14 @@ import dev.nonamecrackers2.simpleclouds.common.noise.NoiseSettings;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.client.renderer.culling.Frustum;
 
-public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
+public final class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private CloudInfo type;
 	private boolean needsNoiseRefreshing;
 	
-	public SingleRegionCloudMeshGenerator(boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency, CloudInfo type)
+	protected SingleRegionCloudMeshGenerator(boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency, boolean fixedMeshDataSectionSize, CloudInfo type)
 	{
-		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 1, false, shadedClouds, lodConfig, meshGenInterval, useTransparency);
+		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 1, false, shadedClouds, lodConfig, meshGenInterval, useTransparency, fixedMeshDataSectionSize);
 		this.setCloudType(type);
 		this.setFadeDistances(0.5F, 1.0F);
 	}
@@ -29,8 +29,8 @@ public class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 		NoiseSettings config = this.type.noiseConfig();
 		int startHeight = config.getStartHeight();
 		int endHeight = config.getEndHeight();
-//		if (startHeight == endHeight)
-//			return skip();
+		if (startHeight == endHeight)
+			return skip();
 		return heights(startHeight, endHeight);
 	}
 	

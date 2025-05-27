@@ -1,6 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh.lod;
 
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import net.minecraft.world.phys.AABB;
 

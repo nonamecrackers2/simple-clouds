@@ -27,9 +27,9 @@ import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.WeightedBlendingTarget;
 import dev.nonamecrackers2.simpleclouds.client.gui.widget.LayerEditor;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
-import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.CloudImageRenderer;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
@@ -166,7 +166,7 @@ public class CloudPreviewerScreen extends Screen3D
 		super(Component.translatable("gui.simpleclouds.cloud_previewer.title"), 0.25F, 5000.0F);
 		if (generator == null)
 		{
-			generator = (SingleRegionCloudMeshGenerator)new SingleRegionCloudMeshGenerator(true, LevelOfDetailOptions.HIGH.getConfig(), 3, true, SimpleCloudsConstants.EMPTY).setTestFacesFacingAway(true);
+			generator = CloudMeshGenerator.builder().testFacesFacingAway(true).createSingleRegion(SimpleCloudsConstants.EMPTY);
 			generator.init(Minecraft.getInstance().getResourceManager());
 		}
 		this.prev = prev;
@@ -485,7 +485,7 @@ public class CloudPreviewerScreen extends Screen3D
 		stack.drawString(this.font, Component.translatable("gui.simpleclouds.cloud_previewer.current_layer", Component.literal(this.layers.isEmpty() ? "NONE" : String.valueOf(this.currentLayer + 1)).withStyle(Style.EMPTY.withBold(true))), 10, 5, 0xFFFFFFFF);
 		
 		Pair<CloudMeshGenerator.MeshGenStatus, CloudMeshGenerator.MeshGenStatus> status = generator.getMeshGenStatus();
-		if (Stream.of(status.getLeft(), status.getRight()).anyMatch(s -> s == CloudMeshGenerator.MeshGenStatus.TOO_MANY_VERTICES || s == CloudMeshGenerator.MeshGenStatus.CHUNK_OVERFLOW))
+		if (Stream.of(status.getLeft(), status.getRight()).anyMatch(s -> s == CloudMeshGenerator.MeshGenStatus.MESH_POOL_OVERFLOW || s == CloudMeshGenerator.MeshGenStatus.CHUNK_OVERFLOW))
 			stack.drawString(this.font, WARNING_TOO_MANY_CUBES, this.width - this.font.width(WARNING_TOO_MANY_CUBES) - 5, this.height - this.font.lineHeight - 5, 0xFFFFFFFF);
 		
 		stack.drawString(this.font, WEATHER_TYPE_TITLE, this.weatherTypeButton.getX(), this.weatherTypeButton.getY() - this.font.lineHeight - 2, 0xFFFFFFFF);

@@ -52,13 +52,13 @@ import dev.nonamecrackers2.simpleclouds.client.event.impl.DetermineCloudRenderPi
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.CloudRenderTarget;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.ShadowMapBuffer;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.WeightedBlendingTarget;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
-import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.chunk.MeshChunk;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.MultiRegionCloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
-import dev.nonamecrackers2.simpleclouds.client.mesh.multiregion.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.lightning.LightningBolt;
 import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.CloudsRenderPipeline;
 import dev.nonamecrackers2.simpleclouds.client.renderer.settings.CloudsRendererSettings;
@@ -472,36 +472,35 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			}
 			
 			CloudMode mode = this.settings.getCurrentCloudMode();
+			boolean isAmbientMode = mode == CloudMode.AMBIENT;
+			boolean useMultiRegion = isAmbientMode || mode == CloudMode.DEFAULT;
 			boolean shadedClouds = this.settings.shadedClouds();
+			boolean useFixedMeshDataSectionSize = this.settings.useFixedMeshDataSectionSize();
 			boolean useTransparency = this.settings.useTransparency();
 			LevelOfDetailConfig lod = this.settings.getCurrentLod().getConfig();
 			
-			if (mode == CloudMode.DEFAULT || mode == CloudMode.AMBIENT) //Use the multi-region generator for DEFAULT or AMBIENT cloud mode
+			var builder = CloudMeshGenerator.builder()
+					.fadeNearOrigin(isAmbientMode)
+					.shadedClouds(shadedClouds)
+					.fixedMeshDataSectionSize(useFixedMeshDataSectionSize)
+					.meshGenInterval(SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get())
+					.lodConfig(lod)
+					.useTransparency(useTransparency);
+			
+			if (useMultiRegion) //Use the multi-region generator for DEFAULT or AMBIENT cloud mode
 			{
-				//Create the generator but use a fallback cloud types array
-				MultiRegionCloudMeshGenerator generator = new MultiRegionCloudMeshGenerator(
-						mode == CloudMode.AMBIENT, 
-						shadedClouds,
-						lod, 
-						SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), 
-						useTransparency
-				);
-				if (mode == CloudMode.AMBIENT) //Enable the fade near origin when using AMBIENT
-					generator.setFadeDistances(SimpleCloudsConstants.AMBIENT_MODE_FADE_START, SimpleCloudsConstants.AMBIENT_MODE_FADE_END);
-				this.meshGenerator = generator;
+				if (isAmbientMode)
+				{
+					builder.fadeStart(SimpleCloudsConstants.AMBIENT_MODE_FADE_START)
+						.fadeEnd(SimpleCloudsConstants.AMBIENT_MODE_FADE_END);
+				}
+				this.meshGenerator = builder.createMultiRegion();
 			}
 			else if (mode == CloudMode.SINGLE)
 			{
 				float fadeStart = (float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F;
 				float fadeEnd = (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F;
-				//Create the generator but use a fallback single mode cloud type
-				this.meshGenerator = new SingleRegionCloudMeshGenerator(
-						shadedClouds, 
-						lod, 
-						SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get(), 
-						useTransparency,
-						SimpleCloudsConstants.EMPTY
-				).setFadeDistances(fadeStart, fadeEnd);
+				this.meshGenerator = builder.fadeStart(fadeStart).fadeEnd(fadeEnd).createSingleRegion(SimpleCloudsConstants.EMPTY);
 			}
 			else
 			{

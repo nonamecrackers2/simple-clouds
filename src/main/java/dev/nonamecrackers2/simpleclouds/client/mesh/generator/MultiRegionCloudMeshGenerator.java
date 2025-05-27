@@ -1,4 +1,4 @@
-package dev.nonamecrackers2.simpleclouds.client.mesh.multiregion;
+package dev.nonamecrackers2.simpleclouds.client.mesh.generator;
 
 import java.io.IOException;
 import java.nio.IntBuffer;
@@ -26,7 +26,6 @@ import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetail;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
@@ -44,7 +43,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 //TODO: Cloud regions abrubtly disappear
-public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
+public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/MultiRegionCloudMeshGenerator");
 
@@ -63,9 +62,9 @@ public class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private boolean updateCloudTypes;
 	private int currentCloudFormationCount;
 	
-	public MultiRegionCloudMeshGenerator(boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency)
+	protected MultiRegionCloudMeshGenerator(boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency, boolean fixedMeshDataSectionSize)
 	{
-		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 0, fadeNearOrigin, shadedClouds, lodConfig, meshGenInterval, useTransparency);
+		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 0, fadeNearOrigin, shadedClouds, lodConfig, meshGenInterval, useTransparency, fixedMeshDataSectionSize);
 	}
 	
 	public void setCloudGetter(CloudGetter getter)

@@ -62,6 +62,7 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Integer> thunderAttenuationDistance;
 		public final ForgeConfigSpec.ConfigValue<Boolean> stormFogLightningFlashes;
 		public final ForgeConfigSpec.ConfigValue<Integer> transparencyRenderDistancePercentage;
+		public final ForgeConfigSpec.ConfigValue<Boolean> concurrentComputeDispatches;
 		//Cloud Visuals
 		public final ForgeConfigSpec.ConfigValue<Boolean> cubeNormals;
 		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds;
@@ -126,6 +127,8 @@ public class SimpleCloudsConfig
 			builder.pop();
 					
 			builder.comment("Performance").push("performance");
+			
+			this.concurrentComputeDispatches = this.createValue(false, "concurrentComputeDispatches", false, "EXPERIMENTAL. Uses a slightly modified algorithm that removes sync calls between chunk generator compute dispatches at the cost of higher memory usage. May result in a performance boost");
 			
 			this.framesToGenerateMesh = this.createRangedIntValue(5, 1, 32, "framesToGenerateMesh", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts");
 			

@@ -9,8 +9,8 @@ import org.apache.logging.log4j.Logger;
 
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.CloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
@@ -32,6 +32,12 @@ public abstract class CloudsRendererSettings
 		public boolean shadedClouds()
 		{
 			return SimpleCloudsConfig.CLIENT.shadedClouds.get();
+		}
+		
+		@Override
+		public boolean useFixedMeshDataSectionSize()
+		{
+			return SimpleCloudsConfig.CLIENT.concurrentComputeDispatches.get();
 		}
 		
 		@Override
@@ -72,6 +78,8 @@ public abstract class CloudsRendererSettings
 	
 	public abstract boolean useTransparency();
 	
+	public abstract boolean useFixedMeshDataSectionSize();
+	
 	public abstract LevelOfDetailOptions getLodConfig();
 	
 	public abstract @Nullable CloudType getSingleModeCloudType();
@@ -94,6 +102,7 @@ public abstract class CloudsRendererSettings
 		boolean shadedClouds = this.shadedClouds();
 		boolean transparency = this.useTransparency();
 		LevelOfDetailOptions lod = Objects.requireNonNull(this.getLodConfig(), "Must supply a LOD");
+		boolean fixedMeshDataSectionSize = this.useFixedMeshDataSectionSize();
 		
 		if (generator != null)
 		{
@@ -104,6 +113,8 @@ public abstract class CloudsRendererSettings
 			else if (generator.transparencyEnabled() != transparency)
 				flag = true;
 			else if (this.currentLod != lod)
+				flag = true;
+			else if (generator.usesFixedMeshDataSectionSize() != fixedMeshDataSectionSize)
 				flag = true;
 		}
 		else
