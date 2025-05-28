@@ -33,8 +33,9 @@ import dev.nonamecrackers2.simpleclouds.client.mesh.chunk.MeshChunk;
 import dev.nonamecrackers2.simpleclouds.client.mesh.instancing.InstanceableMesh;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.BindingManager;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
-import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinFrustumAccessor;
@@ -457,7 +458,7 @@ public abstract class CloudMeshGenerator
 			this.cubeMesh.destroy();
 		this.cubeMesh = InstanceableMesh.defaultCube();
 		
-		ComputeShader.printDebug();
+		BindingManager.printDebug();
 		
 		LOGGER.debug("Finished initializing mesh generator");
 		
@@ -522,18 +523,18 @@ public abstract class CloudMeshGenerator
 	{
 		if (!this.useFixedMeshDataSectionSize)
 		{
-			ShaderStorageBufferObject totalCountBuffer = this.shader.bindShaderStorageBuffer(totalCounterName, GL15.GL_DYNAMIC_COPY);
+			ShaderStorageBufferObject totalCountBuffer = this.shader.createAndBindSSBO(totalCounterName, GL15.GL_DYNAMIC_COPY);
 			totalCountBuffer.allocateBuffer(4);
 			totalCountBuffer.writeData(b -> {
 				b.putInt(0, 0);
 			}, 4, false);
 		}
 		
-		int bufferSize = this.shader.bindShaderStorageBuffer(elementInfoBufferName, GL15.GL_DYNAMIC_COPY).allocateBuffer(maxSize);
+		int bufferSize = this.shader.createAndBindSSBO(elementInfoBufferName, GL15.GL_DYNAMIC_COPY).allocateBuffer(maxSize);
 		
 		int totalChunks = this.getLodConfig().getPreparedChunks().size();
 		int countPerChunkBufferSize = totalChunks * 4;
-		ShaderStorageBufferObject countPerChunkBuffer = this.shader.bindShaderStorageBuffer(countPerChunkName, GL15.GL_DYNAMIC_COPY);
+		ShaderStorageBufferObject countPerChunkBuffer = this.shader.createAndBindSSBO(countPerChunkName, GL15.GL_DYNAMIC_COPY);
 		countPerChunkBuffer.allocateBuffer(countPerChunkBufferSize);
 		countPerChunkBuffer.writeData(b -> 
 		{

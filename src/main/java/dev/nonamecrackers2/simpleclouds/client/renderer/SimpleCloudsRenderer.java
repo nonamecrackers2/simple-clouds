@@ -64,7 +64,8 @@ import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.CloudsRenderPip
 import dev.nonamecrackers2.simpleclouds.client.renderer.settings.CloudsRendererSettings;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
 import dev.nonamecrackers2.simpleclouds.client.shader.SingleSSBOShaderInstance;
-import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.BindingManager;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -382,11 +383,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		if (this.lightningBoltPositions != null)
 		{
-			this.lightningBoltPositions.closeAndClearBinding();
+			BindingManager.freeSSBO(this.lightningBoltPositions);
 			this.lightningBoltPositions = null;
 		}
 		
-		this.lightningBoltPositions = ShaderStorageBufferObject.create(GL15.GL_DYNAMIC_DRAW);
+		this.lightningBoltPositions = BindingManager.createSSBO(GL15.GL_DYNAMIC_DRAW);
 		this.lightningBoltPositions.allocateBuffer(MAX_LIGHTNING_BOLTS * BYTES_PER_LIGHTNING_BOLT);
 		
 		this.stormPostProcessing = this.createPostChain(manager, STORM_POST_PROCESSING_LOC, this.stormFogTarget, 0.25F, 0.25F, pass -> 
@@ -629,7 +630,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		if (this.lightningBoltPositions != null)
 		{
-			this.lightningBoltPositions.closeAndClearBinding();
+			BindingManager.freeSSBO(this.lightningBoltPositions);
 			this.lightningBoltPositions = null;
 		}
 		

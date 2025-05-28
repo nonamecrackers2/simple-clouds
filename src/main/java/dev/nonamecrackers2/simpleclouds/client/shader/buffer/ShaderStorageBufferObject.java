@@ -1,10 +1,12 @@
-package dev.nonamecrackers2.simpleclouds.client.shader.compute;
+package dev.nonamecrackers2.simpleclouds.client.shader.buffer;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
@@ -15,8 +17,11 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-public class ShaderStorageBufferObject
+import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
+
+public class ShaderStorageBufferObject implements WithBinding
 {
+	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/ShaderStorageBufferObject");
 	private static int maxSize = -1;
 	protected int id;
 	protected final int binding;
@@ -35,17 +40,6 @@ public class ShaderStorageBufferObject
 		if (maxSize == -1)
 			maxSize = GL11.glGetInteger(GL43.GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
 		return maxSize;
-	}
-	
-	public static ShaderStorageBufferObject create(int usage)
-	{
-		RenderSystem.assertOnRenderThreadOrInit();
-		int binding = ComputeShader.getAvailableShaderStorageBinding();
-		int bufferId = GlStateManager._glGenBuffers();
-		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, binding, bufferId);
-		ShaderStorageBufferObject buffer = new ShaderStorageBufferObject(bufferId, binding, usage);
-		ComputeShader.ALL_SHADER_STORAGE_BINDINGS.add(binding);
-		return buffer;
 	}
 	
 	public void bindToProgram(String name, int programId)
@@ -89,19 +83,13 @@ public class ShaderStorageBufferObject
 		return size;
 	}
 	
-	@SuppressWarnings("deprecation")
-	public void closeAndClearBinding()
-	{
-		ComputeShader.ALL_SHADER_STORAGE_BINDINGS.remove((Object)this.binding);
-		this.close();
-	}
-	
-	protected void close()
+	@Override
+	public void close()
 	{
 		RenderSystem.assertOnRenderThread();
 		if (this.id != -1)
 		{
-			ComputeShader.LOGGER.debug("Deleting buffer id={}, binding={}", this.id, this.binding);
+			LOGGER.debug("Deleting buffer id={}, binding={}", this.id, this.binding);
 			GL15.glDeleteBuffers(this.id);
 			this.id = -1;
 		}
@@ -142,6 +130,7 @@ public class ShaderStorageBufferObject
 		this.fetchData(consumer, GL30.GL_MAP_WRITE_BIT | GL30.GL_MAP_READ_BIT, size);
 	}
 	
+	@Override
 	public int getBinding()
 	{
 		return this.binding;

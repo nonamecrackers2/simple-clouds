@@ -50,8 +50,8 @@ public final class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	{
 		super.setupShader();
 		
-		this.shader.bindShaderStorageBuffer(LAYER_GROUPINGS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(CloudInfo.BYTES_PER_TYPE);
-		this.shader.bindShaderStorageBuffer(NOISE_LAYERS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
+		this.shader.createAndBindSSBO(LAYER_GROUPINGS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(CloudInfo.BYTES_PER_TYPE);
+		this.shader.createAndBindSSBO(NOISE_LAYERS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS);
 		
 		this.uploadNoiseData();
 		this.needsNoiseRefreshing = false;

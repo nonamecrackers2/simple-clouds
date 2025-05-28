@@ -29,8 +29,9 @@ import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetail;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.LevelOfDetailConfig;
 import dev.nonamecrackers2.simpleclouds.client.mesh.lod.PreparedChunk;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.BindingManager;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
-import dev.nonamecrackers2.simpleclouds.client.shader.compute.ShaderStorageBufferObject;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -101,8 +102,8 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		this.cachedTypes = new CloudInfo[0];
 		this.updateCloudTypes = false;
 		
-		this.shader.bindShaderStorageBuffer(NOISE_LAYERS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * MAX_CLOUD_TYPES);
-		this.shader.bindShaderStorageBuffer(LAYER_GROUPINGS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(CloudInfo.BYTES_PER_TYPE * MAX_CLOUD_TYPES);
+		this.shader.createAndBindSSBO(NOISE_LAYERS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(AbstractNoiseSettings.Param.values().length * 4 * MAX_NOISE_LAYERS * MAX_CLOUD_TYPES);
+		this.shader.createAndBindSSBO(LAYER_GROUPINGS_NAME, GL15.GL_STATIC_DRAW).allocateBuffer(CloudInfo.BYTES_PER_TYPE * MAX_CLOUD_TYPES);
 		
 		this.uploadCloudTypeData();
 	}
@@ -128,7 +129,7 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		var params = ImmutableMap.of("EDGE_FADE_FACTOR", String.valueOf(SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR));
 		this.regionTextureGenerator = ComputeShader.loadShader(REGION_GENERATOR_LOC, manager, 16, 16, this.lodConfig.getLods().length + 1, params);
 		
-		ShaderStorageBufferObject lodScales = this.regionTextureGenerator.bindShaderStorageBuffer(LOD_SCALES_NAME, GL15.GL_STATIC_READ);
+		ShaderStorageBufferObject lodScales = this.regionTextureGenerator.createAndBindSSBO(LOD_SCALES_NAME, GL15.GL_STATIC_READ);
 		int lodScalesSize = this.lodConfig.getLods().length * 4 + 4;
 		lodScales.allocateBuffer(lodScalesSize);
 		lodScales.writeData(b -> {
@@ -139,7 +140,7 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		}, lodScalesSize, false);
 		
 		// Data for the cloud regions in world
-		this.regionTextureGenerator.bindShaderStorageBuffer(CLOUD_REGIONS_NAME, GL15.GL_STATIC_READ).allocateBuffer(MAX_CLOUD_FORMATIONS * BYTES_PER_REGION);
+		this.regionTextureGenerator.createAndBindSSBO(CLOUD_REGIONS_NAME, GL15.GL_STATIC_READ).allocateBuffer(MAX_CLOUD_FORMATIONS * BYTES_PER_REGION);
 
 		// Create the cloud region 2D array texture
 		
@@ -177,8 +178,9 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		
 		// Assign an image unit to it so any shader can access it
 		if (this.cloudRegionImageBinding != -1)
-			ComputeShader.freeImageUnit(this.cloudRegionImageBinding);
-		this.cloudRegionImageBinding = ComputeShader.getAndUseImageUnit();
+			BindingManager.freeImageUnit(this.cloudRegionImageBinding);
+		this.cloudRegionImageBinding = BindingManager.getAvailableImageUnit();
+		BindingManager.useImageUnit(this.cloudRegionImageBinding);
 		GL42.glBindImageTexture(this.cloudRegionImageBinding, this.cloudRegionTextureId, 0, false, 0, GL15.GL_WRITE_ONLY, GL30.GL_RG32F);
 		this.regionTextureGenerator.setImageUnit("regionTexture", this.cloudRegionImageBinding);
 		
@@ -385,7 +387,7 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		
 		if (this.cloudRegionImageBinding != -1)
 		{
-			ComputeShader.freeImageUnit(this.cloudRegionImageBinding);
+			BindingManager.freeImageUnit(this.cloudRegionImageBinding);
 			this.cloudRegionImageBinding = -1;
 		}
 	}

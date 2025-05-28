@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsErrorScreen;
 import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.BindingManager;
 import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
@@ -30,7 +31,7 @@ public abstract class MixinMinecraft
 		SimpleCloudsRenderer.getOptionalInstance().ifPresent(renderer -> {
 			renderer.fillReport(report);
 		});
-		ComputeShader.fillReport(report);
+		BindingManager.fillReport(report);
 	}
 
 	@Inject(method = "setInitialScreen", at = @At("HEAD"), cancellable = true)
