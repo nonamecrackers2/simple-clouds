@@ -19,6 +19,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
+import org.lwjgl.opengl.GL43;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -181,7 +182,7 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			BindingManager.freeImageUnit(this.cloudRegionImageBinding);
 		this.cloudRegionImageBinding = BindingManager.getAvailableImageUnit();
 		BindingManager.useImageUnit(this.cloudRegionImageBinding);
-		GL42.glBindImageTexture(this.cloudRegionImageBinding, this.cloudRegionTextureId, 0, false, 0, GL15.GL_WRITE_ONLY, GL30.GL_RG32F);
+		GL42.glBindImageTexture(this.cloudRegionImageBinding, this.cloudRegionTextureId, 0, true, 0, GL15.GL_WRITE_ONLY, GL30.GL_RG32F);
 		this.regionTextureGenerator.setImageUnit("regionTexture", this.cloudRegionImageBinding);
 		
 		this.runRegionGenerator(0.0F, 0.0F, 1.0F);
