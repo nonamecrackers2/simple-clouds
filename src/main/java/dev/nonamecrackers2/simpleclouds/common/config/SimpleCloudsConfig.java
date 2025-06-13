@@ -132,15 +132,15 @@ public class SimpleCloudsConfig
 			
 			this.concurrentComputeDispatches = this.createValue(false, "concurrentComputeDispatches", false, "EXPERIMENTAL. Uses a slightly modified algorithm that removes sync calls between chunk generator compute dispatches at the cost of higher memory usage. May result in a performance boost");
 			
-			this.framesToGenerateMesh = this.createRangedIntValue(5, 1, 32, "framesToGenerateMesh", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts");
+			this.framesToGenerateMesh = this.createRangedIntValue(5, 1, 32, "framesToGenerateMesh", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of stuttery cloud movement");
 			
-			this.testSidesThatAreOccluded = this.createValue(false, "testSidesThatAreOccluded", false, "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of some visual artifacts");
+			this.testSidesThatAreOccluded = this.createValue(false, "testSidesThatAreOccluded", false, "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of visual issues with shadows and storm fog");
 			
-			this.renderStormFog = this.createValue(true, "renderStormFog", false, "Specifies if the fog beneath storm clouds should appear or not. Disabling can improve performance");
+			this.renderStormFog = this.createValue(true, "renderStormFog", false, "Specifies if 'rain' beneath storm clouds should appear or not. Disabling can improve performance, especially when in VR");
 			
-			this.levelOfDetail = this.createEnumValue(LevelOfDetailOptions.HIGH, "levelOfDetail", false, "Specifies the quality of the level of detail");
+			this.levelOfDetail = this.createEnumValue(LevelOfDetailOptions.HIGH, "levelOfDetail", false, "Specifies the quality of the level of detail. A lower setting makes clouds lower quality faster");
 			
-			this.frustumCulling = this.createValue(true, "frustumCulling", false, "Culls cloud chunks not visible to the player. Disable if facing noticeable artifacts with high cloud mesh generate times");
+			this.frustumCulling = this.createValue(true, "frustumCulling", false, "Culls cloud chunks not visible to the player. Generally should not be disabled, but can fix visual issues when looking around fast with higher frames per mesh generation values");
 			
 			this.stormFogLightningFlashes = this.createValue(true, "stormFogLightningFlashes", false, "Toggles lightning flashes that can be seen in storm fog. Disabling can lead to potential performance gains when lightning spawns");
 			

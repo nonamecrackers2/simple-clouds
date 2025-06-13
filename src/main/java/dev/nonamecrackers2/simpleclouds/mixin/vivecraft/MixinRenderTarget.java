@@ -1,11 +1,13 @@
 package dev.nonamecrackers2.simpleclouds.mixin.vivecraft;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 
+@Pseudo
 @Mixin(value = RenderTarget.class, priority = 1001)
 public class MixinRenderTarget
 {
