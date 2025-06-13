@@ -21,7 +21,10 @@
 		"MixinFrustumAccessor",
 		"MixinPostPass",
 		"MixinRenderTargetAccessor",
-		"MixinUniform"
+		"MixinUniform",
+		"vivecraft.MixinVRRenderer",
+		"vivecraft.MixinMinecraftVRMixin",
+		"vivecraft.MixinRenderTarget"
 	],
 	"minVersion": "0.8"
 }

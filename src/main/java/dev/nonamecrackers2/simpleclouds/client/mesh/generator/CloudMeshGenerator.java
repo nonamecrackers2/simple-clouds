@@ -631,7 +631,7 @@ public abstract class CloudMeshGenerator
 				int byteOffset = byteOffsetPerChunk.apply(chunk);
 				if (byteOffset + bytesToCopy > copyBufferSizeBytes) // TODO: Account for this overflow using mesh gen status
 				{
-					//TODO: Make sure this uses multiples of the size of a single element?
+					//TODO: Make sure this uses multiples of the size of a single element to avoid cutting off a single element
 					bytesToCopy = copyBufferSizeBytes - byteOffset;
 					if (bytesToCopy <= 0)
 						continue;
@@ -951,22 +951,6 @@ public abstract class CloudMeshGenerator
 			if (!this.useFixedMeshDataSectionSize)
 				GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
 		}
-	}
-	
-	@Deprecated
-	protected void clearChunk(CloudMeshGenerator.ChunkGenTask task)
-	{
-		Consumer<String> clear = countPerChunkBufferName -> 
-		{
-			//Clear count. This will cause the given chunk to not render in the render pass
-			//TODO: Instead of modifying this make the copy func ignore this
-			this.shader.getShaderStorageBuffer(countPerChunkBufferName).writeData(buffer -> {
-				buffer.putInt(task.index() * 4, 0);
-			}, task.index() * 4 + 4, false);
-		};
-		clear.accept(SIDES_PER_CHUNK_NAME);
-		if (this.transparencyEnabled())
-			clear.accept(TRANSPARENT_CUBES_PER_CHUNK_NAME);
 	}
 	
 	public void forRenderableMeshChunks(@Nullable Frustum frustum, Function<MeshChunk, MeshChunk.BufferSet> bufferSetFunction, BiConsumer<MeshChunk, MeshChunk.BufferSet> function)

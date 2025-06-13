@@ -19,4 +19,7 @@ public interface MixinPostChain
 	
 	@Accessor("customRenderTargets")
 	Map<String, RenderTarget> simpleclouds$getCustomRenderTargets();
+	
+	@Accessor("screenTarget")
+	public RenderTarget simpleclouds$getScreenTarget();
 }

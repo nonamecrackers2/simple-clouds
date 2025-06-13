@@ -18,6 +18,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.material.FogType;
+import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
 public class DefaultPipeline implements CloudsRenderPipeline
 {
@@ -35,7 +36,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 		float cloudR = (float)cloudCol[0];
 		float cloudG = (float)cloudCol[1];
 		float cloudB = (float)cloudCol[2];
-
+		
 		if (SimpleCloudsConfig.CLIENT.atmosphericClouds.get())
 		{
 			p.push("atmospheric_clouds");
@@ -43,7 +44,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 			mc.getMainRenderTarget().bindWrite(false);
 			p.pop();
 		}
-	
+		
 		// Clouds
 		
 		p.push("clouds");
@@ -128,7 +129,7 @@ public class DefaultPipeline implements CloudsRenderPipeline
 		}
 		
 		// Set the frame buffer back to the main one so everything else can render normally
-		mc.getMainRenderTarget().bindWrite(false);
+		mc.getMainRenderTarget().bindWrite(CompatHelper.isVrActive());
 	}
 	
 	@Override

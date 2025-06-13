@@ -55,7 +55,7 @@ public record CloudType(ResourceLocation id, WeatherType weatherType, float stor
 		float storminess = getOptionalRangedParam(object, "storminess", 0.0F, 0.0F, CloudInfo.STORMINESS_MAX);
 		float stormStart = getOptionalRangedParam(object, "storm_start", 16.0F, 0.0F, CloudInfo.STORM_START_MAX);
 		float stormFadeDistance = getOptionalRangedParam(object, "storm_fade_distance", 32.0F, 0.0F, CloudInfo.STORM_FADE_DISTANCE_MAX);
-		float transparencyFade = getOptionalRangedParam(object, "transparency_fade", 0.0F, 0.0F, CloudInfo.TRANSPARENCY_FADE_MAX); //TODO: Add to cloud previewer screen
+		float transparencyFade = getOptionalRangedParam(object, "transparency_fade", 0.0F, 0.0F, CloudInfo.TRANSPARENCY_FADE_MAX);
 		
 		return new CloudType(id, weatherType, storminess, stormStart, stormFadeDistance, transparencyFade, settings);
 	}

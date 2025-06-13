@@ -71,6 +71,8 @@ public class SimpleCloudsConfig
 		//Distant Horizons
 		public final ForgeConfigSpec.ConfigValue<Boolean> distantShadows;
 		public final ForgeConfigSpec.ConfigValue<Integer> shadowDistance;
+		//Vivecraft
+		public final ForgeConfigSpec.ConfigValue<Boolean> showVivecraftNotice;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder)
 		{
@@ -171,6 +173,8 @@ public class SimpleCloudsConfig
 			this.shadowDistance = this.createRangedIntValue(5000, 500, 15000, "shadowDistance", false, "Specifies the distance shadows can render");
 			
 			builder.pop();
+			
+			this.showVivecraftNotice = this.createValue(true, "showVivecraftNotice", false, "Shows the Vivecraft notice on startup");
 		}
 	}
 	

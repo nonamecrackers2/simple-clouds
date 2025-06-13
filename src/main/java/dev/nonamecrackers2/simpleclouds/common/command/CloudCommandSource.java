@@ -29,7 +29,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 
-//TODO: A command to specify removal of a certain cloud region: regions above the player?
 public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 {
 	CloudCommandSource<ServerLevel, ServerCloudManager> SERVER = new CloudCommandSource<>()

@@ -32,7 +32,6 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraftforge.common.MinecraftForge;
 
-//TODO: Make the distance close thunder sounds much lower
 public abstract class CloudManager<T extends Level> implements CloudGetter, ScAPICloudManager
 {
 	public static final int CLOUD_HEIGHT_MAX = 2048;

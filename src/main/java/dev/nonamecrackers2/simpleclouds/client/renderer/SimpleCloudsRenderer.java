@@ -48,6 +48,7 @@ import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.api.client.event.ModifyCloudRenderDistanceEvent;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
+import dev.nonamecrackers2.simpleclouds.client.compat.SimpleCloudsCompatHelper;
 import dev.nonamecrackers2.simpleclouds.client.event.impl.DetermineCloudRenderPipelineEvent;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.CloudRenderTarget;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.ShadowMapBuffer;
@@ -102,8 +103,6 @@ import net.minecraftforge.fml.StartupMessageManager;
 import net.minecraftforge.fml.loading.ImmediateWindowHandler;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
-//TODO: Latest snapshot: use datapack cloud height + simple clouds config
-//TODO: damage tilt causes weird culling issues?
 public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/SimpleCloudsRenderer");
@@ -135,6 +134,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable RenderTarget cloudTarget;
 	private @Nullable WeightedBlendingTarget cloudTransparencyTarget;
 	private @Nullable RenderTarget stormFogTarget;
+	private int stormFogResolutionDivisor = 4;
 	private @Nullable RenderTarget blurTarget;
 	private final Map<PostChain, Pair<Float, Float>> postChains = Maps.newHashMap();
 	private @Nullable PostChain finalComposite;
@@ -298,8 +298,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		// --- Check OpenGL version ---
 		
-		ArtifactVersion openGlVersion = new DefaultArtifactVersion(ImmediateWindowHandler.getGLVersion());
-		if (this.openGlVersion == null && openGlVersion.compareTo(REQUIRED_OPENGL_VERSION) < 0)
+		ArtifactVersion openGlVersion = this.openGlVersion;
+		if (openGlVersion == null)
+			openGlVersion = new DefaultArtifactVersion(ImmediateWindowHandler.getGLVersion());
+		if (openGlVersion.compareTo(REQUIRED_OPENGL_VERSION) < 0)
 		{
 			LOGGER.error("Simple Clouds renderer could not initialize. OpenGL version is {}, minimum required is {}", openGlVersion, REQUIRED_OPENGL_VERSION);
 			this.initialInitializationResult = RendererInitializeResult.builder().errorOpenGL().build();
@@ -321,24 +323,33 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		boolean highPrecisionDepth = SimpleCloudsMod.dhLoaded();
 		
+		RenderTarget main = SimpleCloudsCompatHelper.getMainRenderTarget();
+		if (main == null)
+		{
+			this.initialInitializationResult = RendererInitializeResult.builder().errorUnknown(new NullPointerException("Main framebuffer is null"), "Simple Clouds Renderer").build();
+			return;
+		}
+		
+		
 		if (this.cloudTarget != null)
 			this.cloudTarget.destroyBuffers();
-		this.cloudTarget = new CloudRenderTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), Minecraft.ON_OSX, highPrecisionDepth);
+		this.cloudTarget = new CloudRenderTarget(main.width, main.height, Minecraft.ON_OSX, highPrecisionDepth);
 		this.cloudTarget.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 		
 		if (this.cloudTransparencyTarget != null)
 			this.cloudTransparencyTarget.destroyBuffers();
-		this.cloudTransparencyTarget = new WeightedBlendingTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), Minecraft.ON_OSX, highPrecisionDepth);
+		this.cloudTransparencyTarget = new WeightedBlendingTarget(main.width, main.height, Minecraft.ON_OSX, highPrecisionDepth);
 		
+		this.stormFogResolutionDivisor = SimpleCloudsCompatHelper.getStormFogResolutionDivisor();
 		if (this.stormFogTarget != null)
 			this.stormFogTarget.destroyBuffers();
-		this.stormFogTarget = new TextureTarget(this.mc.getWindow().getWidth() / 4, this.mc.getWindow().getHeight() / 4, false, Minecraft.ON_OSX);
+		this.stormFogTarget = new TextureTarget(main.width / this.stormFogResolutionDivisor, main.height / this.stormFogResolutionDivisor, false, Minecraft.ON_OSX);
 		this.stormFogTarget.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 		this.stormFogTarget.setFilterMode(GL11.GL_LINEAR);
 		
 		if (this.blurTarget != null)
 			this.blurTarget.destroyBuffers();
-		this.blurTarget = new TextureTarget(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight(), false, Minecraft.ON_OSX);
+		this.blurTarget = new TextureTarget(main.width, main.height, false, Minecraft.ON_OSX);
 		this.blurTarget.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 		this.blurTarget.setFilterMode(GL11.GL_LINEAR);
 		
@@ -390,7 +401,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.lightningBoltPositions = BindingManager.createSSBO(GL15.GL_DYNAMIC_DRAW);
 		this.lightningBoltPositions.allocateBuffer(MAX_LIGHTNING_BOLTS * BYTES_PER_LIGHTNING_BOLT);
 		
-		this.stormPostProcessing = this.createPostChain(manager, STORM_POST_PROCESSING_LOC, this.stormFogTarget, 0.25F, 0.25F, pass -> 
+		this.stormPostProcessing = this.createPostChain(manager, STORM_POST_PROCESSING_LOC, this.stormFogTarget, 1.0F, 1.0F, pass -> 
 		{
 			EffectInstance effect = pass.getEffect();
 			effect.setSampler("ShadowMap", () -> this.stormFogShadowMap.getDepthTexId());
@@ -402,14 +413,14 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.blurPostProcessing = this.createPostChain(manager, BLUR_POST_PROCESSING_LOC, this.blurTarget, 1.0F, 1.0F);
 		this.blurPostProcessing.getTempTarget("swap").setFilterMode(GL11.GL_LINEAR);
 		
-		this.screenSpaceWorldFog = this.createPostChain(manager, SCREEN_SPACE_WORLD_FOG_LOC, this.mc.getMainRenderTarget(), 1.0F, 1.0F, pass -> 
+		this.screenSpaceWorldFog = this.createPostChain(manager, SCREEN_SPACE_WORLD_FOG_LOC, main, 1.0F, 1.0F, pass -> 
 		{
 			EffectInstance effect = pass.getEffect();
 			effect.setSampler("StormFogSampler", () -> this.blurTarget.getColorTextureId());
 			effect.setSampler("CloudDepthSampler", () -> this.cloudTarget.getDepthTextureId());
 		});
 		
-		this.finalComposite = this.createPostChain(manager, this.settings.useTransparency() ? FINAL_COMPOSITE_LOC : FINAL_COMPOSITE_NO_TRANSPARENCY_LOC, this.mc.getMainRenderTarget(), 1.0F, 1.0F, pass -> 
+		this.finalComposite = this.createPostChain(manager, this.settings.useTransparency() ? FINAL_COMPOSITE_LOC : FINAL_COMPOSITE_NO_TRANSPARENCY_LOC, main, 1.0F, 1.0F, pass -> 
 		{
 			EffectInstance effect = pass.getEffect();
 			if (this.settings.useTransparency())
@@ -423,7 +434,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.shadowMap.isPresent())
 		{
 			ShadowMapBuffer map = this.shadowMap.get();
-			this.cloudShadows = this.createPostChain(manager, CLOUD_SHADOWS_LOC, this.mc.getMainRenderTarget(), 1.0F, 1.0F, pass -> 
+			this.cloudShadows = this.createPostChain(manager, CLOUD_SHADOWS_LOC, main, 1.0F, 1.0F, pass -> 
 			{
 				EffectInstance effect = pass.getEffect();
 				effect.setSampler("ShadowMap", () -> this.shadowMap.get().getDepthTexId());
@@ -550,7 +561,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		try
 		{
 			PostChain chain = new PostChain(this.mc.getTextureManager(), manager, target, loc);
-			chain.resize((int)((float)this.mc.getWindow().getWidth() * widthFactor), (int)((float)this.mc.getWindow().getHeight() * heightFactor));
+			chain.resize((int)((float)target.width * widthFactor), (int)((float)target.height * heightFactor));
 			for (PostPass pass : ((MixinPostChain)chain).simpleclouds$getPostPasses())
 				passConsumer.accept(pass);
 			this.postChains.put(chain, Pair.of(widthFactor, heightFactor));
@@ -568,31 +579,46 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		return null;
 	}
 	
-	public void onResize(int width, int height)
+	public void onMainWindowResize(int width, int height)
 	{
+		this.atmoshpericClouds.onResize(width, height);
+		
+		RenderTarget main = SimpleCloudsCompatHelper.getMainRenderTarget();
+		if (main == null)
+			return;
+		
+		width = main.width;
+		height = main.height;
+		
 		if (this.cloudTarget != null)
 			this.cloudTarget.resize(width, height, Minecraft.ON_OSX);
+		
 		if (this.cloudTransparencyTarget != null)
 			this.cloudTransparencyTarget.resize(width, height, Minecraft.ON_OSX);
+		
+		this.stormFogResolutionDivisor = SimpleCloudsCompatHelper.getStormFogResolutionDivisor();
+		
 		if (this.stormFogTarget != null)
 		{
-			this.stormFogTarget.resize(width / 4, height / 4, Minecraft.ON_OSX);
+			this.stormFogTarget.resize(width / this.stormFogResolutionDivisor, height / this.stormFogResolutionDivisor, Minecraft.ON_OSX);
 			this.stormFogTarget.setFilterMode(GL11.GL_LINEAR);
 		}
+		
 		if (this.blurTarget != null)
 		{
 			this.blurTarget.resize(width, height, Minecraft.ON_OSX);
 			this.blurTarget.setFilterMode(GL11.GL_LINEAR);
 		}
+		
 		for (var entry : this.postChains.entrySet())
 		{
 			PostChain chain = entry.getKey();
-			chain.resize((int)((float)this.mc.getWindow().getWidth() * entry.getValue().getLeft()), (int)((float)this.mc.getWindow().getHeight() * entry.getValue().getRight()));
+			RenderTarget chainTarget = ((MixinPostChain)chain).simpleclouds$getScreenTarget(); //TODO: Remove width/height multipliers
+			chain.resize((int)((float)chainTarget.width * entry.getValue().getLeft()), (int)((float)chainTarget.height * entry.getValue().getRight()));
 		}
+		
 		if (this.blurPostProcessing != null)
 			this.blurPostProcessing.getTempTarget("swap").setFilterMode(GL11.GL_LINEAR);
-		
-		this.atmoshpericClouds.onResize(width, height);
 	}
 		
 	public void shutdown()
@@ -961,6 +987,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void renderBeforeLevel(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
+		if (!SimpleCloudsCompatHelper.renderThisPass())
+			return;
+		
 		CloudsRenderPipeline pipeline = CompatHelper.areShadersRunning() ? CloudsRenderPipeline.SHADER_SUPPORT : CloudsRenderPipeline.DEFAULT;
 		DetermineCloudRenderPipelineEvent pipelineEvent = new DetermineCloudRenderPipelineEvent(pipeline);
 		MinecraftForge.EVENT_BUS.post(pipelineEvent);
@@ -1006,13 +1035,13 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.cullFrustum = new Frustum(stack.last().pose(), projMat);
 		float scale = (float)SimpleCloudsConstants.CLOUD_SCALE;
 		double originX = camX / scale;
-		double originY = (camY - (double)this.cloudManager.getCloudHeight()) / scale; //TODO: Culling is not correct for cloud types with tall height offsets
+		double originY = (camY - (double)this.cloudManager.getCloudHeight()) / scale;
 		double originZ = camZ / scale;
 		this.cullFrustum.prepare(originX, originY, originZ);
 		
 		ProfilerFiller p = this.mc.getProfiler();
 		
-		if (SimpleCloudsConfig.CLIENT.generateMesh.get())
+		if (SimpleCloudsConfig.CLIENT.generateMesh.get() && SimpleCloudsCompatHelper.isPrimaryPass())
 		{
 			p.push("mesh_generation");
 			this.prepareMeshGenerator(partialTick);
@@ -1020,7 +1049,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			p.pop();
 		}
 		
-		if (SimpleCloudsConfig.CLIENT.renderClouds.get())
+		if (SimpleCloudsConfig.CLIENT.renderClouds.get() && SimpleCloudsCompatHelper.isPrimaryPass())
 		{
 			p.push("shadow_map");
 			this.renderShadowMaps(camX, camY, camZ, partialTick);
@@ -1033,6 +1062,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void renderAfterSky(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
+		if (!SimpleCloudsCompatHelper.renderThisPass())
+			return;
+		
 		this.mc.getProfiler().push("simple_clouds_after_sky");
 		this.getRenderPipeline().afterSky(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
@@ -1040,6 +1072,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void renderBeforeWeather(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
+		if (!SimpleCloudsCompatHelper.renderThisPass())
+			return;
+		
 		this.mc.getProfiler().push("simple_clouds_before_weather");
 		this.getRenderPipeline().beforeWeather(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
@@ -1047,6 +1082,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void renderAfterLevel(PoseStack stack, Matrix4f projMat, float partialTick, double camX, double camY, double camZ)
 	{
+		if (!SimpleCloudsCompatHelper.renderThisPass())
+			return;
+		
 		this.mc.getProfiler().push("simple_clouds");
 		this.getRenderPipeline().afterLevel(this.mc, this, stack, projMat, partialTick, camX, camY, camZ, this.cullFrustum);
 		this.mc.getProfiler().pop();
@@ -1260,7 +1298,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this._copyDepthSafe(this.mc.getMainRenderTarget(), this.cloudTarget);
 	}
 	
-	public void copyDepthFromMainToClouds() //TODO: Ensure shader support is still working with new transparency
+	public void copyDepthFromMainToClouds()
 	{
 		this._copyDepthSafe(this.cloudTarget, this.mc.getMainRenderTarget());
 	}

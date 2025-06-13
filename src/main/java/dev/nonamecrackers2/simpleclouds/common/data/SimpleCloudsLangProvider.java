@@ -91,10 +91,13 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.error_screen.description", "An error occured while initializing Simple Clouds.");
 		this.add("gui.simpleclouds.error_screen.no_errors", "There are no errors? What?");
 		this.add("gui.simpleclouds.error.recommendations", "Please try updating your graphics drivers. If the issue persists, please make a bug report on the Simple Clouds repository, linked below. Make sure to include the crash report with your issue.");
-		this.add("gui.simpleclouds.error.opengl", "Your graphics processer does not support Simple Clouds.\n\nSimple Clouds only supports GPUs that have OpenGL 4.3+ capabilities. Please try updating your graphics drivers.\n\nIf you are a Mac user, it is likely your device only supports OpenGL 4.1. Check the OpenGL version to see if this is the case. Unfortunately, this is a limitation that Simple Clouds cannot work around.");
+		this.add("gui.simpleclouds.error.opengl", "The currently selected display adapter does not support Simple Clouds.\n\nSimple Clouds only supports display adapters that have OpenGL 4.3+ capabilities.\n\nPlease make sure:\n1. Your drivers are up to date\n2. You are not using integrated graphics instead of a discrete GPU to run Minecraft.\n\nIf you are a MacOS user, Simple Clouds IS NOT SUPPORTED as the OS is stuck on OpenGL 4.1. Unfortunately, this is a limitation that Simple Clouds cannot work around.");
 		this.add("gui.simpleclouds.error.unknown", "Please make a bug report on the mod's GitHub repository, linked below. Make sure to include the crash report and latest.log file with your issue.");
 		this.add("gui.simpleclouds.error.couldNotLoadMeshScript", "Failed to load the mesh compute shader. Please make a bug report on the mod's GitHub repository, linked below. Make sure to include the crash report and latest.log file with your issue.\n\nTo developers: If you are modifying the cube_mesh.comp file using a resource pack and have made an error, this message will appear on start up. Please see the latest.log for more details.");
 		this.add("gui.simpleclouds.error_screen.button.crash_report", "Crash Report");
 		this.add("gui.simpleclouds.error_screen.multiple", "More than one error has occured. Please see the 'crash-reports' folder for more information.");
+		this.add("gui.simpleclouds.notice.title", "Simple Clouds Notice");
+		this.add("gui.simpleclouds.notice.close.title", "Close");
+		this.add("gui.simpleclouds.notice.vivecraft", "Vivecraft support is experimental. Please expect lower framerates, instability, and glitches/visual artifacts. Report bugs and issues on the official GitHub issue tracker.");
 	}
 }

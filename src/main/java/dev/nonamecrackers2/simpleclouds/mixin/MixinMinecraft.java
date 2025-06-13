@@ -9,11 +9,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import dev.nonamecrackers2.simpleclouds.client.compat.SimpleCloudsCompatHelper;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsErrorScreen;
+import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsNoticeScreen;
 import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.shader.buffer.BindingManager;
-import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManagerHolder;
@@ -21,9 +22,10 @@ import net.minecraft.CrashReport;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraftforge.client.extensions.IForgeMinecraft;
 
 @Mixin(Minecraft.class)
-public abstract class MixinMinecraft
+public abstract class MixinMinecraft implements IForgeMinecraft
 {
 	@Inject(method = "fillReport", at = @At("HEAD"))
 	public void simpleclouds$appendCrashReportDetails_fillReport(CrashReport report, CallbackInfoReturnable<CrashReport> ci)
@@ -37,13 +39,20 @@ public abstract class MixinMinecraft
 	@Inject(method = "setInitialScreen", at = @At("HEAD"), cancellable = true)
 	public void simpleclouds$beforeMainTitleScreen_setInitialScreen(CallbackInfo ci)
 	{
+		SimpleCloudsNoticeScreen notice = SimpleCloudsCompatHelper.createNotice();
+		if (notice != null)
+		{
+			this.pushGuiLayer(notice);
+			ci.cancel();
+		}
+		
 		var renderer = SimpleCloudsRenderer.getOptionalInstance().orElse(null);
 		if (renderer != null)
 		{
 			RendererInitializeResult result = renderer.getInitialInitializationResult();
 			if (result != null && result.getState() == RendererInitializeResult.State.ERROR)
 			{
-				this.setScreen(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult()));
+				this.pushGuiLayer(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult()));
 				ci.cancel();
 			}
 		}

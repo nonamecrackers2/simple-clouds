@@ -12,6 +12,7 @@ import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.cloud.spawning.ClientSideCloudSpawningManager;
 import dev.nonamecrackers2.simpleclouds.client.command.ClientCloudCommandHelper;
+import dev.nonamecrackers2.simpleclouds.client.compat.SimpleCloudsCompatHelper;
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
@@ -55,6 +56,7 @@ import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;
 import nonamecrackers2.crackerslib.client.gui.ConfigHomeScreen;
 import nonamecrackers2.crackerslib.client.gui.title.ImageTitle;
 import nonamecrackers2.crackerslib.common.command.ConfigCommandBuilder;
+import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 import nonamecrackers2.crackerslib.common.config.preset.ConfigPreset;
 import nonamecrackers2.crackerslib.common.config.preset.RegisterConfigPresetsEvent;
 
@@ -75,7 +77,7 @@ public class SimpleCloudsClientEvents
 		event.registerReloadListener((ResourceManagerReloadListener)(m -> {
 			ComputeShader.destroyCompiledShaders();
 		}));
-		event.registerReloadListener(SimpleCloudsRenderer.getInstance());
+		event.registerReloadListener(SimpleCloudsCompatHelper.getRendererReloadListener(SimpleCloudsRenderer.getInstance()));
 		CloudPreviewerScreen.addCloudMeshListener(event);
 	}
 	
@@ -137,7 +139,7 @@ public class SimpleCloudsClientEvents
 	{
 		if (event.getModId().equals(SimpleCloudsMod.MODID) && event.getType() == ModConfig.Type.CLIENT)
 		{
-			if (event.isValue(SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup))
+			if (event.isValue(SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup) || event.isValue(SimpleCloudsConfig.CLIENT.showVivecraftNotice))
 				event.setCanceled(true);
 			if (ClientCloudManager.isAvailableServerSide())
 			{

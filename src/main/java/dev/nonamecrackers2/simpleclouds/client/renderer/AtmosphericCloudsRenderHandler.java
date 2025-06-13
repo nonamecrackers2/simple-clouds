@@ -14,10 +14,12 @@ import org.joml.Vector2f;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.client.compat.SimpleCloudsCompatHelper;
 import dev.nonamecrackers2.simpleclouds.mixin.MixinPostChain;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -36,7 +38,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraftforge.common.Tags;
 
-//TODO: Make transform effect camera origin not world origin
 public class AtmosphericCloudsRenderHandler
 {
 	private static final ResourceLocation SHADER_LOC = SimpleCloudsMod.id("shaders/post/atmospheric_clouds.json");
@@ -175,10 +176,16 @@ public class AtmosphericCloudsRenderHandler
 		
 		try
 		{
-			this.postProcessingShader = new PostChain(this.mc.getTextureManager(), manager, this.mc.getMainRenderTarget(), SHADER_LOC);
+			RenderTarget main = SimpleCloudsCompatHelper.getMainRenderTarget();
+			if (main == null)
+			{
+				LOGGER.warn("Main framebufer is null");
+				return;
+			}
+			this.postProcessingShader = new PostChain(this.mc.getTextureManager(), manager, main, SHADER_LOC);
 			if (((MixinPostChain)this.postProcessingShader).simpleclouds$getPostPasses().size() != 2)
 				throw new IllegalArgumentException("Expected two post passes in shader");
-			this.postProcessingShader.resize(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight());
+			this.postProcessingShader.resize(main.width, main.height);
 		}
 		catch (JsonSyntaxException e)
 		{
@@ -194,8 +201,15 @@ public class AtmosphericCloudsRenderHandler
 	
 	public void onResize(int width, int height)
 	{
+		RenderTarget main = SimpleCloudsCompatHelper.getMainRenderTarget();
+		if (main == null)
+			return;
+		
+		width = main.width;
+		height = main.height;
+		
 		if (this.postProcessingShader != null)
-			this.postProcessingShader.resize(this.mc.getWindow().getWidth(), this.mc.getWindow().getHeight());
+			this.postProcessingShader.resize(width, height);
 	}
 	
 	public void close()
