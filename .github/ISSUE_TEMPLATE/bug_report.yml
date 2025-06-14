@@ -66,6 +66,12 @@ body:
       label: Drivers Version
       description: Please include the version of your graphics drivers
       placeholder: e.x. 31.0.15.3713
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating System
+      description: Please include the name of the operating system and known version
+      placeholder: e.x. Windows 11, 24H2
   - type: textarea
     id: description
     attributes:
@@ -103,7 +109,7 @@ body:
     id: mod-list
     attributes:
       label: Mod List
-      description: If applicable, include the list of mods that were enabled when the bug occurred, or NONE if there were no extras
+      description: If applicable, include the list of mods that were enabled when the bug occurred, or NONE if there were no extras. Alternatively, include a link to the modpack you are using, if you are using one, and provide details about any modifications made to the modpack.
       placeholder: List of mods
     validations:
       required: true
