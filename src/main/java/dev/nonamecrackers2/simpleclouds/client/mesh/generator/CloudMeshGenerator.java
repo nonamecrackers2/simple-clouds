@@ -1071,8 +1071,8 @@ public abstract class CloudMeshGenerator
 		private int meshGenInterval = 5;
 		private boolean useTransparency = true;
 		private boolean fixedMeshDataSectionSize;
-		private float fadeStart;
-		private float fadeEnd;
+		private float fadeStart = 0.5F;
+		private float fadeEnd = 1.0F;
 		private boolean testFacesFacingAway = false;
 		
 		private Builder() {}
