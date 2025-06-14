@@ -23,6 +23,8 @@ public class SimpleCloudsBeforeDhRenderHandler extends DhApiBeforeApplyShaderRen
 		Minecraft mc = Minecraft.getInstance();
 		Vec3 camPos = mc.gameRenderer.getMainCamera().getPosition();
 		
+		SimpleCloudsDhCompatHandler._markPassComplete(false);
+		
 		DhApiRenderParam params = event.value;
 		Matrix4f projMat = new Matrix4f().setTransposed(params.dhProjectionMatrix.getValuesAsArray());
 		Matrix4f modelView = new Matrix4f().setTransposed(params.mcModelViewMatrix.getValuesAsArray());

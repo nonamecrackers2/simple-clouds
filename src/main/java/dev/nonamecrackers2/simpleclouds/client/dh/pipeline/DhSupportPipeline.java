@@ -14,6 +14,7 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexSorting;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.FrameBufferUtils;
 import dev.nonamecrackers2.simpleclouds.client.framebuffer.WeightedBlendingTarget;

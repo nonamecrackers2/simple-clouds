@@ -4,7 +4,9 @@ import javax.annotation.Nullable;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 
+import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsNoticeScreen;
+import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.vivecraft.SimpleCloudsReloadVivecraftCompatWrapper;
 import dev.nonamecrackers2.simpleclouds.client.vivecraft.SimpleCloudsVivecraftCompatHandler;
@@ -64,5 +66,13 @@ public class SimpleCloudsCompatHelper
 			return new SimpleCloudsNoticeScreen(Component.translatable("gui.simpleclouds.notice.vivecraft"));
 		}
 		return null;
+	}
+	
+	public static @Nullable RendererInitializeResult findCompatErrors()
+	{
+		RendererInitializeResult.Builder result = RendererInitializeResult.builder();
+		if (CompatHelper.isOculusLoaded() && SimpleCloudsMod.dhLoaded())
+			result.addError(null, "Simple Clouds Notice", Component.translatable("gui.simpleclouds.error.compat.dh_oculus"));
+		return result.build();
 	}
 }

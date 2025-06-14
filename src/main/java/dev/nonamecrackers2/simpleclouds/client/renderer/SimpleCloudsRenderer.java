@@ -309,6 +309,14 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			return;
 		}
 		
+		RendererInitializeResult compatError = SimpleCloudsCompatHelper.findCompatErrors();
+		if (compatError.getState() == RendererInitializeResult.State.ERROR)
+		{
+			LOGGER.error("Simple Clouds renderer could not initialize due to compat error(s): {}", compatError.getErrors().stream().map(e -> e.text().getString()).toList());
+			this.initialInitializationResult = compatError;
+			return;
+		}
+		
 		StartupMessageManager.addModMessage("Initializing Simple Clouds renderer");
 		
 		LOGGER.debug("OpenGL {}", openGlVersion);

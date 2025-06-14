@@ -28,6 +28,8 @@ public class SimpleCloudsDhCompatHandler
 	private static Matrix4f dhModelViewMat;
 	private static int dhFramebufferId;
 	
+	private static boolean passComplete;
+	
 	public static void _updateCachedDhState(Matrix4f projMat, Matrix4f modelViewMat)
 	{
 		dhProjMat = projMat;
@@ -37,6 +39,16 @@ public class SimpleCloudsDhCompatHandler
 	public static void _updateDhFramebufferId(int id)
 	{
 		dhFramebufferId = id;
+	}
+	
+	public static void _markPassComplete(boolean flag)
+	{
+		passComplete = flag;
+	}
+	
+	public static boolean _isPassComplete()
+	{
+		return passComplete;
 	}
 	
 	public static Matrix4f _getDhProjMat()

@@ -17,6 +17,9 @@ public class SimpleCloudsAfterDhRenderHandler extends DhApiAfterRenderEvent
 	@Override
 	public void afterRender(DhApiEventParam<Void> event)
 	{
+		if (SimpleCloudsDhCompatHandler._isPassComplete())
+			return;
+		
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
 		CloudsRenderPipeline pipeline = renderer.getRenderPipeline();
 		Minecraft mc = Minecraft.getInstance();
@@ -36,5 +39,6 @@ public class SimpleCloudsAfterDhRenderHandler extends DhApiAfterRenderEvent
 		
 		SimpleCloudsDhCompatHandler._updateDhFramebufferId(0);
 		SimpleCloudsDhCompatHandler._updateCachedDhState(null, null);
+		SimpleCloudsDhCompatHandler._markPassComplete(true);
 	}
 }
