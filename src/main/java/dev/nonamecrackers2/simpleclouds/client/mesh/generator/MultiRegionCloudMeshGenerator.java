@@ -5,6 +5,7 @@ import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
@@ -63,9 +64,9 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	private boolean updateCloudTypes;
 	private int currentCloudFormationCount;
 	
-	protected MultiRegionCloudMeshGenerator(boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency, boolean fixedMeshDataSectionSize)
+	protected MultiRegionCloudMeshGenerator(boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, Supplier<Integer> meshGenIntervalCalculator, boolean useTransparency, boolean fixedMeshDataSectionSize)
 	{
-		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 0, fadeNearOrigin, shadedClouds, lodConfig, meshGenInterval, useTransparency, fixedMeshDataSectionSize);
+		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 0, fadeNearOrigin, shadedClouds, lodConfig, meshGenIntervalCalculator, useTransparency, fixedMeshDataSectionSize);
 	}
 	
 	public void setCloudGetter(CloudGetter getter)

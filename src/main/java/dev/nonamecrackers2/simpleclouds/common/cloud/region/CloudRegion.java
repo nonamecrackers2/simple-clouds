@@ -186,7 +186,7 @@ public class CloudRegion implements ScAPICloudRegion
 		if (this.tickCount < this.growTicks)
 			scale = (float)this.tickCount / (float)this.growTicks;
 		else
-			scale = 1.0F - (float)(this.tickCount - this.growTicks) / (float)this.existsForTicks;
+			scale = 1.0F - (float)(this.tickCount - this.growTicks) / (float)(this.existsForTicks - this.growTicks);
 		this.radius = this.initialRadius * scale;
 		
 		this.tickCount += isVisible ? 1 : 20;

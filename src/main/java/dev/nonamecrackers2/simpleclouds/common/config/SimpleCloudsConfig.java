@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.GenerationInterval;
 import dev.nonamecrackers2.simpleclouds.client.world.FogRenderMode;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
 import net.minecraft.resources.ResourceLocation;
@@ -63,6 +64,8 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Boolean> stormFogLightningFlashes;
 		public final ForgeConfigSpec.ConfigValue<Integer> transparencyRenderDistancePercentage;
 		public final ForgeConfigSpec.ConfigValue<Boolean> concurrentComputeDispatches;
+		public final ForgeConfigSpec.ConfigValue<GenerationInterval> generationInterval;
+		public final ForgeConfigSpec.ConfigValue<Integer> targetMeshGenFps;
 		//Cloud Visuals
 		public final ForgeConfigSpec.ConfigValue<Boolean> cubeNormals;
 		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds;
@@ -130,9 +133,17 @@ public class SimpleCloudsConfig
 					
 			builder.comment("Performance").push("performance");
 			
-			this.concurrentComputeDispatches = this.createValue(false, "concurrentComputeDispatches", false, "EXPERIMENTAL. Uses a slightly modified algorithm that removes sync calls between chunk generator compute dispatches at the cost of higher memory usage. May result in a performance boost");
+			builder.comment("Mesh Generation").push("mesh_generation");
+			
+			this.generationInterval = this.createEnumValue(GenerationInterval.TARGET_FPS, "generationInterval", false, "How the amount of frames used to generate the entire mesh is calculated. Static will use the 'Frames To Generate Mesh' option. Dynamic will calculate it automatically depending on your FPS. Target FPS will target a certain perceived framerate for mesh generation");
 			
 			this.framesToGenerateMesh = this.createRangedIntValue(5, 1, 32, "framesToGenerateMesh", false, "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of stuttery cloud movement");
+			
+			this.targetMeshGenFps = this.createRangedIntValue(30, 1, 1000, "targetMeshGenFps", false, "Used to set the target FPS with the 'Target FPS' option in 'Generation Interval'");
+			
+			builder.pop();
+			
+			this.concurrentComputeDispatches = this.createValue(false, "concurrentComputeDispatches", false, "EXPERIMENTAL. Uses a slightly modified algorithm that removes sync calls between chunk generator compute dispatches at the cost of higher memory usage. May result in a performance boost");
 			
 			this.testSidesThatAreOccluded = this.createValue(false, "testSidesThatAreOccluded", false, "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of visual issues with shadows and storm fog");
 			

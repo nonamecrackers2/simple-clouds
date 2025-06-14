@@ -270,7 +270,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.meshGenerator instanceof SingleRegionCloudMeshGenerator generator)
 			generator.setFadeDistances((float)SimpleCloudsConfig.CLIENT.singleModeFadeStartPercentage.get() / 100.0F, (float)SimpleCloudsConfig.CLIENT.singleModeFadeEndPercentage.get() / 100.0F);
 		this.meshGenerator.setTransparencyRenderDistance((float)SimpleCloudsConfig.CLIENT.transparencyRenderDistancePercentage.get() / 100.0F);
-		this.meshGenerator.setMeshGenInterval(SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get());
 		this.meshGenerator.setTestFacesFacingAway(SimpleCloudsConfig.CLIENT.testSidesThatAreOccluded.get());
 		if (this.mc.level != null)
 		{
@@ -503,7 +502,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 					.fadeNearOrigin(isAmbientMode)
 					.shadedClouds(shadedClouds)
 					.fixedMeshDataSectionSize(useFixedMeshDataSectionSize)
-					.meshGenInterval(SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get())
+					.meshGenInterval(SimpleCloudsRenderer::calculateMeshGenInterval)
 					.lodConfig(lod)
 					.useTransparency(useTransparency);
 			
@@ -1466,5 +1465,27 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		consumer.vertex(maxX, maxY, maxZ).color(r, g, b, a).endVertex();
 		consumer.vertex(minX, maxY, maxZ).color(r, g, b, a).endVertex();
 		consumer.vertex(minX, minY, maxZ).color(r, g, b, a).endVertex();
+	}
+	
+	private static int calculateMeshGenInterval()
+	{
+		int fps = Minecraft.getInstance().getFps();
+		switch (SimpleCloudsConfig.CLIENT.generationInterval.get())
+		{
+		case STATIC:
+		{
+			return SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
+		}
+		case DYNAMIC:
+		{
+			return Math.max(Mth.ceil((130.0F - (float)fps) / 30.0F) + 5, 1);
+		}
+		case TARGET_FPS:
+		{
+			return Math.max(Mth.ceil((float)fps / SimpleCloudsConfig.CLIENT.targetMeshGenFps.get()), 1);
+		}
+		default:
+			return 5;
+		}
 	}
 }

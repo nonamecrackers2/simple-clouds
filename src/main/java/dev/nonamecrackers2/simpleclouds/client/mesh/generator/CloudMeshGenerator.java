@@ -5,8 +5,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
@@ -98,7 +98,8 @@ public abstract class CloudMeshGenerator
 	protected @Nullable List<MeshChunk> chunks;
 	protected final List<CloudMeshGenerator.ChunkGenTask> completedGenTasks = Lists.newArrayList();
 	protected final Queue<CloudMeshGenerator.ChunkGenTask> chunkGenTasks = Queues.newArrayDeque();
-	protected int meshGenInterval;
+	protected final Supplier<Integer> meshGenIntervalCalculator;
+	protected int meshGenInterval = 1;
 	protected int tasksPerTick;
 	protected @Nullable ComputeShader shader;
 	
@@ -133,7 +134,7 @@ public abstract class CloudMeshGenerator
 	 * @param meshGenInterval
 	 * The frame interval at which the generate the cloud mesh
 	 */
-	public CloudMeshGenerator(ResourceLocation meshShaderLoc, int shaderType, boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency, boolean fixedMeshDataSectionSize)
+	public CloudMeshGenerator(ResourceLocation meshShaderLoc, int shaderType, boolean fadeNearOrigin, boolean shadedClouds, LevelOfDetailConfig lodConfig, Supplier<Integer> meshGenIntervalCalculator, boolean useTransparency, boolean fixedMeshDataSectionSize)
 	{
 		this.meshShaderLoc = meshShaderLoc;
 		this.shaderType = shaderType;
@@ -142,7 +143,7 @@ public abstract class CloudMeshGenerator
 		this.useFixedMeshDataSectionSize = fixedMeshDataSectionSize;
 		
 		this.lodConfig = lodConfig;
-		this.setMeshGenInterval(meshGenInterval);
+		this.meshGenIntervalCalculator = meshGenIntervalCalculator;
 		this.useTransparency = useTransparency;
 		
 		float maxRadius = this.getCloudAreaMaxRadius();
@@ -174,25 +175,6 @@ public abstract class CloudMeshGenerator
 	public LevelOfDetailConfig getLodConfig()
 	{
 		return this.lodConfig;
-	}
-	
-	/**
-	 * Sets the frame interval at which to generate the cloud mesh by when using
-	 * {@link CloudMeshGenerator#tick}.
-	 * <p><p>
-	 * Spreads out the amount of mesh gen compute dispatches
-	 * across the amount of frames specified by this interval evenly. This
-	 * decreases the load on the GPU and can improve performance at higher numbers,
-	 * at a cost of some stuttery-ness in the way the clouds update as it will take
-	 * longer for the entire mesh to generate.
-	 * 
-	 * @param interval
-	 */
-	public void setMeshGenInterval(int interval)
-	{
-		if (interval <= 0)
-			throw new IllegalArgumentException("Please input a mesh gen interval greater than 0");
-		this.meshGenInterval = interval;
 	}
 	
 	/**
@@ -321,6 +303,11 @@ public abstract class CloudMeshGenerator
 		if (this.chunks == null)
 			return 0;
 		return this.chunks.size();
+	}
+	
+	public int getMeshGenInterval()
+	{
+		return this.meshGenInterval;
 	}
 	
 	public void close()
@@ -598,6 +585,9 @@ public abstract class CloudMeshGenerator
 			this.completedGenTasks.clear(); //Clear the chunk gen tasks
 			
 			//Prepare the next batch of chunks to generate meshes for
+			this.meshGenInterval = this.meshGenIntervalCalculator.get();
+			if (this.meshGenInterval <= 0)
+				throw new RuntimeException("Mesh gen interval is <= 0");
 			this.tasksPerTick = this.prepareMeshGen(originX, originY, originZ, meshGenOffsetX, meshGenOffsetZ, frustum, this.meshGenInterval, partialTick);
 		}
 		else
@@ -1068,7 +1058,7 @@ public abstract class CloudMeshGenerator
 		private boolean fadeNearOrigin;
 		private boolean shadedClouds = true;
 		private LevelOfDetailConfig lodConfig = LevelOfDetailOptions.HIGH.getConfig();
-		private int meshGenInterval = 5;
+		private Supplier<Integer> meshGenIntervalCalculator = () -> 5;
 		private boolean useTransparency = true;
 		private boolean fixedMeshDataSectionSize;
 		private float fadeStart = 0.5F;
@@ -1093,7 +1083,13 @@ public abstract class CloudMeshGenerator
 		{
 			if (interval <= 0)
 				throw new IllegalArgumentException("Mesh gen interval must be greater than 0");
-			this.meshGenInterval = interval;
+			this.meshGenIntervalCalculator = () -> interval;
+			return this;
+		}
+		
+		public Builder meshGenInterval(Supplier<Integer> calculator)
+		{
+			this.meshGenIntervalCalculator = calculator;
 			return this;
 		}
 		
@@ -1142,12 +1138,12 @@ public abstract class CloudMeshGenerator
 		
 		public MultiRegionCloudMeshGenerator createMultiRegion()
 		{
-			return this.applyExtraSettings(new MultiRegionCloudMeshGenerator(this.fadeNearOrigin, this.shadedClouds, this.lodConfig, this.meshGenInterval, this.useTransparency, this.fixedMeshDataSectionSize));
+			return this.applyExtraSettings(new MultiRegionCloudMeshGenerator(this.fadeNearOrigin, this.shadedClouds, this.lodConfig, this.meshGenIntervalCalculator, this.useTransparency, this.fixedMeshDataSectionSize));
 		}
 		
 		public SingleRegionCloudMeshGenerator createSingleRegion(CloudInfo type)
 		{
-			return this.applyExtraSettings(new SingleRegionCloudMeshGenerator(this.shadedClouds, this.lodConfig, this.meshGenInterval, this.useTransparency, this.fixedMeshDataSectionSize, type));
+			return this.applyExtraSettings(new SingleRegionCloudMeshGenerator(this.shadedClouds, this.lodConfig, this.meshGenIntervalCalculator, this.useTransparency, this.fixedMeshDataSectionSize, type));
 		}
 	}
 }

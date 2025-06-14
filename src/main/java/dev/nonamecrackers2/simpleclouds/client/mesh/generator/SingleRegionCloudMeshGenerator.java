@@ -1,5 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.client.mesh.generator;
 
+import java.util.function.Supplier;
+
 import javax.annotation.Nullable;
 
 import org.lwjgl.opengl.GL15;
@@ -16,9 +18,9 @@ public final class SingleRegionCloudMeshGenerator extends CloudMeshGenerator
 	private CloudInfo type;
 	private boolean needsNoiseRefreshing;
 	
-	protected SingleRegionCloudMeshGenerator(boolean shadedClouds, LevelOfDetailConfig lodConfig, int meshGenInterval, boolean useTransparency, boolean fixedMeshDataSectionSize, CloudInfo type)
+	protected SingleRegionCloudMeshGenerator(boolean shadedClouds, LevelOfDetailConfig lodConfig, Supplier<Integer> meshGenIntervalCalculator, boolean useTransparency, boolean fixedMeshDataSectionSize, CloudInfo type)
 	{
-		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 1, false, shadedClouds, lodConfig, meshGenInterval, useTransparency, fixedMeshDataSectionSize);
+		super(CloudMeshGenerator.MAIN_CUBE_MESH_GENERATOR, 1, false, shadedClouds, lodConfig, meshGenIntervalCalculator, useTransparency, fixedMeshDataSectionSize);
 		this.setCloudType(type);
 		this.setFadeDistances(0.5F, 1.0F);
 	}

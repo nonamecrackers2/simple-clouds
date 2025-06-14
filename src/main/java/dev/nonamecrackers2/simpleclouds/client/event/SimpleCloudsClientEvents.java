@@ -17,6 +17,7 @@ import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
 import dev.nonamecrackers2.simpleclouds.client.mesh.LevelOfDetailOptions;
 import dev.nonamecrackers2.simpleclouds.client.mesh.generator.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.GenerationInterval;
 import dev.nonamecrackers2.simpleclouds.client.mesh.generator.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.mesh.generator.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsDebugOverlayRenderer;
@@ -37,7 +38,6 @@ import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.FogRenderer.FogMode;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.material.FogType;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
@@ -56,7 +56,6 @@ import nonamecrackers2.crackerslib.client.event.impl.RegisterConfigScreensEvent;
 import nonamecrackers2.crackerslib.client.gui.ConfigHomeScreen;
 import nonamecrackers2.crackerslib.client.gui.title.ImageTitle;
 import nonamecrackers2.crackerslib.common.command.ConfigCommandBuilder;
-import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 import nonamecrackers2.crackerslib.common.config.preset.ConfigPreset;
 import nonamecrackers2.crackerslib.common.config.preset.RegisterConfigPresetsEvent;
 
@@ -100,11 +99,13 @@ public class SimpleCloudsClientEvents
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.medium"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.medium.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 10)
+				.setPreset(SimpleCloudsConfig.CLIENT.generationInterval, GenerationInterval.STATIC)
 				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.MEDIUM)
 				.setPreset(SimpleCloudsConfig.CLIENT.shadowDistance, 2500).build());
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.low"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.low.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 20)
+				.setPreset(SimpleCloudsConfig.CLIENT.generationInterval, GenerationInterval.DYNAMIC)
 				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.LOW)
 				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)
 				.setPreset(SimpleCloudsConfig.CLIENT.atmosphericClouds, false)
@@ -113,6 +114,7 @@ public class SimpleCloudsClientEvents
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.ultra_low"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.ultra_low.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 20)
+				.setPreset(SimpleCloudsConfig.CLIENT.generationInterval, GenerationInterval.DYNAMIC)
 				.setPreset(SimpleCloudsConfig.CLIENT.levelOfDetail, LevelOfDetailOptions.LOW)
 				.setPreset(SimpleCloudsConfig.CLIENT.transparency, false)
 				.setPreset(SimpleCloudsConfig.CLIENT.renderStormFog, false)
@@ -242,8 +244,8 @@ public class SimpleCloudsClientEvents
 				String transparentGeomInfo = humanReadableByteCountSI(generator.getTransparentBufferBytesUsed()) + "/" + humanReadableByteCountSI(generator.getTransparentBufferSize());
 				text.add("O: " + opaqueGeomInfo + " | T: " + transparentGeomInfo);
 				
-				int frames = SimpleCloudsConfig.CLIENT.framesToGenerateMesh.get();
-				text.add("Mesh gen frames: " + frames + "; Effective FPS: " + mc.getFps() / frames);
+				int interval = generator.getMeshGenInterval();
+				text.add("Mesh gen frames: " + interval + "; Effective FPS: " + mc.getFps() / interval);
 				
 				text.add("Frustum culling: " + (SimpleCloudsConfig.CLIENT.frustumCulling.get() ? "ON" : "OFF"));
 				
