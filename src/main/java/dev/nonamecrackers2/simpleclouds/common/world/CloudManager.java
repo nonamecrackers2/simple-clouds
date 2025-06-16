@@ -24,6 +24,9 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudSpawningConfi
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.dedicated.DedicatedPlayerList;
+import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
@@ -207,6 +210,10 @@ public abstract class CloudManager<T extends Level> implements CloudGetter, ScAP
 
 	public void tick()
 	{
+		MinecraftServer server = this.level.getServer();
+		if (server instanceof DedicatedServer && server.getPlayerCount() == 0)
+			return;
+		
 		this.tickCount++;
 
 		if (this.isCloudGeneratorActive())

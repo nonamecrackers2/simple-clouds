@@ -299,6 +299,8 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			for (int j = 0; j < SPAWN_ATTEMPTS; j++)
 			{
 				Vector2i pos = SpawnRegion.getRandomPointInRegion(region, this.random);
+				if (this.getCloudsInRegion(region).size() >= config.getMaxInitialRegions())
+					continue;
 				if (!ignoreOtherRegions && this.spawnRegions.stream().anyMatch(r -> r.includesPoint(pos.x, pos.y)))
 					continue;
 				CloudRegion cloudFormation = this.createRandomRegion(config, (float)x + 0.5F, (float)z + 0.5F, (float)pos.x + 0.5F, (float)pos.y + 0.5F, this.random, false).orElse(null);
