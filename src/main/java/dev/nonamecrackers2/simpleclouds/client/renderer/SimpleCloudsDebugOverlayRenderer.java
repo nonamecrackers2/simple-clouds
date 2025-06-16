@@ -15,6 +15,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 
 import dev.nonamecrackers2.simpleclouds.client.mesh.generator.MultiRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.shader.SimpleCloudsShaders;
+import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
@@ -26,7 +27,7 @@ public class SimpleCloudsDebugOverlayRenderer
 	public static void render(ForgeGui gui, GuiGraphics stack, float partialTicks, float width, float height)
 	{
 		Minecraft mc = gui.getMinecraft();
-		if (SimpleCloudsRenderer.canRenderInDimension(gui.getMinecraft().level) && mc.options.renderDebug && (mc.player == null || mc.player.getPermissionLevel() >= 2))
+		if (SimpleCloudsRenderer.canRenderInDimension(gui.getMinecraft().level) && mc.options.renderDebug && (mc.player == null || mc.player.getPermissionLevel() >= 2 || !ClientCloudManager.isAvailableServerSide()))
 		{
 			float displaySize = 50.0F;
 			if (SimpleCloudsRenderer.getInstance().getMeshGenerator() instanceof MultiRegionCloudMeshGenerator meshGenerator)
