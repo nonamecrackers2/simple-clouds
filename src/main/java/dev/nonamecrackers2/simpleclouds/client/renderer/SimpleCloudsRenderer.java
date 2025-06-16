@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -13,7 +12,6 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
@@ -28,7 +26,7 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL40;
 import org.lwjgl.opengl.GL43;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
@@ -136,7 +134,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable RenderTarget stormFogTarget;
 	private int stormFogResolutionDivisor = 4;
 	private @Nullable RenderTarget blurTarget;
-	private final Map<PostChain, Pair<Float, Float>> postChains = Maps.newHashMap();
+	private final List<PostChain> postChains = Lists.newArrayList();
 	private @Nullable PostChain finalComposite;
 	private @Nullable PostChain stormPostProcessing;
 	private @Nullable PostChain blurPostProcessing;
@@ -408,7 +406,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.lightningBoltPositions = BindingManager.createSSBO(GL15.GL_DYNAMIC_DRAW);
 		this.lightningBoltPositions.allocateBuffer(MAX_LIGHTNING_BOLTS * BYTES_PER_LIGHTNING_BOLT);
 		
-		this.stormPostProcessing = this.createPostChain(manager, STORM_POST_PROCESSING_LOC, this.stormFogTarget, 1.0F, 1.0F, pass -> 
+		this.stormPostProcessing = this.createPostChain(manager, STORM_POST_PROCESSING_LOC, this.stormFogTarget, pass -> 
 		{
 			EffectInstance effect = pass.getEffect();
 			effect.setSampler("ShadowMap", () -> this.stormFogShadowMap.getDepthTexId());
@@ -417,17 +415,17 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.lightningBoltPositions.optionalBindToProgram("LightningBolts", effect.getId());
 		});
 		
-		this.blurPostProcessing = this.createPostChain(manager, BLUR_POST_PROCESSING_LOC, this.blurTarget, 1.0F, 1.0F);
+		this.blurPostProcessing = this.createPostChain(manager, BLUR_POST_PROCESSING_LOC, this.blurTarget);
 		this.blurPostProcessing.getTempTarget("swap").setFilterMode(GL11.GL_LINEAR);
 		
-		this.screenSpaceWorldFog = this.createPostChain(manager, SCREEN_SPACE_WORLD_FOG_LOC, main, 1.0F, 1.0F, pass -> 
+		this.screenSpaceWorldFog = this.createPostChain(manager, SCREEN_SPACE_WORLD_FOG_LOC, main, pass -> 
 		{
 			EffectInstance effect = pass.getEffect();
 			effect.setSampler("StormFogSampler", () -> this.blurTarget.getColorTextureId());
 			effect.setSampler("CloudDepthSampler", () -> this.cloudTarget.getDepthTextureId());
 		});
 		
-		this.finalComposite = this.createPostChain(manager, this.settings.useTransparency() ? FINAL_COMPOSITE_LOC : FINAL_COMPOSITE_NO_TRANSPARENCY_LOC, main, 1.0F, 1.0F, pass -> 
+		this.finalComposite = this.createPostChain(manager, this.settings.useTransparency() ? FINAL_COMPOSITE_LOC : FINAL_COMPOSITE_NO_TRANSPARENCY_LOC, main, pass -> 
 		{
 			EffectInstance effect = pass.getEffect();
 			if (this.settings.useTransparency())
@@ -441,7 +439,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (this.shadowMap.isPresent())
 		{
 			ShadowMapBuffer map = this.shadowMap.get();
-			this.cloudShadows = this.createPostChain(manager, CLOUD_SHADOWS_LOC, main, 1.0F, 1.0F, pass -> 
+			this.cloudShadows = this.createPostChain(manager, CLOUD_SHADOWS_LOC, main, pass -> 
 			{
 				EffectInstance effect = pass.getEffect();
 				effect.setSampler("ShadowMap", () -> this.shadowMap.get().getDepthTexId());
@@ -550,28 +548,24 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	private void destroyPostChains()
 	{
-		var iterator = this.postChains.keySet().iterator();
-		while (iterator.hasNext())
-		{
-			iterator.next().close();
-			iterator.remove();
-		}
+		this.postChains.forEach(PostChain::close);
+		this.postChains.clear();
 	}
 	
-	private @Nullable PostChain createPostChain(ResourceManager manager, ResourceLocation loc, RenderTarget target, float widthFactor, float heightFactor)
+	private @Nullable PostChain createPostChain(ResourceManager manager, ResourceLocation loc, RenderTarget target)
 	{
-		return this.createPostChain(manager, loc, target, heightFactor, heightFactor, effect -> {});
+		return this.createPostChain(manager, loc, target, effect -> {});
 	}
 	
-	private @Nullable PostChain createPostChain(ResourceManager manager, ResourceLocation loc, RenderTarget target, float widthFactor, float heightFactor, Consumer<PostPass> passConsumer)
+	private @Nullable PostChain createPostChain(ResourceManager manager, ResourceLocation loc, RenderTarget target, Consumer<PostPass> passConsumer)
 	{
 		try
 		{
 			PostChain chain = new PostChain(this.mc.getTextureManager(), manager, target, loc);
-			chain.resize((int)((float)target.width * widthFactor), (int)((float)target.height * heightFactor));
+			chain.resize(target.width, target.height);
 			for (PostPass pass : ((MixinPostChain)chain).simpleclouds$getPostPasses())
 				passConsumer.accept(pass);
-			this.postChains.put(chain, Pair.of(widthFactor, heightFactor));
+			this.postChains.add(chain);
 			return chain;
 		}
 		catch (JsonSyntaxException e)
@@ -617,11 +611,10 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.blurTarget.setFilterMode(GL11.GL_LINEAR);
 		}
 		
-		for (var entry : this.postChains.entrySet())
+		for (PostChain chain : this.postChains)
 		{
-			PostChain chain = entry.getKey();
-			RenderTarget chainTarget = ((MixinPostChain)chain).simpleclouds$getScreenTarget(); //TODO: Remove width/height multipliers
-			chain.resize((int)((float)chainTarget.width * entry.getValue().getLeft()), (int)((float)chainTarget.height * entry.getValue().getRight()));
+			RenderTarget chainTarget = ((MixinPostChain)chain).simpleclouds$getScreenTarget();
+			chain.resize(chainTarget.width, chainTarget.height);
 		}
 		
 		if (this.blurPostProcessing != null)

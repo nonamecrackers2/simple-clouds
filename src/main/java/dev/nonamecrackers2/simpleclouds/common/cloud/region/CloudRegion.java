@@ -221,7 +221,7 @@ public class CloudRegion implements ScAPICloudRegion
 	
 	public boolean intersects(SpawnRegion region)
 	{
-		return region.intersectsCircle(this.getWorldX(), this.getWorldZ(), this.getWorldRadius() + (float)SimpleCloudsConstants.CLOUD_SCALE / SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR);
+		return region.intersectsCircle(this.getWorldX(), this.getWorldZ(), this.getWorldRadius() / this.getStretch() + (float)SimpleCloudsConstants.CLOUD_SCALE / SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR);
 	}
 	
 	@Override

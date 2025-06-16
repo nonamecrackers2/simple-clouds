@@ -35,14 +35,13 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudGenerator");
 	private List<SpawnRegion> spawnRegions = Lists.newArrayList();
 	private final List<CloudRegion> clouds = Lists.newArrayList();
-	protected final RandomSource random;
+	protected RandomSource random = RandomSource.create();
 	protected final Supplier<CloudSpawningConfig> spawnConfig;
 	protected int ticksTillNextGen;
 	protected final CloudGetter cloudGetter;
 	
 	public CloudGenerator(CloudGetter cloudGetter, Supplier<CloudSpawningConfig> spawnConfig)
 	{
-		this.random = RandomSource.create();
 		this.cloudGetter = cloudGetter;
 		this.spawnConfig = spawnConfig;
 	}
@@ -169,10 +168,11 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	
 	public void initialize(RandomSource random, Level level)
 	{
-		this.spawnRegions = this.determineValidSpawnRegions(random, level);
+		this.random = RandomSource.create(random.nextLong());
+		this.spawnRegions = this.determineValidSpawnRegions(this.random, level);
 		this.removeAllClouds();
 		CloudSpawningConfig config = this.spawnConfig.get();
-		this.ticksTillNextGen = config.getSpawnInterval().sample(random);
+		this.ticksTillNextGen = config.getSpawnInterval().sample(this.random);
 	}
 	
 	public void tick(Level level)
@@ -188,8 +188,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			//formation visible again causing it to tick. It could then move outside the region again, then the player can move and make it become
 			//visible again causing a cycle. This shouldn't happen as often since cloud formations shrink and will shrink extra fast when no longer visible,
 			//making it so they will shrink farther away from the edge of a spawn region preventing this, but it is behavior to note
-			//TODO: Account for stretch
-			boolean isVisible = SpawnRegion.doesCircleIntersect(this.spawnRegions, region.getWorldX(), region.getWorldZ(), region.getWorldRadius() + (float)SimpleCloudsConstants.CLOUD_SCALE / SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR);
+			boolean isVisible = SpawnRegion.doesCircleIntersect(this.spawnRegions, region.getWorldX(), region.getWorldZ(), region.getWorldRadius() / region.getStretch() + (float)SimpleCloudsConstants.CLOUD_SCALE / SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR);
 			if (isVisible != region.wasPriorVisible())
 				this.onRegionVisibilityChange(region, isVisible);
 			region.tick(this.random, level, isVisible);
