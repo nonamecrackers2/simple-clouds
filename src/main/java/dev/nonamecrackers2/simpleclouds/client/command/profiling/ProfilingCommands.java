@@ -122,12 +122,12 @@ public class ProfilingCommands
 		MutableObject<Popup> main = new MutableObject<>();
 		Map<ResourceLocation, ProfilingCloudGenerator.CloudStats> individualStats = results.getIndividualStats();
 		Consumer<ResourceLocation> valueAcceptor = id -> {
-			Popup.createInfoPopup(main.getValue(), 300, createIndividualResults(id, individualStats.get(id)));
+			Popup.createInfoPopup(main.getValue(), 300, createIndividualResults(id, individualStats.get(id))).alignLeft();
 		};
 		main.setValue(Popup.createOptionListPopup(null, builder -> {
 			for (ResourceLocation id : individualStats.keySet())
 				builder.addObject(Component.literal(id.toString()), id);
-		}, valueAcceptor, 300, 100, mainMessage));
+		}, valueAcceptor, 300, 100, mainMessage).alignLeft());
 	}
 	
 	private static Component createIndividualResults(ResourceLocation id, ProfilingCloudGenerator.CloudStats stats)
