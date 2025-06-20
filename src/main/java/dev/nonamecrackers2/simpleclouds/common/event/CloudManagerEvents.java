@@ -85,7 +85,6 @@ public class CloudManagerEvents
 	@SubscribeEvent
 	public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event)
 	{
-		System.out.println(event.getEntity().position()); //TODO: Respawning not working correctly?
 		CloudManager.get(event.getEntity().level()).onPlayerJoin(event.getEntity());
 		if (event.getEntity() instanceof ServerPlayer player)
 			update(player);

@@ -165,19 +165,34 @@ public class CloudRegion implements ScAPICloudRegion
 		return tag;
 	}
 
-	public void tick(RandomSource random, Level level, boolean isVisible)
+	public void tick(RandomSource random, @Nullable Level level, boolean isVisible)
 	{
-		CloudRegionTickEvent event = new CloudRegionTickEvent(level, this);
-		MinecraftForge.EVENT_BUS.post(event);
+//		if (this.cloudTypeId.toString().equals("simpleclouds:nimbostratus"))
+//		{
+//			System.out.println("------ " + this.cloudTypeId + " -------");
+//			System.out.println("Exist ticks: " + this.existsForTicks);
+//			System.out.println("Grow ticks: " + this.growTicks);
+//			System.out.println("Max speed: " + this.maxSpeed);
+//			System.out.println("Stretch factor: " + this.stretchFactor);
+//			System.out.println("Initial radius: " + this.initialRadius * 8);
+//			System.out.println("Current radius: " + this.radius * 8);
+//		}
+		
 		Vec2 movementDirection = this.movementDirection;
 		float maxSpeed = this.maxSpeed;
 		float accelerationFactor = this.accelerationFactor;
-		if (event.getModifiedMovementDirection() != null)
-			movementDirection = event.getModifiedMovementDirection();
-		if (event.getModifiedMaxSpeed() >= 0.0F)
-			maxSpeed = event.getModifiedMaxSpeed();
-		if (event.getModifiedAccelerationFactor() >= 0.0F)
-			accelerationFactor = event.getModifiedAccelerationFactor();
+		
+		if (level != null)
+		{
+			CloudRegionTickEvent event = new CloudRegionTickEvent(level, this);
+			MinecraftForge.EVENT_BUS.post(event);
+			if (event.getModifiedMovementDirection() != null)
+				movementDirection = event.getModifiedMovementDirection();
+			if (event.getModifiedMaxSpeed() >= 0.0F)
+				maxSpeed = event.getModifiedMaxSpeed();
+			if (event.getModifiedAccelerationFactor() >= 0.0F)
+				accelerationFactor = event.getModifiedAccelerationFactor();
+		}
 		
 		this.radiusO = this.radius;
 		this.stretchFactorO = this.stretchFactor;
@@ -316,6 +331,18 @@ public class CloudRegion implements ScAPICloudRegion
 	{
 		this.moveTo(x / (float)SimpleCloudsConstants.CLOUD_SCALE, z / (float)SimpleCloudsConstants.CLOUD_SCALE);
 	}
+
+	@Override
+	public float getInitialRadius()
+	{
+		return this.initialRadius;
+	}
+	
+	@Override
+	public float getInitialWorldRadius()
+	{
+		return this.initialRadius * (float)SimpleCloudsConstants.CLOUD_SCALE;
+	}
 	
 	@Override
 	public float getRadius(float partialTick)
@@ -390,6 +417,16 @@ public class CloudRegion implements ScAPICloudRegion
 	public boolean wasPriorVisible()
 	{
 		return this.priorVisible;
+	}
+	
+	public int getExistForTicks()
+	{
+		return this.existsForTicks;
+	}
+	
+	public int getGrowTicks()
+	{
+		return this.growTicks;
 	}
 	
 	@Override

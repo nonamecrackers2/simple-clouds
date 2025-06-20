@@ -5,7 +5,6 @@ import java.util.function.Predicate;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
@@ -17,6 +16,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.TimeArgument;
 import net.minecraft.commands.arguments.coordinates.Vec2Argument;
 
+//TODO: Docs, including with API
 public class CloudCommands
 {
 	public static void register(CommandDispatcher<CommandSourceStack> dispatcher, String baseName, Predicate<CommandSourceStack> requirement, CloudCommandSource<?, ?> source, CloudTypeSource cloudTypeSource)
@@ -56,6 +56,37 @@ public class CloudCommands
 												)
 										)
 								)
+								.then(Commands.literal("extreme")
+										.executes(ctx -> source.spawnModifiedCloud(ctx, CloudCommandSource.EXTREME_CLOUD_INFO))
+								)
+								.then(Commands.literal("temperate")
+										.executes(ctx -> source.spawnModifiedCloud(ctx, CloudCommandSource.TEMPERATE_CLOUD_INFO))
+								)
+								.then(Commands.literal("random")
+										.executes(ctx -> source.spawnModifiedCloud(ctx, i -> i))
+								)
+						)
+						.then(Commands.literal("random")
+								.executes(source::spawnRandomCloud)
+						)
+				)
+		);
+		
+		root.then(Commands.literal(baseName).requires(requirement)
+				.then(Commands.literal("get")
+						.then(Commands.literal("at")
+								.then(Commands.argument("position", Vec2Argument.vec2())
+										.executes(source::getCloudTypeAt)
+								)
+						)
+						.then(Commands.literal("count")
+								.then(Commands.argument("position", Vec2Argument.vec2())
+										.then(Commands.argument("radius", IntegerArgumentType.integer(0))
+												.executes(ctx -> source.getCloudTypeCount(ctx, true, true))
+										)
+										.executes(ctx -> source.getCloudTypeCount(ctx, true, false))
+								)
+								.executes(ctx -> source.getCloudTypeCount(ctx, false, false))
 						)
 				)
 		);
@@ -84,18 +115,6 @@ public class CloudCommands
 						.then(Commands.literal("get")
 								.executes(source::getSeed)
 						)
-				)
-		);
-		
-		root.then(Commands.literal(baseName).requires(requirement)
-				.then(Commands.literal("reset")
-						.then(Commands.literal("random")
-								.executes(source::reinitializeWithRandomSeed)
-						)
-						.then(Commands.argument("seed", LongArgumentType.longArg(0L))
-								.executes(source::reinitializeWithSpecifiedSeed)
-						)
-						.executes(source::reinitializeWithSameSeed)
 				)
 		);
 		

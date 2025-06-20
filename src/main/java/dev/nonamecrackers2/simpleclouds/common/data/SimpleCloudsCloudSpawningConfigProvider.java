@@ -35,34 +35,34 @@ public class SimpleCloudsCloudSpawningConfigProvider extends CloudSpawningConfig
 	{
 		this.addEntry(new CloudSpawningConfig.Info(
 				SimpleCloudsMod.id("cumulonimbus"), 
-				Weight.of(1), 
-				UniformFloat.of(0.2F, 0.4F),
-				BiasedToBottomInt.of(3000, 6000), 
-				BiasedToBottomInt.of(24000, 48000), 
+				Weight.of(2), 
+				UniformFloat.of(0.03F, 0.07F),
+				UniformInt.of(6000, 10000), 
+				UniformInt.of(48000, 72000), 
 				UniformInt.of(1200, 2400), 
-				UniformFloat.of(0.2F, 0.4F), 
+				UniformFloat.of(0.3F, 0.6F), 
 				true, 
 				1000)
 		);
 		this.addEntry(new CloudSpawningConfig.Info(
 				SimpleCloudsMod.id("nimbostratus"), 
-				Weight.of(2), 
-				UniformFloat.of(0.2F, 0.4F),
-				BiasedToBottomInt.of(3000, 6000), 
-				BiasedToBottomInt.of(24000, 48000), 
+				Weight.of(3), 
+				UniformFloat.of(0.03F, 0.08F),
+				UniformInt.of(5000, 8000), 
+				UniformInt.of(36000, 72000), 
 				UniformInt.of(1200, 2400), 
-				UniformFloat.of(0.2F, 0.4F), 
+				UniformFloat.of(0.25F, 0.5F), 
 				true, 
 				900)
 		);
 		this.addEntry(new CloudSpawningConfig.Info(
 				SimpleCloudsMod.id("stratus"), 
 				Weight.of(4), 
-				UniformFloat.of(0.2F, 0.4F),
-				BiasedToBottomInt.of(3000, 6000), 
-				BiasedToBottomInt.of(24000, 48000), 
+				UniformFloat.of(0.03F, 0.1F),
+				BiasedToBottomInt.of(5000, 8000), 
+				BiasedToBottomInt.of(48000, 72000), 
 				UniformInt.of(1200, 2400), 
-				UniformFloat.of(0.2F, 0.4F), 
+				UniformFloat.of(0.25F, 0.45F), 
 				true, 
 				800)
 		);

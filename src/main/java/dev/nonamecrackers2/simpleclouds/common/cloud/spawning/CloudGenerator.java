@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector2f;
@@ -17,16 +18,19 @@ import org.joml.Vector2i;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.CreateRegionFunction;
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.SpawnInfo;
 import dev.nonamecrackers2.simpleclouds.common.api.ScAPICloudGeneratorImplHelper;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
+import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
-import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudGetter;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
 import dev.nonamecrackers2.simpleclouds.common.world.SpawnRegion;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 
+//TODO: Seems to still be doing stuff in disabled dimensions
 public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 {
 	public static final int SPAWN_RADIUS = 10000; 
@@ -38,12 +42,17 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	protected RandomSource random = RandomSource.create();
 	protected final Supplier<CloudSpawningConfig> spawnConfig;
 	protected int ticksTillNextGen;
-	protected final CloudGetter cloudGetter;
+	protected final CloudTypeSource cloudGetter;
 	
-	public CloudGenerator(CloudGetter cloudGetter, Supplier<CloudSpawningConfig> spawnConfig)
+	public CloudGenerator(CloudTypeSource cloudGetter, Supplier<CloudSpawningConfig> spawnConfig)
 	{
 		this.cloudGetter = cloudGetter;
 		this.spawnConfig = spawnConfig;
+	}
+	
+	public Supplier<CloudSpawningConfig> getSpawnConfig()
+	{
+		return this.spawnConfig;
 	}
 	
 	@Override
@@ -70,12 +79,14 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		return clouds;
 	}
 	
+	@Override
 	public @Nullable CloudRegion getCloudAtWorldPosition(float worldX, float worldZ)
 	{
 		return this.getCloudAtPosition(worldX / (float)SimpleCloudsConstants.CLOUD_SCALE, worldZ / (float)SimpleCloudsConstants.CLOUD_SCALE);
 	}
 	
-	public @Nullable CloudRegion getCloudAtPosition(float x, float z) //TODO: Add to API
+	@Override
+	public @Nullable CloudRegion getCloudAtPosition(float x, float z) 
 	{
 		return CloudRegion.calculateAt(this.getClouds(), x, z).getLeft();
 	}
@@ -168,14 +179,14 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	
 	public void initialize(RandomSource random, Level level)
 	{
-		this.random = RandomSource.create(random.nextLong());
+		this.random = RandomSource.create();
 		this.spawnRegions = this.determineValidSpawnRegions(this.random, level);
 		this.removeAllClouds();
 		CloudSpawningConfig config = this.spawnConfig.get();
 		this.ticksTillNextGen = config.getSpawnInterval().sample(this.random);
 	}
 	
-	public void tick(Level level)
+	public void tick(@Nullable Level level)
 	{
 		this.spawnRegions = this.determineValidSpawnRegions(this.random, level);
 		
@@ -202,7 +213,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			if (region.isDead())
 			{
 				iterator.remove();
-				if (!level.isClientSide)
+				if (level != null && !level.isClientSide)
 					System.out.println("cloud region died, was visible: " + isVisible + ", total: " + this.getTotalCloudRegions());
 			}
 		}
@@ -226,26 +237,65 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		return this.ticksTillNextGen <= 0;
 	}
 	
-	protected void spawnCloud(CloudSpawningConfig config, Level level)
+	public Optional<CloudRegion> spawnCloud(CloudSpawningConfig config, Level level)
 	{
-		this.ticksTillNextGen = config.getSpawnInterval().sample(this.random);
+		return this.spawnCloud(() -> config.getRandom(this.random).orElse(null), config.getSpawnInterval().sample(this.random), config.getMaxRegions(), level);
+	}
+	
+	@Override
+	public Optional<CloudRegion> spawnCloud(Supplier<SpawnInfo> infoGetter, int nextSpawnInterval, int maxRegions, Level level)
+	{
+		return this.spawnCloud(infoGetter, nextSpawnInterval, maxRegions, level, this::createRegion);
+	}
+	
+	@Override
+	public Optional<CloudRegion> spawnCloud(Supplier<SpawnInfo> infoGetter, int nextSpawnInterval, int maxRegions, Level level, CreateRegionFunction regionFunc)
+	{
+		this.ticksTillNextGen = nextSpawnInterval;
 		System.out.println("next spawn attempt: " + this.ticksTillNextGen);
+		
+		MutableObject<CloudRegion> spawnedCloud = new MutableObject<>();
 		
 		SpawnRegion.randomPointForEachRegion(this.spawnRegions, this.random, SPAWN_ATTEMPTS, (r, p) -> 
 		{
-			if (this.getCloudsInRegion(r).size() >= config.getMaxRegions())
+			if (this.getCloudsInRegion(r).size() >= maxRegions)
 				return true;
 			
 			float x = (float)p.x + 0.5F;
 			float z = (float)p.y + 0.5F;
 			
-			return this.createRandomRegion(config, (float)r.x() + 0.5F, (float)r.z() + 0.5F, x, z, this.random, true).map(region -> {
-				return this.addCloud(region, CloudGenerator.Order.USE_WEIGHT);
+			SpawnInfo info = infoGetter.get();
+			
+			if (info == null)
+				return false;
+			
+			CloudType type = this.cloudGetter.getCloudTypeForId(info.cloudType());
+			if (type == null)
+			{
+				LOGGER.warn("Spawn config has unknown cloud type with id '{}'", info.cloudType());
+				return false;
+			}
+			
+			return regionFunc.create(infoGetter.get(), (float)r.x() + 0.5F, (float)r.z() + 0.5F, x, z, this.random, true).map(apiRegion -> 
+			{
+				CloudRegion region = (CloudRegion)apiRegion;
+				if (this.addCloud(region, CloudGenerator.Order.USE_WEIGHT))
+				{
+					spawnedCloud.setValue(region);
+					return true;
+				}
+				else
+				{
+					return false;
+				}
 			}).orElse(false);
 		});
+		
+		return Optional.ofNullable(spawnedCloud.getValue());
 	}
 	
-	protected Optional<CloudRegion> createRandomRegion(CloudSpawningConfig config, float playerX, float playerZ, float x, float z, RandomSource random, boolean growTime)
+	@Override
+	public Optional<CloudRegion> createRegion(SpawnInfo info, float playerX, float playerZ, float x, float z, RandomSource random, boolean growTime)
 	{
 		for (CloudRegion region : this.getClouds())
 		{
@@ -254,33 +304,22 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 				return Optional.empty();
 		}
 		
-		CloudSpawningConfig.Info info = config.getRandom(random).orElse(null);
-		if (info == null)
-			return Optional.empty();
-		
-		CloudType type = this.cloudGetter.getCloudTypeForId(info.cloudType());
-		if (type == null)
-		{
-			LOGGER.warn("Spawn config has unknown cloud type with id '{}'", info.cloudType());
-			return Optional.empty();
-		}
-		
-		Vec2 direction;
 		float deltaAdj = info.movesToPlayer() ? 0.1F : 1.0F;
 		float deltaX = (playerX - x) * (1.0F + random.nextFloat() * deltaAdj);
 		float deltaZ = (playerZ - z) * (1.0F + random.nextFloat() * deltaAdj);
 		float rotation = (float)Math.atan2(deltaX, deltaZ) + (float)Math.PI;
+		Vec2 direction;
 		if (random.nextInt(5) == 0)
 			direction = new Vec2(random.nextFloat() * 2.0F - 1.0F, random.nextFloat() * 2.0F - 1.0F).normalized();
 		else
 			direction = new Vec2(deltaX, deltaZ).normalized();
 		
-		float radius = (float)info.radius().sample(random);
-		float maxSpeed = 0.1F;
+		float radius = (float)info.determineRadius(random);
+		float maxSpeed = info.determineSpeed(random);
 		float accelerationFactor = 0.01F;
-		int existTicks = info.existTicks().sample(random);
-		int growTicks = growTime ? Math.min(existTicks, info.growTicks().sample(random)) : 0;
-		float stretchFactor = info.stretchFactor().sample(random);
+		int existTicks = info.determineExistTicks(random);
+		int growTicks = growTime ? info.determineGrowTicks(random) : 0;
+		float stretchFactor = info.determineStretchFactor(random);
 		
 		return Optional.of(new CloudRegion(info.cloudType(), direction, maxSpeed, accelerationFactor, x / (float)SimpleCloudsConstants.CLOUD_SCALE, z / (float)SimpleCloudsConstants.CLOUD_SCALE, radius / (float)SimpleCloudsConstants.CLOUD_SCALE, rotation, stretchFactor, existTicks, growTicks, info.orderWeight()));
 	}
@@ -303,7 +342,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 					continue;
 				if (!ignoreOtherRegions && this.spawnRegions.stream().anyMatch(r -> r.includesPoint(pos.x, pos.y)))
 					continue;
-				CloudRegion cloudFormation = this.createRandomRegion(config, (float)x + 0.5F, (float)z + 0.5F, (float)pos.x + 0.5F, (float)pos.y + 0.5F, this.random, false).orElse(null);
+				CloudRegion cloudFormation = this.createRegion(config.getRandom(this.random).orElse(null), (float)x + 0.5F, (float)z + 0.5F, (float)pos.x + 0.5F, (float)pos.y + 0.5F, this.random, false).orElse(null);
 				if (cloudFormation == null)
 					continue;
 				this.addCloud(cloudFormation, CloudGenerator.Order.USE_WEIGHT);
@@ -314,7 +353,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	
 	protected void onRegionVisibilityChange(CloudRegion region, boolean nowVisible) {}
 	
-	protected abstract List<SpawnRegion> determineValidSpawnRegions(RandomSource random, Level level);
+	protected abstract List<SpawnRegion> determineValidSpawnRegions(RandomSource random, @Nullable Level level);
 	
 	public static enum Order
 	{

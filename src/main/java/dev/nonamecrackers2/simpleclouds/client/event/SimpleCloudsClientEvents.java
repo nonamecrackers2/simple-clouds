@@ -12,6 +12,7 @@ import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
 import dev.nonamecrackers2.simpleclouds.client.cloud.spawning.ClientSideCloudSpawningManager;
 import dev.nonamecrackers2.simpleclouds.client.command.ClientCloudCommandHelper;
+import dev.nonamecrackers2.simpleclouds.client.command.profiling.ProfilingCommands;
 import dev.nonamecrackers2.simpleclouds.client.compat.SimpleCloudsCompatHelper;
 import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsConfigScreen;
@@ -134,6 +135,7 @@ public class SimpleCloudsClientEvents
 	{
 		ConfigCommandBuilder.builder(event.getDispatcher(), "simpleclouds").addSpec(ModConfig.Type.CLIENT, SimpleCloudsConfig.CLIENT_SPEC).register();
 		ClientCloudCommandHelper.register(event.getDispatcher());
+		ProfilingCommands.register(event.getDispatcher());
 	}
 	
 	@SubscribeEvent
