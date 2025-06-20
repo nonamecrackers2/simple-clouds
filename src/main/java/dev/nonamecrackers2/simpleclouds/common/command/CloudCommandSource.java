@@ -3,7 +3,6 @@ package dev.nonamecrackers2.simpleclouds.common.command;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.arguments.FloatArgumentType;

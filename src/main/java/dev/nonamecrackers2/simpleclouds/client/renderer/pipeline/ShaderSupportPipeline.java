@@ -1,7 +1,5 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer.pipeline;
 
-import javax.annotation.Nullable;
-
 import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;

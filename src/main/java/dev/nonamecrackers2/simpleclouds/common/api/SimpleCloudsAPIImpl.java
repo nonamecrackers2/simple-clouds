@@ -1,7 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.common.api;
 
 import org.apache.maven.artifact.versioning.ArtifactVersion;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.api.ScAPIInternal;

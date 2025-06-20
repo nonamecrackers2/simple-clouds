@@ -30,7 +30,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 
-//TODO: Seems to still be doing stuff in disabled dimensions
 public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 {
 	public static final int SPAWN_RADIUS = 10000; 

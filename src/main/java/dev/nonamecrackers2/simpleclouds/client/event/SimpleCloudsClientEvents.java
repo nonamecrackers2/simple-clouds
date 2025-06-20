@@ -96,7 +96,6 @@ public class SimpleCloudsClientEvents
 	
 	public static void registerClientPresets(RegisterConfigPresetsEvent event)
 	{
-		//TODO: Presets don't seem to work very well in the config menu, probably something with CrackersLib
 		event.registerPreset(ModConfig.Type.CLIENT, ConfigPreset.builder(Component.translatable("simpleclouds.config.preset.medium"))
 				.setDescription(Component.translatable("simpleclouds.config.preset.medium.description"))
 				.setPreset(SimpleCloudsConfig.CLIENT.framesToGenerateMesh, 10)

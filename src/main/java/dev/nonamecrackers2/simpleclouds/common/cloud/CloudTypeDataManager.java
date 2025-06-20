@@ -16,13 +16,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 
-import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraft.world.level.storage.LevelResource;
 
 public class CloudTypeDataManager extends SimpleJsonResourceReloadListener implements CloudTypeSource
 {
