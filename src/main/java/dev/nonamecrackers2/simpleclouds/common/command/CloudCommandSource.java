@@ -9,6 +9,7 @@ import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
+import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -187,6 +188,9 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 	
 	default int refreshClouds(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
+		if (SimpleCloudsHooks.isExternalWeatherControlEnabled()) {
+			return 0;
+		}
 		CommandSourceStack source = context.getSource();
 		T manager = this.getCloudManager(context);
 		CloudGenerator generator = manager.getCloudGenerator();

@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.Queues;
 
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
+import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeDataManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -57,7 +58,7 @@ public class ServerCloudManager extends CloudManager<ServerLevel>
 	{
 		super.tick();
 		
-		if (!this.useVanillaWeather)
+		if (!this.useVanillaWeather && !SimpleCloudsHooks.isExternalWeatherControlEnabled())
 			this.level.setRainLevel(0.0F);
 		
 //		boolean allSleeping = true;

@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
+import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector2f;
 
@@ -97,12 +98,12 @@ public abstract class CloudManager<T extends Level> implements CloudGetter, ScAP
 	{
 		return this.cloudSource.getIndexedCloudTypes();
 	}
-	
+
 	@Override
-	public boolean isCloudGeneratorActive()
-	{
-		return this.getCloudMode() != CloudMode.SINGLE;
+	public boolean isCloudGeneratorActive() {
+		return this.getCloudMode() != CloudMode.SINGLE && !SimpleCloudsHooks.isExternalWeatherControlEnabled();
 	}
+
 	
 	public void onPlayerJoin(Player player)
 	{
