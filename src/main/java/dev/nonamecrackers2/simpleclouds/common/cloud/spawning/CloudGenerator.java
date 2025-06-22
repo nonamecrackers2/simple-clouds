@@ -17,6 +17,7 @@ import org.joml.Vector2i;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
 import dev.nonamecrackers2.simpleclouds.common.api.ScAPICloudGeneratorImplHelper;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
