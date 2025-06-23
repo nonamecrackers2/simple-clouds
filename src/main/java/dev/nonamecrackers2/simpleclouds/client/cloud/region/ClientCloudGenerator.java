@@ -33,7 +33,7 @@ public class ClientCloudGenerator extends CloudGenerator
 	{
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null)
-			return Lists.newArrayList(new SpawnRegion(player.getBlockX(), player.getBlockZ(), SPAWN_RADIUS));
+			return Lists.newArrayList(new SpawnRegion(player.getBlockX(), player.getBlockZ(), SimpleCloudsConstants.SPAWN_RADIUS));
 		else
 			return Lists.newArrayList();
 	}
