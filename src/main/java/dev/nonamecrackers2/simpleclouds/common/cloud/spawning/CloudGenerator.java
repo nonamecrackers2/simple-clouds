@@ -35,9 +35,6 @@ import net.minecraft.world.phys.Vec2;
 
 public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 {
-	public static final int SPAWN_RADIUS = 10000; 
-	public static final int SPAWN_ATTEMPTS = 10; 
-	public static final float MIN_SPAWN_DIST_BETWEEN_REGIONS = 500.0F; 
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudGenerator");
 	private List<SpawnRegion> spawnRegions = Lists.newArrayList();
 	private final List<CloudRegion> clouds = Lists.newArrayList();
@@ -261,7 +258,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		
 		MutableObject<CloudRegion> spawnedCloud = new MutableObject<>();
 		
-		SpawnRegion.randomPointForEachRegion(this.spawnRegions, this.random, SPAWN_ATTEMPTS, (r, p) -> 
+		SpawnRegion.randomPointForEachRegion(this.spawnRegions, this.random, SimpleCloudsConstants.SPAWN_ATTEMPTS, (r, p) -> 
 		{
 			if (this.getCloudsInRegion(r).size() >= maxRegions)
 				return true;
@@ -340,7 +337,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		
 		for (int i = 0; i < config.getMaxInitialRegions(); i++)
 		{
-			for (int j = 0; j < SPAWN_ATTEMPTS; j++)
+			for (int j = 0; j < SimpleCloudsConstants.SPAWN_ATTEMPTS; j++)
 			{
 				Vector2i pos = SpawnRegion.getRandomPointInRegion(region, this.random);
 				if (this.getCloudsInRegion(region).size() >= config.getMaxInitialRegions())
