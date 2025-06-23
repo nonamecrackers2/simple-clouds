@@ -30,7 +30,7 @@ public class ProfilingCloudGenerator extends CloudGenerator
 	public static final Logger LOGGER = LogManager.getLogger();
 	private static final int ORIGIN_X = 0;
 	private static final int ORIGIN_Z = 0;
-	private static final List<SpawnRegion> DEFAULT = ImmutableList.of(new SpawnRegion(ORIGIN_X, ORIGIN_Z, CloudGenerator.SPAWN_RADIUS));
+	private static final List<SpawnRegion> DEFAULT = ImmutableList.of(new SpawnRegion(ORIGIN_X, ORIGIN_Z, SimpleCloudsConstants.SPAWN_RADIUS));
 	private final ProfilingCloudGenerator.Results results = new ProfilingCloudGenerator.Results();
 	
 	public ProfilingCloudGenerator(CloudTypeSource cloudGetter, Supplier<CloudSpawningConfig> spawnConfig)
