@@ -83,6 +83,9 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("command.simpleclouds.clouds.clear", "Removed %s cloud formations");
 		this.add("command.simpleclouds.clouds.clear.fail", "No cloud formations to remove");
 		this.add("command.simpleclouds.clouds.refresh", "Refreshing clouds");
+		this.add("command.simpleclouds.clouds.get", "Cloud type %s is at [%s, %s] and has weather type '%s'");
+		this.add("command.simpleclouds.clouds.get.empty", "No cloud type is at that position");
+		this.add("command.simpleclouds.clouds.count", "Found %s cloud formations [%s]");
 		this.add("commands.simpleclouds.cloudType.notFound", "Unknown cloud type '%s'");
 		this.add("gui.simpleclouds.debug.title", "Simple Clouds Debug");
 		this.add("simpleclouds.subtitle.distant_thunder", "Distant Thunder Roars");

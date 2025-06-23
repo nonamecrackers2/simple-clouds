@@ -18,7 +18,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 
-//TODO: Test extensively on multiplayer
 public class ServerCloudGenerator extends CloudGenerator
 {
 	private static final Logger LOGGER = LogManager.getLogger();

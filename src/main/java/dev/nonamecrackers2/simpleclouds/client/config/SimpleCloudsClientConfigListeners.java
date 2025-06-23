@@ -98,6 +98,7 @@ public class SimpleCloudsClientConfigListeners
 			Popup.createYesNoPopup(null, () -> {
 				SimpleCloudsRenderer.getInstance().requestReload();
 			}, 300, Component.translatable("gui.simpleclouds.requires_reload.info"));
+			Popup.clearQueue();
 		});
 	}
 }

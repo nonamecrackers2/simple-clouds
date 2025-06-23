@@ -106,17 +106,12 @@ public class SimpleCloudsVivecraftCompatHandler
 					}
 				}
 			}
-//			RenderPass current = ClientDataHolderVR.getInstance().currentPass;
-//			return current != RenderPass.SCOPEL && current != RenderPass.SCOPER;
 		}
 		return true;
 	}
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static boolean isPrimaryPass()
 	{
-//		if (CompatHelper.isVrActive())
-//			return ClientDataHolderVR.getInstance().currentPass == RenderPass.LEFT;
 		if (CompatHelper.isVrActive())
 		{
 			var clientDataHolder = getClientDataHolderVR();

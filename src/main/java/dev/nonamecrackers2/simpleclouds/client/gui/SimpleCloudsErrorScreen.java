@@ -5,23 +5,15 @@ import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 
-import com.google.common.collect.Lists;
-
 import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.Util;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.layouts.FrameLayout;
-import net.minecraft.client.gui.layouts.GridLayout;
 import net.minecraft.client.gui.layouts.GridLayout.RowHelper;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
-import net.minecraftforge.fml.loading.ImmediateWindowHandler;
-import nonamecrackers2.crackerslib.client.util.GUIUtils;
 
 public class SimpleCloudsErrorScreen extends SimpleCloudsInfoScreen
 {

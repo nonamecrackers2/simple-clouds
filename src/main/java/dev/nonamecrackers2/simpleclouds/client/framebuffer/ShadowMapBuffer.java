@@ -12,8 +12,6 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import net.minecraft.client.renderer.culling.Frustum;
-
 public class ShadowMapBuffer implements AutoCloseable
 {
 	private final Matrix4f projMat;

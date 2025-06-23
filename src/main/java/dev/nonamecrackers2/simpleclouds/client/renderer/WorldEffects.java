@@ -344,10 +344,13 @@ public class WorldEffects
 		return hsbLerp(defaultR, defaultG, defaultB, 0.63F, 0.1F, 0.05F, lerp);
 	}
 	
+	//TODO: Better lerping
 	private static Color hsbLerp(float r, float g, float b, float targetHue, float targetSaturation, float targetBrightness, float lerp)
 	{
 		float[] hsbFog = Color.RGBtoHSB((int)(r * 255.0F), (int)(g * 255.0F), (int)(b * 255.0F), null);
-		float hue = Mth.clamp(Mth.lerp(lerp, targetHue, hsbFog[0]), 0.0F, 1.0F);
+		if (targetHue < hsbFog[0])
+			targetHue += 1.0F;
+		float hue = Mth.lerp(lerp, targetHue, hsbFog[0]);
 		float sat = Mth.clamp(Mth.lerp(lerp, targetSaturation, hsbFog[1]), 0.0F, 1.0F);
 		float bright = Mth.clamp(Mth.lerp(lerp, targetBrightness, hsbFog[2]), 0.0F, 1.0F);
 		return Color.getHSBColor(hue, sat, bright);

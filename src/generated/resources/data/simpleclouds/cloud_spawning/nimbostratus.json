@@ -1,41 +1,41 @@
 {
   "type": "simpleclouds:nimbostratus",
   "exist_ticks": {
-    "type": "minecraft:biased_to_bottom",
+    "type": "minecraft:uniform",
     "value": {
-      "max_inclusive": 48000,
-      "min_inclusive": 24000
+      "max_inclusive": 72000,
+      "min_inclusive": 36000
     }
   },
   "grow_ticks": {
-    "type": "minecraft:biased_to_bottom",
+    "type": "minecraft:uniform",
     "value": {
-      "max_inclusive": 6000,
-      "min_inclusive": 3000
+      "max_inclusive": 8000,
+      "min_inclusive": 5000
     }
   },
   "moves_to_player": true,
   "order_weight": 900,
   "radius": {
-    "type": "minecraft:biased_to_bottom",
+    "type": "minecraft:uniform",
     "value": {
-      "max_inclusive": 6000,
-      "min_inclusive": 3000
+      "max_inclusive": 8000,
+      "min_inclusive": 5000
     }
   },
   "speed": {
     "type": "minecraft:uniform",
     "value": {
-      "max_exclusive": 0.4,
-      "min_inclusive": 0.2
+      "max_exclusive": 0.08,
+      "min_inclusive": 0.03
     }
   },
   "stretch_factor": {
     "type": "minecraft:uniform",
     "value": {
-      "max_exclusive": 0.4,
-      "min_inclusive": 0.2
+      "max_exclusive": 0.5,
+      "min_inclusive": 0.25
     }
   },
-  "weight": 2
+  "weight": 3
 }

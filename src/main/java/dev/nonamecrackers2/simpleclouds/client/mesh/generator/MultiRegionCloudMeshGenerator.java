@@ -20,7 +20,6 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
-import org.lwjgl.opengl.GL43;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;

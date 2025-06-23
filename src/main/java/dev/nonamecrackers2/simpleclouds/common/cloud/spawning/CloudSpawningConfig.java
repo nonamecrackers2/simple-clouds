@@ -12,6 +12,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.SpawnInfo;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import net.minecraft.resources.ResourceLocation;
@@ -155,12 +156,42 @@ public class CloudSpawningConfig
 		return this.weights.getRandom(random);
 	}
 	
-	public static record Info(ResourceLocation cloudType, Weight weight, FloatProvider speed, IntProvider radius, IntProvider existTicks, IntProvider growTicks, FloatProvider stretchFactor, boolean movesToPlayer, int orderWeight) implements WeightedEntry
+	public static record Info(ResourceLocation cloudType, Weight weight, FloatProvider speed, IntProvider radius, IntProvider existTicks, IntProvider growTicks, FloatProvider stretchFactor, boolean movesToPlayer, int orderWeight) implements WeightedEntry, SpawnInfo
 	{
 		@Override
 		public Weight getWeight()
 		{
 			return this.weight;
+		}
+		
+		@Override
+		public int determineExistTicks(RandomSource random)
+		{
+			return this.existTicks.sample(random);
+		}
+		
+		@Override
+		public int determineGrowTicks(RandomSource random)
+		{
+			return this.growTicks.sample(random);
+		}
+		
+		@Override
+		public int determineRadius(RandomSource random)
+		{
+			return this.radius.sample(random);
+		}
+		
+		@Override
+		public float determineSpeed(RandomSource random)
+		{
+			return this.speed.sample(random);
+		}
+		
+		@Override
+		public float determineStretchFactor(RandomSource random)
+		{
+			return this.stretchFactor.sample(random);
 		}
 		
 		public JsonObject toJson() throws IllegalArgumentException

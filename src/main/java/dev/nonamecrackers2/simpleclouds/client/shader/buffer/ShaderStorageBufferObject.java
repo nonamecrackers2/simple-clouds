@@ -17,8 +17,6 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import dev.nonamecrackers2.simpleclouds.client.shader.compute.ComputeShader;
-
 public class ShaderStorageBufferObject implements WithBinding
 {
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/ShaderStorageBufferObject");
