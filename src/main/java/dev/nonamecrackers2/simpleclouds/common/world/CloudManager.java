@@ -100,13 +100,13 @@ public abstract class CloudManager<T extends Level> implements CloudGetter, ScAP
 
 	@Override
 	public boolean isCloudGeneratorActive() {
-		return this.getCloudMode() != CloudMode.SINGLE && !SimpleCloudsHooks.isExternalWeatherControlEnabled();
+		return this.getCloudMode() != CloudMode.SINGLE;
 	}
 
 	
 	public void onPlayerJoin(Player player)
 	{
-		if (this.isCloudGeneratorActive())
+		if (this.isCloudGeneratorActive() && !SimpleCloudsHooks.isExternalWeatherControlEnabled())
 			this.cloudGenerator.doInitialGen(player.getBlockX(), player.getBlockZ(), this.level, false);
 	}
 	
