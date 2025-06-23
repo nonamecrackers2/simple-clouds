@@ -302,7 +302,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		for (CloudRegion region : this.getClouds())
 		{
 			float dist = Vector2f.distance(x, z, region.getWorldX(), region.getWorldZ()) - region.getWorldRadius();
-			if (dist <= MIN_SPAWN_DIST_BETWEEN_REGIONS)
+			if (dist <= SimpleCloudsConstants.MIN_SPAWN_DIST_BETWEEN_REGIONS)
 				return Optional.empty();
 		}
 		
