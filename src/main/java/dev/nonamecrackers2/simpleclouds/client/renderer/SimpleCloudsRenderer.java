@@ -143,7 +143,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable ShaderStorageBufferObject lightningBoltPositions;
 	private @Nullable ShadowMapBuffer stormFogShadowMap;
 	private Optional<ShadowMapBuffer> shadowMap = Optional.empty();
-	private @Nullable Frustum shadowMapFrustum;
 	private @Nullable Frustum cullFrustum;
 	private float fogStart;
 	private float fogEnd;
@@ -877,9 +876,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			this.renderShadowMap(buffer, stack, SimpleCloudsShaders.getCloudsShadowMapShader(), null);
 			return stack;
 		}).orElse(null);
-		
-		if (this.shadowMapStack == null)
-			this.shadowMapFrustum = null;
 		
 		RenderSystem.enableCull();
 		

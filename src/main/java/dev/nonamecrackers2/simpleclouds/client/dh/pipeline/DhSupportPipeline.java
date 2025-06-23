@@ -101,7 +101,7 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 		
 		// Renders the clouds on to the cloud frame buffer
 		CloudMeshGenerator generator = renderer.getMeshGenerator();
-		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, projMat, renderer.getFogStart(), renderer.getFogEnd(), partialTick, cloudR, cloudG, cloudB, frustum);
+		SimpleCloudsRenderer.renderCloudsOpaque(generator, stack, projMat, renderer.getFogStart(), renderer.getFogEnd(), partialTick, cloudR, cloudG, cloudB, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? frustum : null);
 		
 		// Render transparent cloud geometry
 		p.popPush("clouds_transparent");
@@ -115,7 +115,7 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 			renderer.copyDepthFromCloudsToTransparency();
 			transparencyTarget.bindWrite(false);
 			// Render the transparent geometry to the transparency framebuffer
-			SimpleCloudsRenderer.renderCloudsTransparency(generator, stack, projMat, renderer.getFogStart(), renderer.getFogEnd(), partialTick, cloudR, cloudG, cloudB, frustum);
+			SimpleCloudsRenderer.renderCloudsTransparency(generator, stack, projMat, renderer.getFogStart(), renderer.getFogEnd(), partialTick, cloudR, cloudG, cloudB, SimpleCloudsConfig.CLIENT.frustumCulling.get() ? frustum : null);
 		}
 		
 		p.pop();
