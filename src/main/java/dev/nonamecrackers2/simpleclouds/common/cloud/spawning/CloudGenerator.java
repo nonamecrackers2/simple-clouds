@@ -328,7 +328,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	
 	public void doInitialGen(int x, int z, Level level, boolean ignoreOtherRegions)
 	{
-		SpawnRegion region = new SpawnRegion(x, z, CloudGenerator.SPAWN_RADIUS);
+		SpawnRegion region = new SpawnRegion(x, z, SimpleCloudsConstants.SPAWN_RADIUS);
 		
 		CloudSpawningConfig config = this.spawnConfig.get();
 		
