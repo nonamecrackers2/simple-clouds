@@ -27,6 +27,10 @@ public class SimpleCloudsConstants
 	//Ambient cloud mode
 	public static final float AMBIENT_MODE_FADE_START = 0.25F;
 	public static final float AMBIENT_MODE_FADE_END = 0.5F;
-	
+	//Generator
+	public static final int SPAWN_ATTEMPTS = 10;
+	public static final float MIN_SPAWN_DIST_BETWEEN_REGIONS = 500.0F;
+	public static int SPAWN_RADIUS = 10000;
+
 	private SimpleCloudsConstants() {}
 }
