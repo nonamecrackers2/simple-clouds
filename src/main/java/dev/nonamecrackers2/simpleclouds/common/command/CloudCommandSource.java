@@ -270,7 +270,7 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		if (inRegion)
 		{
 			Vec2 pos = Vec2Argument.getVec2(context, "position");
-			int radius = CloudGenerator.SPAWN_RADIUS;
+			int radius = SimpleCloudsConstants.SPAWN_RADIUS;
 			if (withRadius)
 				radius = IntegerArgumentType.getInteger(context, "radius");
 			SpawnRegion region = new SpawnRegion(Mth.floor(pos.y) / SimpleCloudsConstants.CLOUD_SCALE, Mth.floor(pos.y) / SimpleCloudsConstants.CLOUD_SCALE, radius);
