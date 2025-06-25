@@ -48,6 +48,11 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		this.cloudGetter = cloudGetter;
 		this.spawnConfig = spawnConfig;
 	}
+
+	public int getTicksTillNextGen()
+	{
+		return this.ticksTillNextGen;
+	}
 	
 	public Supplier<CloudSpawningConfig> getSpawnConfig()
 	{
