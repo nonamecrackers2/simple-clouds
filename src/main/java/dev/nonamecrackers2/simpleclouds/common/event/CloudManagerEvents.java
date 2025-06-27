@@ -76,7 +76,7 @@ public class CloudManagerEvents
 	@SubscribeEvent
 	public static void onPlayerSwapDimensions(PlayerEvent.PlayerChangedDimensionEvent event)
 	{
-		System.out.println(event.getEntity().position());
+//		System.out.println(event.getEntity().position());
 		CloudManager.get(event.getEntity().level()).onPlayerJoin(event.getEntity());
 		if (event.getEntity() instanceof ServerPlayer player)
 			update(player);
@@ -101,7 +101,7 @@ public class CloudManagerEvents
 		CloudManager<ServerLevel> manager = CloudManager.get(player.serverLevel());
 		SpawnRegion region = new SpawnRegion(player.getBlockX(), player.getBlockZ(), CloudGenerator.SPAWN_RADIUS);
 		List<CloudRegion> formationsForPlayer = manager.getCloudGenerator().getCloudsInRegion(region);
-		System.out.println("sending " + formationsForPlayer.size() + " clouds to player " + player.getDisplayName().getString());
+//		System.out.println("sending " + formationsForPlayer.size() + " clouds to player " + player.getDisplayName().getString());
 		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.PLAYER.with(() -> player), new SendCloudRegionsPacket(formationsForPlayer));
 	}
 }

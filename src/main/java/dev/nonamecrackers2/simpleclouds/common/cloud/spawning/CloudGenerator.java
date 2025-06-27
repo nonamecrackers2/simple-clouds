@@ -164,14 +164,14 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			}
 			if (totalCount >= SimpleCloudsConstants.MAX_CLOUD_FORMATIONS)
 			{
-				System.out.println("refusing cloud region, too many");
+//				System.out.println("refusing cloud region, too many");
 				return false;
 			}
 		}
 		
 		order.appender.accept(this.clouds, region);
 		
-		System.out.println(this.clouds.stream().map(CloudRegion::getOrderWeight).toList());
+//		System.out.println(this.clouds.stream().map(CloudRegion::getOrderWeight).toList());
 		
 		return true;
 	}
@@ -212,8 +212,8 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			if (region.isDead())
 			{
 				iterator.remove();
-				if (level != null && !level.isClientSide)
-					System.out.println("cloud region died, was visible: " + isVisible + ", total: " + this.getTotalCloudRegions());
+//				if (level != null && !level.isClientSide)
+//					System.out.println("cloud region died, was visible: " + isVisible + ", total: " + this.getTotalCloudRegions());
 			}
 		}
 		
@@ -251,7 +251,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	public Optional<CloudRegion> spawnCloud(Supplier<SpawnInfo> infoGetter, int nextSpawnInterval, int maxRegions, Level level, CreateRegionFunction regionFunc)
 	{
 		this.ticksTillNextGen = nextSpawnInterval;
-		System.out.println("next spawn attempt: " + this.ticksTillNextGen);
+//		System.out.println("next spawn attempt: " + this.ticksTillNextGen);
 		
 		MutableObject<CloudRegion> spawnedCloud = new MutableObject<>();
 		
