@@ -18,8 +18,11 @@ import org.joml.Vector2i;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+
+import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.CreateRegionFunction;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.SpawnInfo;
+
 import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionNaturallySpawnEvent;
 import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionRemovedEvent;
 import dev.nonamecrackers2.simpleclouds.common.api.ScAPICloudGeneratorImplHelper;
@@ -36,9 +39,6 @@ import net.minecraftforge.common.MinecraftForge;
 
 public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 {
-	public static final int SPAWN_RADIUS = 10000; 
-	public static final int SPAWN_ATTEMPTS = 10; 
-	public static final float MIN_SPAWN_DIST_BETWEEN_REGIONS = 500.0F; 
 	private static final Logger LOGGER = LogManager.getLogger("simpleclouds/CloudGenerator");
 	private List<SpawnRegion> spawnRegions = Lists.newArrayList();
 	private final List<CloudRegion> clouds = Lists.newArrayList();
@@ -51,6 +51,11 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	{
 		this.cloudGetter = cloudGetter;
 		this.spawnConfig = spawnConfig;
+	}
+
+	public int getTicksTillNextGen()
+	{
+		return this.ticksTillNextGen;
 	}
 	
 	public Supplier<CloudSpawningConfig> getSpawnConfig()
@@ -236,9 +241,12 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		int maxSpawnInterval = config.getSpawnInterval().getMaxValue();
 		if (this.ticksTillNextGen > maxSpawnInterval)
 			this.ticksTillNextGen = maxSpawnInterval;
-		
-		if (!config.isEmpty() && this.shouldGenerateCloud(config, this.random, level))
-			this.spawnCloud(config, level);
+        
+		if (!SimpleCloudsHooks.isExternalWeatherControlEnabled())
+        {
+		    if (!config.isEmpty() && this.shouldGenerateCloud(config, this.random, level))
+			    this.spawnCloud(config, level);
+        }
 	}
 	
 	protected boolean shouldGenerateCloud(CloudSpawningConfig config, RandomSource random, Level level)
@@ -265,7 +273,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		
 		MutableObject<CloudRegion> spawnedCloud = new MutableObject<>();
 		
-		SpawnRegion.randomPointForEachRegion(this.spawnRegions, this.random, SPAWN_ATTEMPTS, (r, p) -> 
+		SpawnRegion.randomPointForEachRegion(this.spawnRegions, this.random, SimpleCloudsConstants.SPAWN_ATTEMPTS, (r, p) -> 
 		{
 			if (this.getCloudsInRegion(r).size() >= maxRegions)
 				return true;
@@ -310,7 +318,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		for (CloudRegion region : this.getClouds())
 		{
 			float dist = Vector2f.distance(x, z, region.getWorldX(), region.getWorldZ()) - region.getWorldRadius();
-			if (dist <= MIN_SPAWN_DIST_BETWEEN_REGIONS)
+			if (dist <= SimpleCloudsConstants.MIN_SPAWN_DIST_BETWEEN_REGIONS)
 				return Optional.empty();
 		}
 		
@@ -336,7 +344,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	
 	public void doInitialGen(int x, int z, Level level, boolean ignoreOtherRegions)
 	{
-		SpawnRegion region = new SpawnRegion(x, z, CloudGenerator.SPAWN_RADIUS);
+		SpawnRegion region = new SpawnRegion(x, z, SimpleCloudsConstants.SPAWN_RADIUS);
 		
 		CloudSpawningConfig config = this.spawnConfig.get();
 		
@@ -345,7 +353,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		
 		for (int i = 0; i < config.getMaxInitialRegions(); i++)
 		{
-			for (int j = 0; j < SPAWN_ATTEMPTS; j++)
+			for (int j = 0; j < SimpleCloudsConstants.SPAWN_ATTEMPTS; j++)
 			{
 				Vector2i pos = SpawnRegion.getRandomPointInRegion(region, this.random);
 				if (this.getCloudsInRegion(region).size() >= config.getMaxInitialRegions())

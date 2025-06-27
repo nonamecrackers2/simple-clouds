@@ -116,6 +116,6 @@ public class ServerCloudGenerator extends CloudGenerator
 	@Override
 	protected List<SpawnRegion> determineValidSpawnRegions(RandomSource random, Level level)
 	{
-		return ServerCloudManager.regionsFromEntities(level.players(), SPAWN_RADIUS);
+		return ServerCloudManager.regionsFromEntities(level.players(), SimpleCloudsConstants.SPAWN_RADIUS);
 	}
 }

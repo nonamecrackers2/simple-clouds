@@ -99,7 +99,7 @@ public class CloudManagerEvents
 	private static void sendCloudRegionsToPlayer(ServerPlayer player)
 	{
 		CloudManager<ServerLevel> manager = CloudManager.get(player.serverLevel());
-		SpawnRegion region = new SpawnRegion(player.getBlockX(), player.getBlockZ(), CloudGenerator.SPAWN_RADIUS);
+		SpawnRegion region = new SpawnRegion(player.getBlockX(), player.getBlockZ(), SimpleCloudsConstants.SPAWN_RADIUS);
 		List<CloudRegion> formationsForPlayer = manager.getCloudGenerator().getCloudsInRegion(region);
 //		System.out.println("sending " + formationsForPlayer.size() + " clouds to player " + player.getDisplayName().getString());
 		SimpleCloudsPacketHandlers.MAIN.send(PacketDistributor.PLAYER.with(() -> player), new SendCloudRegionsPacket(formationsForPlayer));
