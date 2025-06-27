@@ -54,8 +54,8 @@ public class ServerCloudGenerator extends CloudGenerator
 				LOGGER.error("Failed to read cloud region: ", e);
 			}
 		}
-		System.out.println("what is up, reading");
-		System.out.println(regions);
+//		System.out.println("what is up, reading");
+//		System.out.println(regions);
 		this.setClouds(regions);
 		this.ticksTillNextGen = tag.getInt("ticks_till_next_gen");
 	}
@@ -70,10 +70,10 @@ public class ServerCloudGenerator extends CloudGenerator
 	@Override
 	public boolean addCloud(CloudRegion region, CloudGenerator.Order order)
 	{
-		System.out.println("total clouds: " + (this.getTotalCloudRegions()));
+//		System.out.println("total clouds: " + (this.getTotalCloudRegions()));
 		if (!super.addCloud(region, order))
 			return false;
-		System.out.println("success! total clouds: " + (this.getTotalCloudRegions()));
+//		System.out.println("success! total clouds: " + (this.getTotalCloudRegions()));
 		this.requiresSync = true;
 		return true;
 	}
@@ -88,9 +88,9 @@ public class ServerCloudGenerator extends CloudGenerator
 	}
 	
 	@Override
-	public void tick(Level level)
+	public void tick(Level level, float speed)
 	{
-		super.tick(level);
+		super.tick(level, speed);
 		
 		if (this.syncTimer > 0)
 		{
@@ -109,7 +109,7 @@ public class ServerCloudGenerator extends CloudGenerator
 	@Override
 	protected void onRegionVisibilityChange(CloudRegion region, boolean nowVisible)
 	{
-		System.out.println("visibility changed: visible? " + nowVisible);
+//		System.out.println("visibility changed: visible? " + nowVisible);
 		this.requiresSync = true;
 	}
 	

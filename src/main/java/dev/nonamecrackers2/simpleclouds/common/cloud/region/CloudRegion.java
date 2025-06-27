@@ -165,7 +165,7 @@ public class CloudRegion implements ScAPICloudRegion
 		return tag;
 	}
 
-	public void tick(RandomSource random, @Nullable Level level, boolean isVisible)
+	public void tick(RandomSource random, @Nullable Level level, boolean isVisible, float speed)
 	{
 //		if (this.cloudTypeId.toString().equals("simpleclouds:nimbostratus"))
 //		{
@@ -179,8 +179,8 @@ public class CloudRegion implements ScAPICloudRegion
 //		}
 		
 		Vec2 movementDirection = this.movementDirection;
-		float maxSpeed = this.maxSpeed;
-		float accelerationFactor = this.accelerationFactor;
+		float maxSpeed = this.maxSpeed * speed;
+		float accelerationFactor = this.accelerationFactor * speed;
 		
 		if (level != null)
 		{
@@ -204,7 +204,7 @@ public class CloudRegion implements ScAPICloudRegion
 			scale = 1.0F - (float)(this.tickCount - this.growTicks) / (float)(this.existsForTicks - this.growTicks);
 		this.radius = this.initialRadius * scale;
 		
-		this.tickCount += isVisible ? 1 : 20;
+		this.tickCount += Math.max(1, Mth.ceil((isVisible ? 1.0F : 20.0F) * speed));
 		
 		this.posXO = this.posX;
 		this.posZO = this.posZ;

@@ -23,15 +23,19 @@ import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.CreateRegionFunction;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.SpawnInfo;
 
+import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionNaturallySpawnEvent;
+import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionRemovedEvent;
 import dev.nonamecrackers2.simpleclouds.common.api.ScAPICloudGeneratorImplHelper;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
 import dev.nonamecrackers2.simpleclouds.common.world.SpawnRegion;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
+import net.minecraftforge.common.MinecraftForge;
 
 public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 {
@@ -139,6 +143,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			if (predicate.test(region))
 			{
 				iterator.remove();
+				MinecraftForge.EVENT_BUS.post(new CloudRegionRemovedEvent(null, region, CloudRegionRemovedEvent.Reason.MANUALLY));
 				anyPassed = true;
 			}
 		}
@@ -169,14 +174,14 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			}
 			if (totalCount >= SimpleCloudsConstants.MAX_CLOUD_FORMATIONS)
 			{
-				System.out.println("refusing cloud region, too many");
+//				System.out.println("refusing cloud region, too many");
 				return false;
 			}
 		}
 		
 		order.appender.accept(this.clouds, region);
 		
-		System.out.println(this.clouds.stream().map(CloudRegion::getOrderWeight).toList());
+//		System.out.println(this.clouds.stream().map(CloudRegion::getOrderWeight).toList());
 		
 		return true;
 	}
@@ -190,7 +195,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		this.ticksTillNextGen = config.getSpawnInterval().sample(this.random);
 	}
 	
-	public void tick(@Nullable Level level)
+	public void tick(@Nullable Level level, float speed)
 	{
 		this.spawnRegions = this.determineValidSpawnRegions(this.random, level);
 		
@@ -206,24 +211,29 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			boolean isVisible = SpawnRegion.doesCircleIntersect(this.spawnRegions, region.getWorldX(), region.getWorldZ(), region.getWorldRadius() / region.getStretch() + (float)SimpleCloudsConstants.CLOUD_SCALE / SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR);
 			if (isVisible != region.wasPriorVisible())
 				this.onRegionVisibilityChange(region, isVisible);
-			region.tick(this.random, level, isVisible);
+			region.tick(this.random, level, isVisible, speed);
 			
 			if (!this.cloudGetter.doesCloudTypeExist(region.getCloudTypeId()))
 			{
 				LOGGER.warn("Cloud type with id {} no longer exists, removing cloud region", region.getCloudTypeId());
 				iterator.remove();
+				MinecraftForge.EVENT_BUS.post(new CloudRegionRemovedEvent(level, region, CloudRegionRemovedEvent.Reason.CLOUD_TYPE_NO_LONGER_EXISTS));
 			}
 			
 			if (region.isDead())
 			{
 				iterator.remove();
-				if (level != null && !level.isClientSide)
-					System.out.println("cloud region died, was visible: " + isVisible + ", total: " + this.getTotalCloudRegions());
+				CloudRegionRemovedEvent.Reason reason = CloudRegionRemovedEvent.Reason.NATURALLY;
+				if (!region.wasPriorVisible())
+					reason = CloudRegionRemovedEvent.Reason.NO_LONGER_VISIBLE;
+				MinecraftForge.EVENT_BUS.post(new CloudRegionRemovedEvent(level, region, reason));
+//				if (level != null && !level.isClientSide)
+//					System.out.println("cloud region died, was visible: " + isVisible + ", total: " + this.getTotalCloudRegions());
 			}
 		}
 		
 		if (this.ticksTillNextGen > 0)
-			this.ticksTillNextGen--;
+			this.ticksTillNextGen -= Math.max(1, Mth.ceil(speed));
 		
 		CloudSpawningConfig config = this.spawnConfig.get();
 		
@@ -259,7 +269,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	public Optional<CloudRegion> spawnCloud(Supplier<SpawnInfo> infoGetter, int nextSpawnInterval, int maxRegions, Level level, CreateRegionFunction regionFunc)
 	{
 		this.ticksTillNextGen = nextSpawnInterval;
-		System.out.println("next spawn attempt: " + this.ticksTillNextGen);
+//		System.out.println("next spawn attempt: " + this.ticksTillNextGen);
 		
 		MutableObject<CloudRegion> spawnedCloud = new MutableObject<>();
 		
@@ -289,6 +299,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 				if (this.addCloud(region, CloudGenerator.Order.USE_WEIGHT))
 				{
 					spawnedCloud.setValue(region);
+					MinecraftForge.EVENT_BUS.post(new CloudRegionNaturallySpawnEvent(level, apiRegion));
 					return true;
 				}
 				else

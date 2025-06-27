@@ -216,14 +216,15 @@ public abstract class CloudManager<T extends Level> implements CloudGetter, ScAP
 		
 		this.tickCount++;
 
-		if (this.isCloudGeneratorActive())
-			this.cloudGenerator.tick(this.level);
-		
 		this.scrollXO = this.scrollX;
 		this.scrollYO = this.scrollY;
 		this.scrollZO = this.scrollZ;
 		float speed = this.getCloudSpeed();
 		speed = this.modifyCloudSpeed(speed);
+		
+		if (this.isCloudGeneratorActive())
+			this.cloudGenerator.tick(this.level, speed);
+		
 		speed *= 0.0001F;
 		this.scrollAngle += speed;
 		this.scrollX = (float)Math.cos(this.scrollAngle) * SCROLL_OFFSET;
