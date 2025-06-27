@@ -20,6 +20,8 @@ import com.google.common.collect.Lists;
 
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.CreateRegionFunction;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.SpawnInfo;
+import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionNaturallySpawnEvent;
+import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionRemovedEvent;
 import dev.nonamecrackers2.simpleclouds.common.api.ScAPICloudGeneratorImplHelper;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
@@ -29,6 +31,7 @@ import dev.nonamecrackers2.simpleclouds.common.world.SpawnRegion;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
+import net.minecraftforge.common.MinecraftForge;
 
 public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 {
@@ -134,6 +137,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			if (predicate.test(region))
 			{
 				iterator.remove();
+				MinecraftForge.EVENT_BUS.post(new CloudRegionRemovedEvent(null, region, CloudRegionRemovedEvent.Reason.MANUALLY));
 				anyPassed = true;
 			}
 		}
@@ -207,11 +211,16 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			{
 				LOGGER.warn("Cloud type with id {} no longer exists, removing cloud region", region.getCloudTypeId());
 				iterator.remove();
+				MinecraftForge.EVENT_BUS.post(new CloudRegionRemovedEvent(level, region, CloudRegionRemovedEvent.Reason.CLOUD_TYPE_NO_LONGER_EXISTS));
 			}
 			
 			if (region.isDead())
 			{
 				iterator.remove();
+				CloudRegionRemovedEvent.Reason reason = CloudRegionRemovedEvent.Reason.NATURALLY;
+				if (!region.wasPriorVisible())
+					reason = CloudRegionRemovedEvent.Reason.NO_LONGER_VISIBLE;
+				MinecraftForge.EVENT_BUS.post(new CloudRegionRemovedEvent(level, region, reason));
 //				if (level != null && !level.isClientSide)
 //					System.out.println("cloud region died, was visible: " + isVisible + ", total: " + this.getTotalCloudRegions());
 			}
@@ -281,6 +290,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 				if (this.addCloud(region, CloudGenerator.Order.USE_WEIGHT))
 				{
 					spawnedCloud.setValue(region);
+					MinecraftForge.EVENT_BUS.post(new CloudRegionNaturallySpawnEvent(level, apiRegion));
 					return true;
 				}
 				else
