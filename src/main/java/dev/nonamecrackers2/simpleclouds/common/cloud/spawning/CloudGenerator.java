@@ -28,6 +28,7 @@ import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
 import dev.nonamecrackers2.simpleclouds.common.world.SpawnRegion;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
@@ -189,7 +190,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		this.ticksTillNextGen = config.getSpawnInterval().sample(this.random);
 	}
 	
-	public void tick(@Nullable Level level)
+	public void tick(@Nullable Level level, float speed)
 	{
 		this.spawnRegions = this.determineValidSpawnRegions(this.random, level);
 		
@@ -205,7 +206,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			boolean isVisible = SpawnRegion.doesCircleIntersect(this.spawnRegions, region.getWorldX(), region.getWorldZ(), region.getWorldRadius() / region.getStretch() + (float)SimpleCloudsConstants.CLOUD_SCALE / SimpleCloudsConstants.REGION_EDGE_FADE_FACTOR);
 			if (isVisible != region.wasPriorVisible())
 				this.onRegionVisibilityChange(region, isVisible);
-			region.tick(this.random, level, isVisible);
+			region.tick(this.random, level, isVisible, speed);
 			
 			if (!this.cloudGetter.doesCloudTypeExist(region.getCloudTypeId()))
 			{
@@ -227,7 +228,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		}
 		
 		if (this.ticksTillNextGen > 0)
-			this.ticksTillNextGen--;
+			this.ticksTillNextGen -= Math.max(1, Mth.ceil(speed));
 		
 		CloudSpawningConfig config = this.spawnConfig.get();
 		

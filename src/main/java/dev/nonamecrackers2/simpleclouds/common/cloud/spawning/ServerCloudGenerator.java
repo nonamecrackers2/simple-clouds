@@ -88,9 +88,9 @@ public class ServerCloudGenerator extends CloudGenerator
 	}
 	
 	@Override
-	public void tick(Level level)
+	public void tick(Level level, float speed)
 	{
-		super.tick(level);
+		super.tick(level, speed);
 		
 		if (this.syncTimer > 0)
 		{

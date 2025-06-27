@@ -45,9 +45,9 @@ public class ProfilingCloudGenerator extends CloudGenerator
 	}
 	
 	@Override
-	public void tick(Level level)
+	public void tick(Level level, float speed)
 	{
-		super.tick(level);
+		super.tick(level, speed);
 		
 		this.results.tick(this.getTotalCloudRegions(), this.getCloudAtWorldPosition(ORIGIN_X, ORIGIN_Z));
 	}
@@ -68,7 +68,7 @@ public class ProfilingCloudGenerator extends CloudGenerator
 		{
 			ProfilingCloudGenerator generator = new ProfilingCloudGenerator(getter, () -> config);
 			for (int i = 0; i < iterations; i++)
-				generator.tick(null);
+				generator.tick(null, 1.0F);
 			return generator.results;
 		});
 	}
