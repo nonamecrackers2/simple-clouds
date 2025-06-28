@@ -73,7 +73,7 @@ uniform sampler2D DiffuseSampler;
 
 uniform mat4 InverseWorldProjMat;
 uniform mat4 InverseModelViewMat;
-uniform vec3 CameraPos;
+//uniform vec3 CameraPos;
 uniform mat2 Transform;
 uniform float Height;
 uniform float PixelScale;
@@ -113,16 +113,16 @@ void main()
 	}
 	
 	vec3 rayDir = getRayDirection(texCoord);
-	vec3 origin = vec3(CameraPos.x, 0.0, CameraPos.z);
-	float rayLen = (Height - origin.y) / rayDir.y;
+	//vec3 origin = vec3(CameraPos.x, 0.0, CameraPos.z);
+	float rayLen = Height / rayDir.y;//(Height - origin.y) / rayDir.y;
 	if (rayLen <= 0.0)
 	{
 		fragColor = vec4(col, 1.0);
 		return;
 	}
-	vec3 point = origin + rayLen * rayDir;
+	vec3 point = rayLen * rayDir;//origin + rayLen * rayDir;
 	
-	float len = distance(point.xz, CameraPos.xz);
+	float len = length(point.xz);//distance(point.xz, CameraPos.xz);
 	if (len > MaxDist)
 	{
 		fragColor = vec4(col, 1.0);

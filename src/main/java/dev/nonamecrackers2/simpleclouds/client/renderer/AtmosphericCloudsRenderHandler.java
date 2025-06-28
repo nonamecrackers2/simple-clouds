@@ -160,10 +160,10 @@ public class AtmosphericCloudsRenderHandler
 		EffectInstance effect = pass.getEffect();
 		effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
 		effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
-		effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
+//		effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
 		Matrix2f transform = new Matrix2f().identity();
 		transform.scale(formation.scaleX, formation.scaleZ);
-		transform.rotate(yaw);
+		transform.rotateLocal(yaw);
 		effect.safeGetUniform("Transform").setMat2x2(transform.m00, transform.m01, transform.m10, transform.m11);
 		effect.safeGetUniform("ShiftMovement").set(shiftMovement);
 		effect.safeGetUniform("CloudDensity").set(formation.density * densityMult);
