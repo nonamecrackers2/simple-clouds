@@ -11,6 +11,7 @@ import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector2f;
 
+import dev.nonamecrackers2.simpleclouds.api.SimpleCloudsAPI;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.api.common.event.ModifyCloudSpeedEvent;
@@ -106,7 +107,7 @@ public abstract class CloudManager<T extends Level> implements CloudGetter, ScAP
 	
 	public void onPlayerJoin(Player player)
 	{
-		if (this.isCloudGeneratorActive() && !SimpleCloudsHooks.isExternalWeatherControlEnabled())
+		if (this.isCloudGeneratorActive() && !SimpleCloudsAPI.getApi().getHooks().isExternalWeatherControlEnabled())
 			this.cloudGenerator.doInitialGen(player.getBlockX(), player.getBlockZ(), this.level, false);
 	}
 	

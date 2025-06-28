@@ -17,6 +17,7 @@ import com.google.common.collect.Maps;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.weather.WeatherType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
+import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
 import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudGenerator;
 import dev.nonamecrackers2.simpleclouds.common.cloud.spawning.CloudSpawningConfig;

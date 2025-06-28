@@ -1,13 +1,20 @@
 package dev.nonamecrackers2.simpleclouds.common.api;
 
-public class SimpleCloudsHooks {
-    private static boolean externalWeatherControl = false;
+import dev.nonamecrackers2.simpleclouds.api.common.ScAPIHooks;
 
-    public static void setExternalWeatherControl(boolean control) {
-        externalWeatherControl = control;
-    }
+public class SimpleCloudsHooks implements ScAPIHooks
+{
+	private boolean externalWeatherControl;
 
-    public static boolean isExternalWeatherControlEnabled() {
-        return externalWeatherControl;
-    }
+	@Override
+	public void setExternalWeatherControl(boolean control)
+	{
+		this.externalWeatherControl = control;
+	}
+
+	@Override
+	public boolean isExternalWeatherControlEnabled()
+	{
+		return this.externalWeatherControl;
+	}
 }

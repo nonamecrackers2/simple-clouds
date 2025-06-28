@@ -12,6 +12,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
 
 import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
+import dev.nonamecrackers2.simpleclouds.api.SimpleCloudsAPI;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.SpawnInfo;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.StaticSpawnInfo;
 
@@ -301,9 +302,8 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 	
 	default int refreshClouds(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
 	{
-		if (SimpleCloudsHooks.isExternalWeatherControlEnabled()) {
+		if (SimpleCloudsAPI.getApi().getHooks().isExternalWeatherControlEnabled())
 			return 0;
-		}
 		CommandSourceStack source = context.getSource();
 		T manager = this.getCloudManager(context);
 		CloudGenerator generator = manager.getCloudGenerator();

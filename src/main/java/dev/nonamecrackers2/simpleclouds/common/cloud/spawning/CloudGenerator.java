@@ -20,12 +20,14 @@ import com.google.common.collect.Lists;
 
 
 import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
+import dev.nonamecrackers2.simpleclouds.api.SimpleCloudsAPI;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.CreateRegionFunction;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.SpawnInfo;
 
 import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionNaturallySpawnEvent;
 import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionRemovedEvent;
 import dev.nonamecrackers2.simpleclouds.common.api.ScAPICloudGeneratorImplHelper;
+import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsAPIImpl;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -242,7 +244,7 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 		if (this.ticksTillNextGen > maxSpawnInterval)
 			this.ticksTillNextGen = maxSpawnInterval;
         
-		if (!SimpleCloudsHooks.isExternalWeatherControlEnabled())
+		if (!SimpleCloudsAPI.getApi().getHooks().isExternalWeatherControlEnabled())
         {
 		    if (!config.isEmpty() && this.shouldGenerateCloud(config, this.random, level))
 			    this.spawnCloud(config, level);

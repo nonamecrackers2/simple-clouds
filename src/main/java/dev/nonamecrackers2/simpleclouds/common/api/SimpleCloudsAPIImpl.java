@@ -5,6 +5,7 @@ import org.apache.maven.artifact.versioning.ArtifactVersion;
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
 import dev.nonamecrackers2.simpleclouds.api.ScAPIInternal;
 import dev.nonamecrackers2.simpleclouds.api.SimpleCloudsAPI;
+import dev.nonamecrackers2.simpleclouds.api.common.ScAPIHooks;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.region.ScAPICloudRegion;
 import dev.nonamecrackers2.simpleclouds.api.common.world.ScAPICloudManager;
 import dev.nonamecrackers2.simpleclouds.common.cloud.region.CloudRegion;
@@ -16,6 +17,7 @@ import net.minecraft.world.phys.Vec2;
 public class SimpleCloudsAPIImpl implements SimpleCloudsAPI
 {
 	public static final SimpleCloudsAPIImpl INSTANCE;
+	private final SimpleCloudsHooks hooks = new SimpleCloudsHooks();
 	
 	static 
 	{
@@ -35,6 +37,12 @@ public class SimpleCloudsAPIImpl implements SimpleCloudsAPI
 	public ScAPICloudManager getCloudManager(Level level)
 	{
 		return CloudManager.get(level);
+	}
+	
+	@Override
+	public ScAPIHooks getHooks()
+	{
+		return this.hooks;
 	}
 	
 	@Override

@@ -8,6 +8,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.api.SimpleCloudsAPI;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.command.argument.CloudTypeArgument;
 import dev.nonamecrackers2.simpleclouds.common.world.CloudManager;
@@ -91,11 +92,14 @@ public class CloudCommands
 				)
 		);
 		
-		root.then(Commands.literal(baseName).requires(requirement)
-				.then(Commands.literal("refresh")
-						.executes(source::refreshClouds)
-				)
-		);
+		if (!SimpleCloudsAPI.getApi().getHooks().isExternalWeatherControlEnabled())
+		{
+			root.then(Commands.literal(baseName).requires(requirement)
+					.then(Commands.literal("refresh")
+							.executes(source::refreshClouds)
+							)
+					);
+		}
 		
 		root.then(Commands.literal(baseName).requires(requirement)
 				.then(Commands.literal("speed")
