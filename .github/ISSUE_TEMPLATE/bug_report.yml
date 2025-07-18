@@ -33,6 +33,7 @@ body:
       label: Mod Version
       description: The version of the mod you are using
       options:
+        - "0.7.1"
         - "0.7"
         - "0.6.3"
     validations:
