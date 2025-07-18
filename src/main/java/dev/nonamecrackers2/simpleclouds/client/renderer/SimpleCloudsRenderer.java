@@ -995,6 +995,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		float factor = this.worldEffectsManager.getDarkenFactor(partialTick);
 		float renderDistance = (float)this.meshGenerator.getCloudAreaMaxRadius() * (float)SimpleCloudsConstants.CLOUD_SCALE * factor;
+		if (renderDistance < 2867.0F)
+			renderDistance = 2867.0F;
 		ModifyCloudRenderDistanceEvent renderDistEvent = new ModifyCloudRenderDistanceEvent(renderDistance);
 		MinecraftForge.EVENT_BUS.post(renderDistEvent);
 		renderDistance = renderDistEvent.getRenderDistance();

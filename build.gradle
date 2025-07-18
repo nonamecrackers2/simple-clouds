@@ -235,17 +235,29 @@ tasks.named('jar', Jar).configure {
 //     dependsOn 'reobfJar'
 // }
 
+java {
+	withSourcesJar()
+}
+
 // Example configuration to allow publishing using the maven-publish plugin
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
+            group = mod_authors
+            artifactId = mod_id
             artifact jar
+            artifact sourcesJar
         }
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/mcmodsrepo"
-        }
+		    name "nonamecrackers2Maven"
+		    url "https://maven.nonamecrackers2.dev/${maven_dir}"
+		    credentials(PasswordCredentials)
+		    authentication {
+		    	basic(BasicAuthentication)
+		    }
+		}
     }
 }
 
