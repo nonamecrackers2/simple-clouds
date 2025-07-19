@@ -98,6 +98,7 @@ public class SimpleCloudsLangProvider extends LanguageProvider
 		this.add("gui.simpleclouds.error.unknown", "Please make a bug report on the mod's GitHub repository, linked below. Make sure to include the crash report and latest.log file with your issue.");
 		this.add("gui.simpleclouds.error.couldNotLoadMeshScript", "Failed to load the mesh compute shader. Please make a bug report on the mod's GitHub repository, linked below. Make sure to include the crash report and latest.log file with your issue.\n\nTo developers: If you are modifying the cube_mesh.comp file using a resource pack and have made an error, this message will appear on start up. Please see the latest.log for more details.");
 		this.add("gui.simpleclouds.error.compat.dh_oculus", "Simple Clouds does not currently support shaders with Distant Horizons. Please either remove Oculus/Iris to play with Simple Clouds, or remove Simple Clouds to play with shaders.");
+		this.add("gui.simpleclouds.error.coreShadersInitialization", "An error occured while initializing core shaders. If you are modifying them, please see the log for more details. If you are a user, please report this on the Simple Clouds GitHub.");
 		this.add("gui.simpleclouds.error_screen.button.crash_report", "Crash Report");
 		this.add("gui.simpleclouds.error_screen.multiple", "More than one error has occured. Please see the 'crash-reports' folder for more information.");
 		this.add("gui.simpleclouds.notice.title", "Simple Clouds Notice");

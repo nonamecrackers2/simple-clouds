@@ -305,6 +305,14 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			return;
 		}
 		
+		if (!SimpleCloudsShaders.areShadersInitialized())
+		{
+			LOGGER.error("Simple Clouds renderer could not initialize. Core shaders are not initialized.");
+			this.initialInitializationResult = RendererInitializeResult.builder().coreShadersNotInitialized(SimpleCloudsShaders.getError()).build();
+			saveAndPrintCrashReports(this.mc, this.initialInitializationResult);
+			return;
+		}
+		
 		RendererInitializeResult compatError = SimpleCloudsCompatHelper.findCompatErrors();
 		if (compatError.getState() == RendererInitializeResult.State.ERROR)
 		{
@@ -458,7 +466,13 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		LOGGER.debug("Effective chunk span with LODs (total viewable area): {}", this.meshGenerator.getLodConfig().getEffectiveChunkSpan());
 		LOGGER.debug("Total span in blocks: {}", this.meshGenerator.getLodConfig().getEffectiveChunkSpan() * SimpleCloudsConstants.CHUNK_SIZE * SimpleCloudsConstants.CLOUD_SCALE);
 		
-		switch (result.getState()) //Print crash reports if needed
+		//Print crash reports if needed
+		saveAndPrintCrashReports(this.mc, result);
+	}
+	
+	private static void saveAndPrintCrashReports(Minecraft mc, RendererInitializeResult result)
+	{
+		switch (result.getState())
 		{
 		case ERROR:
 		{
@@ -466,11 +480,11 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			LOGGER.error("---------CRASH REPORT BEGIN---------");
 			for (CrashReport report : reports)
 			{
-				this.mc.fillReport(report);
+				mc.fillReport(report);
 				LOGGER.error("{}", report.getFriendlyReport());
 			}
 			LOGGER.error("---------CRASH REPORT END---------");
-			result.saveCrashReports(this.mc.gameDirectory);
+			result.saveCrashReports(mc.gameDirectory);
 			break;
 		}
 		default:

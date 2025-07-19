@@ -133,6 +133,11 @@ public class RendererInitializeResult
 			return this.addError(error, title, Component.translatable("gui.simpleclouds.error.couldNotLoadMeshScript"));
 		}
 		
+		public Builder coreShadersNotInitialized(@Nullable Throwable error)
+		{
+			return this.addError(error, "Core Shader Initialization Error", Component.translatable("gui.simpleclouds.error.coreShadersInitialization"));
+		}
+		
 		public RendererInitializeResult build()
 		{
 			return new RendererInitializeResult(this.state, this.errors.build());
