@@ -17,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15C;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -119,7 +120,7 @@ public class ComputeShader
 		else
 		{
 			Uniform.uploadInteger(loc, id);
-			RenderSystem.activeTexture('\u84c0' + id);
+			RenderSystem.activeTexture(GL13.GL_TEXTURE0 + id);
 			binder.run();
 		}
 		ProgramManager.glUseProgram(0);

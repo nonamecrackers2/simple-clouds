@@ -230,6 +230,7 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 			PreparedChunk chunk = task.chunk().getChunkInfo();
 			GL41.glProgramUniform2f(id, loc, chunk.x() * (float)SimpleCloudsConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F, chunk.z() * (float)SimpleCloudsConstants.CHUNK_SIZE + (float)this.requiredRegionTexSize / 2.0F);
 		});
+		this.shader.setSampler2DArray("RegionsSampler", this.cloudRegionTextureId, 0);
 		
 		super.generateChunk(task);
 	}

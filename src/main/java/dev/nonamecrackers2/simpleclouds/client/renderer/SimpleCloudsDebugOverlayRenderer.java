@@ -2,6 +2,7 @@ package dev.nonamecrackers2.simpleclouds.client.renderer;
 
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL30;
 
 import com.mojang.blaze3d.shaders.ProgramManager;
@@ -50,7 +51,7 @@ public class SimpleCloudsDebugOverlayRenderer
 					ProgramManager.glUseProgram(shader.getId());
 					int loc = Uniform.glGetUniformLocation(shader.getId(), "TexRegionSampler");
 					Uniform.uploadInteger(loc, 0);
-					RenderSystem.activeTexture('\u84c0' + 0);
+					RenderSystem.activeTexture(GL13.GL_TEXTURE0 + 0);
 					GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, id);
 					BufferUploader.drawWithShader(bufferbuilder.end());
 				}

@@ -734,7 +734,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
 				shader.COLOR_MODULATOR.upload();
 			}
-			
 			GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, shader.getShaderStorageBinding(), opaqueBuffers.getBufferId());
 			generator.getSideMesh().drawInstanced(opaqueBuffers.getElementCount());
 		}, ditherFade);

@@ -146,9 +146,9 @@ dependencies {
     
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     
-    runtimeOnly fg.deobf("curse.maven:embeddium-908741:5681725")
+    //runtimeOnly fg.deobf("curse.maven:embeddium-908741:5630140")
     //runtimeOnly fg.deobf("curse.maven:worldedit-225608:4586218")
-    //runtimeOnly fg.deobf("curse.maven:create-328085:5689514")
+    //runtimeOnly fg.deobf("curse.maven:create-328085:6641603")
     //runtimeOnly fg.deobf("curse.maven:oculus-581495:6020952")
     //runtimeOnly fg.deobf("curse.maven:borderless-378979:4575494")
     //runtimeOnly fg.deobf("curse.maven:stellarview-865273:5373192")
@@ -168,7 +168,7 @@ dependencies {
 	implementation fg.deobf("nonamecrackers2:simplecloudsapi-forge:${api_version}")
 	
 	implementation fg.deobf("maven.modrinth:DistantHorizonsApi:${dh_api_version}")
-	implementation fg.deobf("maven.modrinth:DistantHorizons:${dh_version}-${minecraft_version}")
+	//implementation fg.deobf("maven.modrinth:DistantHorizons:${dh_version}-${minecraft_version}")
 	
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
