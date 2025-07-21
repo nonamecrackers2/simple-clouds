@@ -31,6 +31,7 @@ public class SimpleCloudsClientConfigListeners
 				.addListener(SimpleCloudsConfig.CLIENT.shadowDistance, (o, n) -> requestReload(false))
 				.addListener(SimpleCloudsConfig.CLIENT.concurrentComputeDispatches, (o, n) -> requestReload(false))
 				.addListener(SimpleCloudsConfig.CLIENT.singleModeCloudType, (o, n) -> onSingleModeCloudTypeUpdated(n))
+				.addListener(SimpleCloudsConfig.CLIENT.customRainSounds, (o, n) -> reloadResources())
 				.buildAndRegister();
 	}
 	
@@ -99,6 +100,15 @@ public class SimpleCloudsClientConfigListeners
 				SimpleCloudsRenderer.getInstance().requestReload();
 			}, 300, Component.translatable("gui.simpleclouds.requires_reload.info"));
 			Popup.clearQueue();
+		});
+	}
+	
+	public static void reloadResources()
+	{
+		Minecraft.getInstance().execute(() -> {
+			Popup.createYesNoPopup(null, () -> {
+				Minecraft.getInstance().reloadResourcePacks();
+			}, 300, Component.translatable("gui.simpleclouds.requires_reload_resource_packs.info"));
 		});
 	}
 }

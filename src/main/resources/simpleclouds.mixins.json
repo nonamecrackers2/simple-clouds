@@ -22,6 +22,7 @@
 		"MixinPostPass",
 		"MixinRenderTargetAccessor",
 		"MixinUniform",
+		"MixinSoundManagerPreperations",
 		"vivecraft.MixinVRRenderer",
 		"vivecraft.MixinMinecraftVRMixin",
 		"vivecraft.MixinRenderTarget"

@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 
+import dev.nonamecrackers2.simpleclouds.client.compat.SimpleCloudsCompatHelper;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -80,7 +81,7 @@ public class MixinLevelRenderer
 	@Inject(method = "renderSnowAndRain", at = @At("HEAD"), cancellable = true)
 	public void simpleclouds$overrideRainRendering_renderSnowAndRain(LightTexture texture, float partialTick, double camX, double camY, double camZ, CallbackInfo ci)
 	{
-		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
+		if (SimpleCloudsRenderer.canRenderInDimension(this.level) && SimpleCloudsCompatHelper.renderCustomRain())
 			ci.cancel();
 	}
 	

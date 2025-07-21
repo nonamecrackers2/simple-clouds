@@ -88,8 +88,10 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -989,7 +991,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void renderWeather(LightTexture texture, float partialTick, double camX, double camY, double camZ)
 	{
-		this.worldEffectsManager.renderRain(texture, partialTick, camX, camY, camZ);
+		if (SimpleCloudsCompatHelper.renderCustomRain())
+			this.worldEffectsManager.renderRain(texture, partialTick, camX, camY, camZ);
 		if (!SimpleCloudsMod.dhLoaded())
 			this.worldEffectsManager.renderLightning(partialTick, camX, camY, camZ);
 	}

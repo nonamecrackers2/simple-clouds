@@ -66,6 +66,8 @@ public class SimpleCloudsConfig
 		public final ForgeConfigSpec.ConfigValue<Boolean> concurrentComputeDispatches;
 		public final ForgeConfigSpec.ConfigValue<GenerationInterval> generationInterval;
 		public final ForgeConfigSpec.ConfigValue<Integer> targetMeshGenFps;
+		public final ForgeConfigSpec.ConfigValue<Boolean> customRainSounds;
+		public final ForgeConfigSpec.ConfigValue<Boolean> renderCustomRain;
 		//Cloud Visuals
 		public final ForgeConfigSpec.ConfigValue<Boolean> cubeNormals;
 		public final ForgeConfigSpec.ConfigValue<Boolean> shadedClouds;
@@ -108,6 +110,10 @@ public class SimpleCloudsConfig
 			this.lightningColorVariation = this.createValue(true, "lightningColorVariation", false, "Specifies if lightning should have slight random color variation");
 			
 			this.thunderAttenuationDistance = this.createRangedIntValue(2000, 100, 20000, "thunderAttenuationDistance", false, "Specifies the attenuation distance for thunder. The lower the value, the quieter it will be from longer distances");
+			
+			this.customRainSounds = this.createValue(true, "customRainSounds", false, "Specifies if new rain sounds should replace the vanilla ones");
+			
+			this.renderCustomRain = this.createValue(true, "renderCustomRain", false, "Specifies if custom rain rendering should be used. Automatically disabled when using Pretty/Particle Rain");
 			
 			builder.pop();
 			
