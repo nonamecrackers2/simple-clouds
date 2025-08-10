@@ -71,23 +71,24 @@ repositories {
         name "nonamecrackers2Maven"
         url "https://maven.nonamecrackers2.dev/snapshots"
     }
-    //
-    //flatDir {
-    //    dir 'libs'
-    //}
+    
+    flatDir {
+        dir 'libs'
+    }
 }
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
 
-    jarJar("nonamecrackers2:crackerslib-neoforge:${crackerslib_version}") {
-    	jarJar.ranged(it, "${crackerslib_version_range}")
-    }
+    //jarJar("nonamecrackers2:crackerslib-neoforge:${crackerslib_version}") {
+    //	jarJar.ranged(it, "${crackerslib_version_range}")
+    //}
     
     //runtimeOnly "maven.modrinth:sodium:mc1.21-0.6.0-beta.2-neoforge"
     //runtimeOnly "maven.modrinth:iris:1.8.0-beta.5+1.21-neoforge"
     
-    implementation "nonamecrackers2:crackerslib-neoforge:${crackerslib_version}"
+    //implementation "nonamecrackers2:crackerslib-neoforge:${crackerslib_version}"
+    implementation "nonamecrackers2.crackerslib:crackerslib-1.21.1-0.4.6-beta"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
