@@ -1,0 +1,91 @@
+{
+    "additions": {
+        "command.simpleclouds.clouds.clear": "Removed %s cloud formations",
+        "command.simpleclouds.clouds.clear.fail": "No cloud formations to remove",
+        "command.simpleclouds.clouds.count": "Found %s cloud formations [%s]",
+        "command.simpleclouds.clouds.get": "Cloud type %s is at [%s, %s] and has weather type '%s'",
+        "command.simpleclouds.clouds.get.empty": "No cloud type is at that position",
+        "command.simpleclouds.clouds.refresh": "Refreshing clouds",
+        "command.simpleclouds.clouds.spawn": "Spawned cloud %s at [%s, %s]",
+        "command.simpleclouds.clouds.spawn.fail": "Too many cloud formations close by!",
+        "commands.simpleclouds.cloudType.notFound": "Unknown cloud type '%s'",
+        "gui.simpleclouds.cloud_previewer.transparency_fade.title": "Transparency Fade",
+        "gui.simpleclouds.config.atmosphericClouds.description": "Specifies if a purely visual 2D atmospheric cloud layer should render.",
+        "gui.simpleclouds.config.atmosphericClouds.title": "Atmospheric Clouds",
+        "gui.simpleclouds.config.category.distant_horizons.title": "Distant Horizons",
+        "gui.simpleclouds.config.category.mesh_generation.title": "Mesh Generation",
+        "gui.simpleclouds.config.category.preference.title": "Preference",
+        "gui.simpleclouds.config.category.visual.title": "Visual",
+        "gui.simpleclouds.config.concurrentComputeDispatches.description": "EXPERIMENTAL. Uses a slightly modified algorithm that removes sync calls between chunk generator compute dispatches at the cost of higher memory usage. May result in a performance boost.",
+        "gui.simpleclouds.config.concurrentComputeDispatches.title": "Concurrent Compute Dispatches",
+        "gui.simpleclouds.config.cubeNormals.description": "Specifies if normals should be applied to each individual cube in the cloud which applies a bit of shading per cube face. Helps distinguish each individual cube in a cloud.",
+        "gui.simpleclouds.config.cubeNormals.title": "Cube Normals",
+        "gui.simpleclouds.config.distantShadows.description": "Toggles shadows that appear on distant terrain.",
+        "gui.simpleclouds.config.distantShadows.title": "Distant Shadows",
+        "gui.simpleclouds.config.generationInterval.description": "How the amount of frames used to generate the entire mesh is calculated. Static will use the 'Frames To Generate Mesh' option. Dynamic will calculate it automatically depending on your FPS. Target FPS will target a certain perceived framerate for mesh generation.",
+        "gui.simpleclouds.config.generationInterval.title": "Generation Interval",
+        "gui.simpleclouds.config.shadedClouds.description": "Specifies if minimal shading should be applied to clouds. May cause performance drops",
+        "gui.simpleclouds.config.shadedClouds.title": "Shaded Clouds",
+        "gui.simpleclouds.config.shadowDistance.description": "Specifies the distance shadows can render.\nRange: 500 ~ 15000",
+        "gui.simpleclouds.config.shadowDistance.title": "Shadow Distance",
+        "gui.simpleclouds.config.showVivecraftNotice.description": "Shows the Vivecraft notice on startup.",
+        "gui.simpleclouds.config.showVivecraftNotice.title": "Show Vivecraft Notice",
+        "gui.simpleclouds.config.targetMeshGenFps.description": "Used to set the target FPS with the 'Target FPS' option in 'Generation Interval'.\nRange: 1 ~ 1000",
+        "gui.simpleclouds.config.targetMeshGenFps.title": "Target Mesh Gen Fps",
+        "gui.simpleclouds.config.transparency.description": "Specifies if transparent cubes should be generated for supported cloud types. May cause performance drops.",
+        "gui.simpleclouds.config.transparency.title": "Transparency",
+        "gui.simpleclouds.config.transparencyRenderDistancePercentage.description": "Specifies the maximum percentage of the total viewable distance transparent cubes can be generated in.\nRange: 1 ~ 100",
+        "gui.simpleclouds.config.transparencyRenderDistancePercentage.title": "Transparency Render Distance Percentage",
+        "gui.simpleclouds.error.compat.dh_oculus": "Simple Clouds does not currently support shaders with Distant Horizons. Please either remove Oculus/Iris to play with Simple Clouds, or remove Simple Clouds to play with shaders.",
+        "gui.simpleclouds.error.opengl": "The currently selected display adapter does not support Simple Clouds.\n\nSimple Clouds only supports display adapters that have OpenGL 4.3+ capabilities.\n\nPlease make sure:\n1. Your drivers are up to date\n2. You are not using integrated graphics instead of a discrete GPU to run Minecraft.\n\nIf you are a MacOS user, Simple Clouds IS NOT SUPPORTED as the OS is stuck on OpenGL 4.1. Unfortunately, this is a limitation that Simple Clouds cannot work around.",
+        "gui.simpleclouds.notice.close.title": "Close",
+        "gui.simpleclouds.notice.title": "Simple Clouds Notice",
+        "gui.simpleclouds.notice.vivecraft": "Vivecraft support is experimental. Please expect lower framerates, instability, and glitches/visual artifacts. Report bugs and issues on the official GitHub issue tracker.",
+        "simpleclouds.config.preset.classic_style": "Classic Style",
+        "simpleclouds.config.preset.classic_style.description": "The classic Simple Clouds style",
+        "simpleclouds.config.preset.low": "Low",
+        "simpleclouds.config.preset.low.description": "For systems that are struggling a bit running this mod. Sets the level of detail to the lowest, disables transparency, and makes the cloud mesh generate a bit slower.",
+        "simpleclouds.config.preset.medium": "Medium",
+        "simpleclouds.config.preset.medium.description": "For more medium-end systems that can't handle high. Lowers the level of detail and makes the cloud mesh generate a bit slower.",
+        "simpleclouds.config.preset.ultra_low": "Ultra Low",
+        "simpleclouds.config.preset.ultra_low.description": "If your system is REALLY struggling. Lowest level of detail, no transparency, and disables storm fog."
+    },
+    "changes": {
+        "gui.simpleclouds.config.framesToGenerateMesh.description": {
+            "new": "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of stuttery cloud movement.\nRange: 1 ~ 32",
+            "old": "Specifies how many frames it should take to generate the entire cloud mesh. Higher values will improve performance at the cost of some visual artifacts.\nRange: 1 ~ 32"
+        },
+        "gui.simpleclouds.config.frustumCulling.description": {
+            "new": "Culls cloud chunks not visible to the player. Generally should not be disabled, but can fix visual issues when looking around fast with higher frames per mesh generation values.",
+            "old": "Culls cloud chunks not visible to the player. Disable if facing noticeable artifacts with high cloud mesh generate times."
+        },
+        "gui.simpleclouds.config.levelOfDetail.description": {
+            "new": "Specifies the quality of the level of detail. A lower setting makes clouds lower quality faster.",
+            "old": "Specifies the quality of the level of detail."
+        },
+        "gui.simpleclouds.config.renderStormFog.description": {
+            "new": "Specifies if 'rain' beneath storm clouds should appear or not. Disabling can improve performance, especially when in VR.",
+            "old": "Specifies if the fog beneath storm clouds should appear or not. Disabling can improve performance."
+        },
+        "gui.simpleclouds.config.testSidesThatAreOccluded.description": {
+            "new": "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of visual issues with shadows and storm fog.",
+            "old": "Specifies if faces that are not visible to the camera should be tested during mesh generation. Settings this to off can improve performance at the cost of some visual artifacts."
+        },
+        "gui.simpleclouds.error.recommendations": {
+            "new": "Please try updating your graphics drivers. If the issue persists, please make a bug report on the Simple Clouds repository, linked below. Make sure to include the crash report with your issue.",
+            "old": "Please try updating your graphics drivers. If the issue persists, please make a bug report on the Simple Clouds repository, linked below. Make sure to include the crash report with your issue.\n\nPlease note that Simple Clouds only supports GPUs that support OpenGL 4.3+. If you've updated your graphics drivers and this issue still persists, it is likely your graphics card is too old to support Simple Clouds."
+        },
+        "gui.simpleclouds.error_screen.description": {
+            "new": "An error occured while initializing Simple Clouds.",
+            "old": "An error occured while initializing the cloud mesh generator."
+        }
+    },
+    "removals": {
+        "gui.simpleclouds.config.cloudStyle.description": "Specifies the visual style of the cloud. DEFAULT is the default style. SHADED adds minimal shading to clouds, making them appear more defined.",
+        "gui.simpleclouds.config.cloudStyle.title": "Cloud Style",
+        "simpleclouds.config.preset.fast_culled_mesh": "Fast Culled Mesh",
+        "simpleclouds.config.preset.fast_culled_mesh.description": "Heavily lowers the total vertex count by applying culling. Generates the cloud mesh much faster. A small delay for chunks to appear is present when turning fast.",
+        "simpleclouds.config.preset.optimal_mesh": "Optimal Mesh",
+        "simpleclouds.config.preset.optimal_mesh.description": "A more complete cloud mesh that fairs better with storm fog. Removes the small delay for chunks to appear that can be seen when using frustum culling, however at the cost of more vertices. Clouds may appear to move with a slight stutter when moving fast."
+    }
+}

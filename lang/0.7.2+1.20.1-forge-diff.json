@@ -1,0 +1,12 @@
+{
+    "additions": {
+        "gui.simpleclouds.config.customRainSounds.description": "Specifies if new rain sounds should replace the vanilla ones.",
+        "gui.simpleclouds.config.customRainSounds.title": "Custom Rain Sounds",
+        "gui.simpleclouds.config.renderCustomRain.description": "Specifies if custom rain rendering should be used. Automatically disabled when using Pretty/Particle Rain.",
+        "gui.simpleclouds.config.renderCustomRain.title": "Render Custom Rain",
+        "gui.simpleclouds.error.coreShadersInitialization": "An error occured while initializing core shaders. If you are modifying them, please see the log for more details. If you are a user, please report this on the Simple Clouds GitHub.",
+        "gui.simpleclouds.requires_reload_resource_packs.info": "A config option was modified that requires resource packs to be reloaded. Would you like to reload resources to apply the changes?"
+    },
+    "changes": {},
+    "removals": {}
+}

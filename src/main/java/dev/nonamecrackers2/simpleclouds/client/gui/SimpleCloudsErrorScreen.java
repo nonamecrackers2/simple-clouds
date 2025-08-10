@@ -1,76 +1,58 @@
 package dev.nonamecrackers2.simpleclouds.client.gui;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 
-import dev.nonamecrackers2.simpleclouds.client.mesh.GeneratorInitializeResult;
+import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
+import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.Util;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.FocusableTextWidget;
-import net.minecraft.client.gui.layouts.FrameLayout;
-import net.minecraft.client.gui.layouts.GridLayout;
+import net.minecraft.client.gui.layouts.GridLayout.RowHelper;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.neoforged.fml.loading.ImmediateWindowHandler;
-import nonamecrackers2.crackerslib.client.util.GUIUtils;
+import net.minecraft.util.FormattedCharSequence;
 
-public class SimpleCloudsErrorScreen extends Screen
+
+public class SimpleCloudsErrorScreen extends SimpleCloudsInfoScreen
 {
-	private static final int PADDING = 20;
 	private static final Component DESCRIPTION = Component.translatable("gui.simpleclouds.error_screen.description");
-	private final GeneratorInitializeResult result;
+	private final RendererInitializeResult result;
 	private Path crashReportsFolder;
-	private Component openGLVersion;
 	
-	public SimpleCloudsErrorScreen(GeneratorInitializeResult result)
+	public SimpleCloudsErrorScreen(RendererInitializeResult result)
 	{
-		super(Component.translatable("gui.simpleclouds.error_screen.title").withStyle(Style.EMPTY.withUnderlined(true).withBold(true)));
+		super(Component.translatable("gui.simpleclouds.error_screen.title").withStyle(Style.EMPTY.withUnderlined(true).withBold(true)), 3);
 		this.result = result;
 	}
 	
 	@Override
-	protected void init()
+	protected void generateText(List<FormattedCharSequence> text, int maxWidth)
 	{
-		this.openGLVersion = Component.literal("OpenGL " + ImmediateWindowHandler.getGLVersion());
-		this.crashReportsFolder = this.minecraft.gameDirectory.toPath().resolve("crash-reports");
-		
-		MutableComponent text = DESCRIPTION.copy();
-		text.append("\n\n");
+		text.addAll(this.font.split(DESCRIPTION, maxWidth));
 		if (!this.result.getErrors().isEmpty())
 		{
-			GeneratorInitializeResult.Error error = this.result.getErrors().get(this.result.getErrors().size() - 1);
-			text.append(error.text());
+			RendererInitializeResult.Error error = this.result.getErrors().get(this.result.getErrors().size() - 1);
+			text.add(FormattedCharSequence.EMPTY);
+			text.addAll(this.font.split(error.text(), maxWidth));
 			if (this.result.getErrors().size() > 1)
 			{
-				text.append("\n\n");
-				text.append(Component.translatable("gui.simpleclouds.error_screen.multiple"));
+				text.add(FormattedCharSequence.EMPTY);
+				text.addAll(this.font.split(Component.translatable("gui.simpleclouds.error_screen.multiple"), maxWidth));
 			}
 		}
 		else
 		{
-			text.append(Component.translatable("gui.simpleclouds.error_screen.no_errors"));
+			text.add(Component.translatable("gui.simpleclouds.error_screen.no_errors").getVisualOrderText());
 		}
-		
-		
-		var textWidget = this.addRenderableWidget(new FocusableTextWidget(Math.min(this.width, 400), text, this.font, 20));
-		textWidget.setCentered(true);
-        textWidget.setPosition(this.width / 2 - textWidget.getWidth() / 2, this.height / 2 - textWidget.getHeight() / 2);
-        this.setInitialFocus(textWidget);
-		
-		GridLayout layout = new GridLayout().spacing(10);
-		GridLayout.RowHelper row = layout.createRowHelper(3);
-		
-		row.addChild(Button.builder(Component.translatable("gui.crackerslib.screen.config.github"), b -> {
-			GUIUtils.openLink("https://github.com/nonamecrackers2/simple-clouds-new/issues");
-		}).width(100).build());
-		
-		row.addChild(Button.builder(Component.translatable("gui.crackerslib.screen.config.discord"), b -> {
-			GUIUtils.openLink("https://discord.com/invite/cracker-s-modded-community-987817685293355028");
-		}).width(100).build());
+	}
+	
+	@Override
+	protected void generateButtons(RowHelper row)
+	{
+		super.generateButtons(row);
 		
 		Button button = row.addChild(Button.builder(Component.translatable("gui.simpleclouds.error_screen.button.crash_report"), b -> {
 			var list = this.result.getSavedCrashReportPaths();
@@ -80,10 +62,14 @@ public class SimpleCloudsErrorScreen extends Screen
 				Util.getPlatform().openUri(this.crashReportsFolder.toUri());
 		}).width(100).build());
 		button.active = this.result.getSavedCrashReportPaths() != null && !this.result.getSavedCrashReportPaths().isEmpty();
+	}
+	
+	@Override
+	protected void init()
+	{
+		this.crashReportsFolder = this.minecraft.gameDirectory.toPath().resolve("crash-reports");
 		
-		layout.arrangeElements();
-		FrameLayout.centerInRectangle(layout, 0, this.height - 40, this.width, 40);
-		layout.visitWidgets(this::addRenderableWidget);
+		super.init();
 	}
 	
 	@Override
@@ -94,20 +80,21 @@ public class SimpleCloudsErrorScreen extends Screen
 		
 		if (keyCode == GLFW.GLFW_KEY_R && Screen.hasControlDown())
 		{
-			this.minecraft.reloadResourcePacks();
+			this.minecraft.reloadResourcePacks().thenRunAsync(() ->
+			{
+				var renderer = SimpleCloudsRenderer.getOptionalInstance().orElse(null);
+				if (renderer == null)
+					return;
+				RendererInitializeResult result = renderer.getInitialInitializationResult();
+				if (result != null && result.getState() == RendererInitializeResult.State.ERROR)
+					this.minecraft.setScreen(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult()));
+				else
+					this.minecraft.setScreen(null);
+			}, this.minecraft);
 			return true;
 		}
 		
 		return false;
-	}
-	
-	@Override
-	public void render(GuiGraphics stack, int mouseX, int mouseY, float partialTick)
-	{
-		super.render(stack, mouseX, mouseY, partialTick);
-		
-		stack.drawCenteredString(this.font, this.getTitle(), this.width / 2, PADDING, 0xFFFFFFFF);
-		stack.drawString(this.font, this.openGLVersion, PADDING, PADDING, 0xFFFFFFFF);
 	}
 	
 	@Override

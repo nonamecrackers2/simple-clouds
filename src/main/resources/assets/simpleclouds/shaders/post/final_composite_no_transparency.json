@@ -1,0 +1,17 @@
+{
+	"targets": [
+		"output"
+	],
+	"passes": [
+		{
+			"name": "simpleclouds:clouds_composite_no_transparency",
+			"intarget": "minecraft:main",
+			"outtarget": "output"
+		},
+		{
+			"name": "blit",
+			"intarget": "output",
+			"outtarget": "minecraft:main"
+		}
+	]
+}

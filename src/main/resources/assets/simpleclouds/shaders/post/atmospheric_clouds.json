@@ -1,0 +1,17 @@
+{
+    "targets": [
+        "swap"
+    ],
+    "passes": [
+        {
+            "name": "simpleclouds:atmospheric_clouds",
+            "intarget": "minecraft:main",
+            "outtarget": "swap"
+        },
+        {
+            "name": "simpleclouds:atmospheric_clouds",
+            "intarget": "swap",
+            "outtarget": "minecraft:main"
+        }
+    ]
+}

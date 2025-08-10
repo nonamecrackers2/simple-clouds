@@ -3,11 +3,11 @@ package dev.nonamecrackers2.simpleclouds.client.config;
 import com.google.common.base.Joiner;
 
 import dev.nonamecrackers2.simpleclouds.SimpleCloudsMod;
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.cloud.ClientSideCloudTypeManager;
-import dev.nonamecrackers2.simpleclouds.client.mesh.SingleRegionCloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.SingleRegionCloudMeshGenerator;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import dev.nonamecrackers2.simpleclouds.client.world.ClientCloudManager;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
 import net.minecraft.ChatFormatting;
@@ -23,9 +23,15 @@ public class SimpleCloudsClientConfigListeners
 	public static void registerListener()
 	{
 		ConfigListener.builder(ModConfig.Type.CLIENT, SimpleCloudsMod.MODID)
-				.addListener(SimpleCloudsConfig.CLIENT.cloudMode, (o, n) -> requestReload())
-				.addListener(SimpleCloudsConfig.CLIENT.cloudStyle, (o, n) -> requestReload())
+				.addListener(SimpleCloudsConfig.CLIENT.cloudMode, (o, n) -> requestReload(true))
+				.addListener(SimpleCloudsConfig.CLIENT.shadedClouds, (o, n) -> requestReload(false))
+				.addListener(SimpleCloudsConfig.CLIENT.transparency, (o, n) -> requestReload(false))
+				.addListener(SimpleCloudsConfig.CLIENT.levelOfDetail, (o, n) -> requestReload(false))
+				.addListener(SimpleCloudsConfig.CLIENT.distantShadows, (o, n) -> requestReload(false))
+				.addListener(SimpleCloudsConfig.CLIENT.shadowDistance, (o, n) -> requestReload(false))
+				.addListener(SimpleCloudsConfig.CLIENT.concurrentComputeDispatches, (o, n) -> requestReload(false))
 				.addListener(SimpleCloudsConfig.CLIENT.singleModeCloudType, (o, n) -> onSingleModeCloudTypeUpdated(n))
+				.addListener(SimpleCloudsConfig.CLIENT.customRainSounds, (o, n) -> reloadResources())
 				.buildAndRegister();
 	}
 	
@@ -55,7 +61,7 @@ public class SimpleCloudsClientConfigListeners
 			ClientSideCloudTypeManager.getInstance().getCloudTypeFromRawId(type).ifPresentOrElse(t -> {
 				generator.setCloudType(t);
 			}, () -> {
-				generator.setCloudType(SimpleCloudsConstants.FALLBACK);
+				generator.setCloudType(SimpleCloudsConstants.EMPTY);
 			});
 		}
 	}
@@ -84,15 +90,25 @@ public class SimpleCloudsClientConfigListeners
 		});
 	}
 	
-	public static void requestReload()
+	public static void requestReload(boolean skipIfServerAvailable)
 	{
 		Minecraft.getInstance().execute(() -> 
 		{
-			if (ClientCloudManager.isAvailableServerSide())
+			if (skipIfServerAvailable && ClientCloudManager.isAvailableServerSide())
 				return;
 			Popup.createYesNoPopup(null, () -> {
 				SimpleCloudsRenderer.getInstance().requestReload();
 			}, 300, Component.translatable("gui.simpleclouds.requires_reload.info"));
+			Popup.clearQueue();
+		});
+	}
+	
+	public static void reloadResources()
+	{
+		Minecraft.getInstance().execute(() -> {
+			Popup.createYesNoPopup(null, () -> {
+				Minecraft.getInstance().reloadResourcePacks();
+			}, 300, Component.translatable("gui.simpleclouds.requires_reload_resource_packs.info"));
 		});
 	}
 }

@@ -17,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15C;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -34,25 +35,21 @@ import com.mojang.blaze3d.shaders.ProgramManager;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
-import net.minecraft.CrashReport;
-import net.minecraft.CrashReportCategory;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.BindingManager;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.ShaderStorageBufferObject;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.UniqueBinding;
+import dev.nonamecrackers2.simpleclouds.client.shader.buffer.WithBinding;
 import net.minecraft.FileUtil;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.neoforged.neoforge.client.ClientHooks;
 
-public class ComputeShader implements AutoCloseable
+public class ComputeShader
 {
 	protected static final Logger LOGGER = LogManager.getLogger("simpleclouds/ComputeShader");
 	private static final Pattern LOCAL_GROUP_REPLACER = Pattern.compile("\\$\\{.*?\\}");
 	private static final Map<String, ComputeShader.CompiledShader> COMPILED_PROGRAMS = Maps.newHashMap();
-	protected static final Int2ObjectMap<ShaderStorageBufferObject> ALL_SHADER_STORAGE_BUFFERS = new Int2ObjectOpenHashMap<>();
-	private static final IntList ALL_IMAGE_BINDINGS = new IntArrayList();
 	private static int maxGroupX = -1;
 	private static int maxGroupY = -1;
 	private static int maxGroupZ = -1;
@@ -60,12 +57,10 @@ public class ComputeShader implements AutoCloseable
 	private static int maxLocalGroupY = -1;
 	private static int maxLocalGroupZ = -1;
 	private static int maxLocalInvocations = -1;
-	private static int maxSSBOBindings = -1;
-	private static int maxImageUnits = -1;
 	private int id;
 	private final ComputeShader.CompiledShader compiledShader;
 	private final String name;
-	private final Map<String, ShaderStorageBufferObject> shaderStorageBuffers = Maps.newHashMap();
+	private final Map<String, WithBinding> unique = Maps.newHashMap();
 	private final List<String> missingUniformErrors = Lists.newArrayList();
 	
 	private ComputeShader(int id, ComputeShader.CompiledShader compiledShader, String name)
@@ -76,68 +71,16 @@ public class ComputeShader implements AutoCloseable
 		this.name = name;
 	}
 	
-	public static void printDebug()
-	{
-		LOGGER.debug("Binded SSBOs: {}", ALL_SHADER_STORAGE_BUFFERS);
-		LOGGER.debug("Binded image units: {}", ALL_IMAGE_BINDINGS);
-	}
-	
-	public static void fillReport(CrashReport report)
-	{
-		CrashReportCategory category = report.addCategory("Simple Clouds Compute Shaders");
-		category.setDetail("Binded SSBOS", ALL_SHADER_STORAGE_BUFFERS);
-		category.setDetail("Binded Image Units", ALL_IMAGE_BINDINGS);
-	}
-	
-	public static int getAvailableShaderStorageBinding()
-	{
-		if (maxSSBOBindings == -1)
-			maxSSBOBindings = GL11.glGetInteger(GL43.GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS);
-		for (int i = maxSSBOBindings - 1; i > 0; i--)
-		{
-			if (!ALL_SHADER_STORAGE_BUFFERS.containsKey(i))
-				return i;
-		}
-		throw new NullPointerException("No available buffer binding. Total available buffer bindings: " + maxSSBOBindings);
-	}
-	
-	public static int getAvailableImageUnit()
-	{
-		if (maxImageUnits == -1)
-			maxImageUnits = GL11.glGetInteger(GL43.GL_MAX_IMAGE_UNITS);
-		for (int i = maxImageUnits - 1; i > 0; i--)
-		{
-			if (!ALL_IMAGE_BINDINGS.contains(i))
-				return i;
-		}
-		throw new NullPointerException("No available image binding. Total available image units: " + maxImageUnits);
-	}
-	
-	public static int getAndUseImageUnit()
-	{
-		int unit = getAvailableImageUnit();
-		ALL_IMAGE_BINDINGS.add(unit);
-		return unit;
-	}
-	
-	@SuppressWarnings("deprecation")
-	public static void freeImageUnit(int unit)
-	{
-		//We want to remove the value "unit" from the list, not the value at index "unit"
-		ALL_IMAGE_BINDINGS.remove((Object)unit);
-	}
-	
-	@Override
 	public void close()
 	{
 		RenderSystem.assertOnRenderThread();
 		LOGGER.debug("Closing compute shader id={}", this.id);
-		this.shaderStorageBuffers.values().forEach(buffer -> 
+		this.unique.values().forEach(buffer -> 
 		{
 			buffer.close();
-			ALL_SHADER_STORAGE_BUFFERS.remove(buffer.getBinding());
+			BindingManager.freeShaderStorageBinding(buffer.getBinding());
 		});
-		this.shaderStorageBuffers.clear();
+		this.unique.clear();
 		if (this.id != -1)
 		{
 			GlStateManager.glDeleteProgram(this.id);
@@ -177,7 +120,7 @@ public class ComputeShader implements AutoCloseable
 		else
 		{
 			Uniform.uploadInteger(loc, id);
-			RenderSystem.activeTexture('\u84c0' + id);
+			RenderSystem.activeTexture(GL13.GL_TEXTURE0 + id);
 			binder.run();
 		}
 		ProgramManager.glUseProgram(0);
@@ -206,23 +149,47 @@ public class ComputeShader implements AutoCloseable
 	 * @param usage One of:<br><table><tr><td>{@link GL15C#GL_STREAM_DRAW STREAM_DRAW}</td><td>{@link GL15C#GL_STREAM_READ STREAM_READ}</td><td>{@link GL15C#GL_STREAM_COPY STREAM_COPY}</td><td>{@link GL15C#GL_STATIC_DRAW STATIC_DRAW}</td><td>{@link GL15C#GL_STATIC_READ STATIC_READ}</td><td>{@link GL15C#GL_STATIC_COPY STATIC_COPY}</td><td>{@link GL15C#GL_DYNAMIC_DRAW DYNAMIC_DRAW}</td></tr><tr><td>{@link GL15C#GL_DYNAMIC_READ DYNAMIC_READ}</td><td>{@link GL15C#GL_DYNAMIC_COPY DYNAMIC_COPY}</td></tr></table>
 	 * @return {@link ShaderStorageBufferObject}
 	 */
-	public ShaderStorageBufferObject bindShaderStorageBuffer(String name, int usage)
+	public ShaderStorageBufferObject createAndBindSSBO(String name, int usage)
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
 		this.assertValid();
-		if (this.shaderStorageBuffers.containsKey(name))
+		
+		if (this.unique.containsKey(name))
 			throw new IllegalArgumentException("Buffer with name '" + name + "' is already defined");
+		
 		int index = GL43.glGetProgramResourceIndex(this.id, GL43.GL_SHADER_STORAGE_BLOCK, name);
 		if (index == -1)
 			throw new NullPointerException("Unknown block index with name '" + name + "'");
-		int binding = getAvailableShaderStorageBinding();
+		
+		int binding = BindingManager.getAvailableShaderStorageBinding();
 		GL43.glShaderStorageBlockBinding(this.id, index, binding);
 		int bufferId = GlStateManager._glGenBuffers();
 		GL30.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, binding, bufferId);
 		ShaderStorageBufferObject buffer = new ShaderStorageBufferObject(bufferId, binding, usage);
-		this.shaderStorageBuffers.put(name, buffer);
-		ALL_SHADER_STORAGE_BUFFERS.put(binding, buffer);
+		this.unique.put(name, buffer);
+		BindingManager.useShaderStorageBinding(binding);
+		
 		return buffer;
+	}
+	
+	public int findAndUseSSBOBinding(String name)
+	{
+		RenderSystem.assertOnRenderThreadOrInit();
+		this.assertValid();
+		
+		if (this.unique.containsKey(name))
+			throw new IllegalArgumentException("Buffer with name '" + name + "' is already defined");
+		
+		int index = GL43.glGetProgramResourceIndex(this.id, GL43.GL_SHADER_STORAGE_BLOCK, name);
+		if (index == -1)
+			throw new NullPointerException("Unknown block index with name '" + name + "'");
+		
+		int binding = BindingManager.getAvailableShaderStorageBinding();
+		GL43.glShaderStorageBlockBinding(this.id, index, binding);
+		this.unique.put(name, new UniqueBinding(binding));
+		BindingManager.useShaderStorageBinding(binding);
+		
+		return binding;
 	}
 	
 	public void setImageUnit(String name, int unit)
@@ -235,11 +202,24 @@ public class ComputeShader implements AutoCloseable
 		GL41.glProgramUniform1i(this.id, loc, unit);
 	}
 	
-	public ShaderStorageBufferObject getShaderStorageBuffer(String name)
+	private WithBinding getUniqueObject(String name)
 	{
 		RenderSystem.assertOnRenderThread();
 		this.assertValid();
-		return Objects.requireNonNull(this.shaderStorageBuffers.get(name), "Unknown buffer with name '" + name + "'");
+		return Objects.requireNonNull(this.unique.get(name), "Unknown buffer with name '" + name + "'");
+	}
+	
+	public ShaderStorageBufferObject getShaderStorageBuffer(String name)
+	{
+		WithBinding unique = this.getUniqueObject(name);
+		if (!(unique instanceof ShaderStorageBufferObject))
+			throw new ClassCastException("Object with name '" + name + "' is not an SSBO object!");
+		return (ShaderStorageBufferObject)unique;
+	}
+	
+	public int getShaderStorageBinding(String name)
+	{
+		return this.getUniqueObject(name).getBinding();
 	}
 	
 	public void dispatch(int groupX, int groupY, int groupZ, boolean wait)
@@ -345,11 +325,13 @@ public class ComputeShader implements AutoCloseable
 					@Override
 					public List<String> process(String file)
 					{
-						file = LOCAL_GROUP_REPLACER.matcher(file).replaceAll(result -> {
+						file = LOCAL_GROUP_REPLACER.matcher(file).replaceAll(result -> 
+						{
 							String group = result.group();
 							for (var entry : parameters.entrySet())
 							{
-								if (entry.getKey().equals(group))
+								String param = "${" + entry.getKey() + "}";
+								if (param.equals(group))
 									return entry.getValue();
 							}
 							switch (group)

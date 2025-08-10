@@ -1,7 +1,5 @@
 package dev.nonamecrackers2.simpleclouds.common.packet.impl;
 
-import org.joml.Vector3f;
-
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.codec.StreamDecoder;
@@ -15,23 +13,14 @@ public interface CloudManagerInfoPayload
 	
 	default void encode(FriendlyByteBuf buffer)
 	{
-		buffer.writeVector3f(this.direction());
 		buffer.writeFloat(this.speed());
-		buffer.writeFloat(this.scrollX());
-		buffer.writeFloat(this.scrollY());
-		buffer.writeFloat(this.scrollZ());
+		buffer.writeFloat(this.scrollAngle());
 		buffer.writeVarInt(this.cloudHeight());
 	}
 	
-	Vector3f direction();
-	
 	float speed();
 	
-	float scrollX();
-	
-	float scrollY();
-	
-	float scrollZ();
+	float scrollAngle();
 	
 	int cloudHeight();
 }

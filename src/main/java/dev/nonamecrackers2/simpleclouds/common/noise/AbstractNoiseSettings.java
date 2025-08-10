@@ -1,6 +1,6 @@
 package dev.nonamecrackers2.simpleclouds.common.noise;
 
-import dev.nonamecrackers2.simpleclouds.client.mesh.CloudMeshGenerator;
+import dev.nonamecrackers2.simpleclouds.client.mesh.generator.CloudMeshGenerator;
 import net.minecraft.util.Mth;
 
 public abstract class AbstractNoiseSettings<T extends AbstractNoiseSettings<T>> implements NoiseSettings
@@ -43,6 +43,18 @@ public abstract class AbstractNoiseSettings<T extends AbstractNoiseSettings<T>> 
 	public int layerCount()
 	{
 		return 1;
+	}
+	
+	@Override
+	public int getStartHeight()
+	{
+		return Mth.floor(this.getParam(AbstractNoiseSettings.Param.HEIGHT_OFFSET));
+	}
+	
+	@Override
+	public int getEndHeight()
+	{
+		return this.getStartHeight() + Mth.ceil(this.getParam(AbstractNoiseSettings.Param.HEIGHT));
 	}
 	
 	public static enum Param

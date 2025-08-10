@@ -7,7 +7,8 @@
 		"MixinServerLevel",
 		"MixinWeatherCommand",
 		"MixinLevel",
-		"MixinServerLevelAccessor"
+		"MixinServerLevelAccessor",
+		"vanillacompat.MixinThrownTrident"
 	],
 	"client": [
 		"MixinLevelRenderer",
@@ -15,8 +16,16 @@
 		"MixinGameRendererAccessor",
 		"MixinPostChain",
 		"MixinClientLevel",
+		"MixinLightTexture",
 		"MixinMinecraft",
-		"MixinVertexFormatElement"
+		"MixinFrustumAccessor",
+		"MixinPostPass",
+		"MixinRenderTargetAccessor",
+		"MixinUniform",
+		"MixinSoundManagerPreperations",
+		"vivecraft.MixinVRRenderer",
+		"vivecraft.MixinMinecraftVRMixin",
+		"vivecraft.MixinRenderTarget"
 	],
 	"minVersion": "0.8"
 }

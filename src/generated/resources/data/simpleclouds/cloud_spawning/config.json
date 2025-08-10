@@ -1,0 +1,9 @@
+{
+  "max_formations": 5,
+  "max_initial_formations": 3,
+  "spawn_interval": {
+    "type": "minecraft:biased_to_bottom",
+    "max_inclusive": 12000,
+    "min_inclusive": 2400
+  }
+}

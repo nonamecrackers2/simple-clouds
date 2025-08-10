@@ -2,6 +2,7 @@ package dev.nonamecrackers2.simpleclouds.common.packet;
 
 import dev.nonamecrackers2.simpleclouds.client.packet.handler.SimpleCloudsClientPacketHandler;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPayload;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudRegionsPayload;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPayload;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPayload;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPayload;
@@ -14,7 +15,7 @@ public class SimpleCloudsPayloadRegistrar
 {
 	public static void register(RegisterPayloadHandlersEvent event, SimpleCloudsClientPacketHandler clientHandler)
 	{
-		PayloadRegistrar registrar = event.registrar("1.0").optional();
+		PayloadRegistrar registrar = event.registrar("1.1").optional();
 		registrar.playToClient(
 				NotifyCloudModeUpdatedPayload.TYPE, 
 				NotifyCloudModeUpdatedPayload.CODEC, 
@@ -29,6 +30,11 @@ public class SimpleCloudsPayloadRegistrar
 				SendCloudManagerPayload.TYPE, 
 				SendCloudManagerPayload.CODEC, 
 				clientHandler::handleSendCloudManagerPayload
+		);
+		registrar.playToClient(
+				SendCloudRegionsPayload.TYPE, 
+				SendCloudRegionsPayload.CODEC, 
+				clientHandler::handleSendCloudRegionsPacket
 		);
 		registrar.playToClient(
 				SendCloudTypesPayload.TYPE, 

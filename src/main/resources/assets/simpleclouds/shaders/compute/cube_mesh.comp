@@ -3,13 +3,17 @@
 #define TYPE ${TYPE}    //0 for multi-region, 1 for single cloud type
 #define FADE_NEAR_ORIGIN ${FADE_NEAR_ORIGIN}    //0 to disable, 1 to enable
 #define STYLE ${STYLE}     //0 for default, 1 for shaded
+#define TRANSPARENCY ${TRANSPARENCY}     //0 for no transparency, 1 for transparency
+#define FIXED_SECTION_SIZE ${FIXED_SECTION_SIZE}     //0 for false, 1 for true
 
 #define SHADE_DIRECTION normalize(vec3(0.5, 0.5, 0.5))
+
+#define TILE_PERIOD vec3(32.0, 64.0, 32.0)
 
 #define LOCAL_SIZE vec3(${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z})
 layout(local_size_x = ${LOCAL_SIZE_X}, local_size_y = ${LOCAL_SIZE_Y}, local_size_z = ${LOCAL_SIZE_Z}) in;
 
-#moj_import <simpleclouds:simplex_noise.glsl>
+#moj_import <simpleclouds:psrdnoise.glsl>
 
 struct LayerGroup {
 	int StartIndex;
@@ -17,6 +21,7 @@ struct LayerGroup {
 	float Storminess;
 	float StormStart;
 	float StormFadeDistance;
+	float TransparencyFade;
 };
 
 struct NoiseLayer {
@@ -30,38 +35,100 @@ struct NoiseLayer {
 	float ValueScale;
 };
 
-struct Vertex {
+// ----- Opaque -----
+
+struct SideInfo {
+	int side;
 	float x;
 	float y;
 	float z;
 	float brightness;
-	int index;
+	float radius;
 };
 
-struct Side {
-	Vertex a;
-	Vertex b;
-	Vertex c;
-	Vertex d;
+// ----- Transparent -----
+
+#if TRANSPARENCY == 1
+
+struct TransparentCubeInfo {
+	float x;
+	float y;
+	float z;
+	float brightness;
+	float alpha;
+	float radius;
 };
 
-const uint sideIndices[6] = {
-	0, 1, 2, 0, 2, 3
-};
+#endif
 
-layout(std430) restrict buffer Counter {
-	uint counter;
-};
+// -----------------------
 
-layout(std430) restrict writeonly buffer SideDataBuffer {
-    Side data[];
+//Faces:
+//-X = 0
+//+X = 1
+//-Y = 2
+//+Y = 3
+//-Z = 4
+//+Z = 5
+
+//const uint sideIndices[6] = {
+//	0, 1, 2, 0, 2, 3
+//};
+//
+//#if TRANSPARENCY == 1
+//
+//const uint transparentCubeIndices[36] = {
+//	0, 1, 2, 0, 2, 3, //-z
+//	4, 7, 6, 4, 6, 5, //+z
+//	7, 0, 3, 7, 3, 6, //-x
+//	1, 4, 5, 1, 5, 2, //+x
+//	1, 0, 7, 1, 7, 4, //-y
+//	5, 6, 3, 5, 3, 2 //+y
+//};
+//
+//#endif
+
+// ----- Opaque Buffers -----
+
+#if FIXED_SECTION_SIZE == 0
+layout(std430) restrict buffer TotalSides {
+	uint totalSides;
+};
+#endif
+
+layout(std430) restrict writeonly buffer SideInfoBuffer {
+    SideInfo data[];
 }
 sides;
 
-layout(std430) restrict writeonly buffer IndexBuffer {
+layout(std430) restrict buffer SidesPerChunk {
 	uint data[];
 }
-indices;
+sidesPerChunk;
+
+// ----- Transparency Buffers -----
+
+#if TRANSPARENCY == 1
+
+#if FIXED_SECTION_SIZE == 0
+layout(std430) restrict buffer TotalTransparentCubes {
+	uint totalTransparentCubes;
+};
+#endif
+
+layout(std430) restrict writeonly buffer TransparentCubeInfoBuffer {
+    TransparentCubeInfo data[];
+}
+cubesTransparent;
+
+layout(std430) restrict buffer TransparentCubesPerChunk {
+	uint data[];
+}
+transparentCubesPerChunk;
+
+#endif
+
+// ----------------------------------
 
 layout(std430) readonly buffer NoiseLayers {
 	NoiseLayer data[];
@@ -74,7 +141,6 @@ layout(std430) readonly buffer LayerGroupings {
 layerGroupings;
 
 #if TYPE == 0
-//layout(rg32f) uniform image3D regions;
 uniform sampler2DArray RegionsSampler;
 uniform int RegionsTexSize;
 #endif
@@ -84,66 +150,88 @@ uniform int TotalLodLevels;
 uniform vec3 RenderOffset;
 uniform float Scale = 1.0;
 uniform vec3 Scroll;
+uniform float Wiggle;
 uniform vec3 Origin;
 uniform bool TestFacesFacingAway;
 uniform int DoNotOccludeSide = -1;
+uniform int ChunkIndex;
+
+#if FIXED_SECTION_SIZE == 1
+//Offset in number of mesh elements
+uniform int OpaqueMeshDataOffset;
+uniform int TransparentMeshDataOffset;
+#endif
+
+#if TRANSPARENCY == 1
+uniform int TransparencyDistance = 300;
+#endif
 
 #if TYPE == 0
-
 uniform vec2 RegionSampleOffset;
-
 #elif TYPE == 1
-
 uniform float FadeStart;
 uniform float FadeEnd;
-
 #endif
 
 #if FADE_NEAR_ORIGIN == 1
-
 uniform float FadeStart;
 uniform float FadeEnd;
-
 #endif
 
-//Faces:
-//-X = 0
-//+X = 1
-//-Y = 2
-//+Y = 3
-//-Z = 4
-//+Z = 5
-
-float getNoiseForLayer(NoiseLayer layer, float x, float y, float z)
+float getNoiseForLayer(NoiseLayer layer, float x, float y, float z, out vec3 gradient)
 {
-	if (y < layer.HeightOffset || y > layer.HeightOffset + layer.Height)
-		return 0.0;
+	if (y < layer.HeightOffset || y > layer.HeightOffset + layer.Height - 1)
+		return -10000.0;
 	vec3 scale = vec3(layer.ScaleX, layer.ScaleY, layer.ScaleZ);
 	vec3 scrollScaled = Scroll / scale;
 	vec3 samplePos = vec3(x, y, z) / scale + scrollScaled;
-	float noise = snoise(samplePos) * layer.ValueScale + layer.ValueOffset;
+	float noise = psrdnoise(samplePos, TILE_PERIOD, Wiggle, gradient) * layer.ValueScale + layer.ValueOffset;
 	float heightDelta = y - layer.HeightOffset;
 	noise -= 1.0 - clamp(heightDelta / layer.FadeDistance, 0.0, 1.0);
 	noise -= 1.0 - clamp((layer.Height - heightDelta) / layer.FadeDistance, 0.0, 1.0);
 	return noise;
 }
 
-float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z)
+float getNoiseForLayerGroup(LayerGroup group, float x, float y, float z, out vec3 gradient)
 {
 	int totalLayers = group.EndIndex - group.StartIndex;
-	if (totalLayers > 0)
+	if (totalLayers == 0)
 	{
-		float combinedNoise = getNoiseForLayer(layers.data[group.StartIndex], x, y, z);
-		for (int i = 1; i < totalLayers; i++)
-			combinedNoise += getNoiseForLayer(layers.data[i + group.StartIndex], x, y, z);
-		return combinedNoise;
+		return -10000.0;
 	}
-	return 0.0F;
+	else if (totalLayers == 1)
+	{
+		return getNoiseForLayer(layers.data[group.StartIndex], x, y, z, gradient);
+	}
+	else
+	{
+		vec3 finalGradient = vec3(0.0);
+		float combinedNoise = 0.0;
+		bool anyValid = false;
+		for (int i = 0; i < totalLayers; i++)
+		{
+			vec3 gradForLayer = vec3(0.0);
+			float valForLayer = getNoiseForLayer(layers.data[i + group.StartIndex], x, y, z, gradForLayer);
+			if (valForLayer > -10.0)
+			{
+				combinedNoise += valForLayer;
+				finalGradient += gradForLayer;
+				anyValid = true;
+			}
+		}
+		gradient = finalGradient;
+		if (anyValid)
+			return combinedNoise;
+		else
+			return -10000.0;
+	}
+	return 0.0;
 }
 
 bool isPosValid(float x, float y, float z, LayerGroup group, float fade)
 {
-	return getNoiseForLayerGroup(group, x, y, z) + fade > 0.0;
+	vec3 gradient = vec3(0.0);
+	return getNoiseForLayerGroup(group, x, y, z, gradient) + fade > 0.0;
 }
 
 bool isPosValid(float x, float y, float z, int nx, int nz)
@@ -153,7 +241,7 @@ bool isPosValid(float x, float y, float z, int nx, int nz)
     vec4 info = texture(RegionsSampler, vec3(texelCoord / RegionsTexSize, float(LodLevel)));
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
-    float fade = -5.0 * pow(info.g, 10.0);
+    float fade = -5.0 * pow(1.0 - info.g, 10.0);
 #if FADE_NEAR_ORIGIN == 1
     float len = distance(vec2(x, z), Origin.xz);
 	fade = min(fade, -5.0 * (1.0 - min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0)));
@@ -193,44 +281,84 @@ bool shouldNotOcclude(int index)
 	}
 }
 
-void createFace(vec3 offset, vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, int index, float brightness)
+// ----- Opaque -----
+
+void createFace(vec3 center, float cubeRadius, int index, float brightness)
 {
-	uint currentFace = atomicAdd(counter, 1u);
-	uint lastIndex = currentFace * 6;
-	uint lastVertex = currentFace * 4;
-	Side side;
-	side.a = Vertex(offset.x + corner1.x, offset.y + corner1.y, offset.z + corner1.z, brightness, index);
-	side.b = Vertex(offset.x + corner2.x, offset.y + corner2.y, offset.z + corner2.z, brightness, index);
-	side.c = Vertex(offset.x + corner3.x, offset.y + corner3.y, offset.z + corner3.z, brightness, index);
-	side.d = Vertex(offset.x + corner4.x, offset.y + corner4.y, offset.z + corner4.z, brightness, index);
+#if FIXED_SECTION_SIZE == 0
+	atomicAdd(sidesPerChunk.data[ChunkIndex], 1u);
+	uint currentFace = atomicAdd(totalSides, 1u);
+#elif FIXED_SECTION_SIZE == 1
+	uint currentFace = atomicAdd(sidesPerChunk.data[ChunkIndex], 1u);
+#endif
+	SideInfo side;
+	side.side = index;
+	side.x = center.x;
+	side.y = center.y;
+	side.z = center.z;
+	side.brightness = brightness;
+	side.radius = cubeRadius;
+#if FIXED_SECTION_SIZE == 0
 	sides.data[currentFace] = side;
-	for (uint i = 0; i < sideIndices.length(); i++)
-		indices.data[lastIndex + i] = lastVertex + sideIndices[i];
+#elif FIXED_SECTION_SIZE == 1
+	sides.data[OpaqueMeshDataOffset + currentFace] = side;
+#endif
 }
 
 void createCube(float x, float y, float z, float cubeRadius, float brightness, float fade, LayerGroup group)
 {
-	vec3 norm = normalize(vec3(x, y, z) - Origin);
-	vec3 offset = vec3(x + cubeRadius, y + cubeRadius, z + cubeRadius);
+	vec3 pos = vec3(x, y, z);
+	vec3 norm = normalize(pos - Origin);
+	vec3 center = pos + cubeRadius;
 	//-Y
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, -1.0, 0.0)) <= 0.0) && (!isPosValid(x, y - Scale, z, group, fade) || shouldNotOcclude(2)))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), 2, brightness);
+		createFace(center, cubeRadius, 2, brightness);
 	//+Y
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 1.0, 0.0)) <= 0.0) && (!isPosValid(x, y + Scale, z, group, fade) || shouldNotOcclude(3)))
-		createFace(offset, vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), 3, brightness);
+		createFace(center, cubeRadius, 3, brightness);
 	//-X
 	if ((TestFacesFacingAway || dot(norm, vec3(-1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x - Scale, y, z, -1, 0) || shouldNotOcclude(0)))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(-cubeRadius, -cubeRadius, -cubeRadius), 0, brightness);
+		createFace(center, cubeRadius, 0, brightness);
 	//+X
 	if ((TestFacesFacingAway || dot(norm, vec3(1.0, 0.0, 0.0)) <= 0.0) && (!isPosValid(x + Scale, y, z, 1, 0) || shouldNotOcclude(1)))
-		createFace(offset, vec3(cubeRadius, -cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(cubeRadius, -cubeRadius, cubeRadius), 1, brightness);
+		createFace(center, cubeRadius, 1, brightness);
 	//-Z
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, -1.0)) <= 0.0) && (!isPosValid(x, y, z - Scale, 0, -1) || shouldNotOcclude(4)))
-		createFace(offset, vec3(-cubeRadius, -cubeRadius, -cubeRadius), vec3(-cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, cubeRadius, -cubeRadius), vec3(cubeRadius, -cubeRadius, -cubeRadius), 4, brightness);
+		createFace(center, cubeRadius, 4, brightness);
 	//+Z
 	if ((TestFacesFacingAway || dot(norm, vec3(0.0, 0.0, 1.0)) <= 0.0) && (!isPosValid(x, y, z + Scale, 0, 1) || shouldNotOcclude(5)))
-		createFace(offset, vec3(cubeRadius, -cubeRadius, cubeRadius), vec3(cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, cubeRadius, cubeRadius), vec3(-cubeRadius, -cubeRadius, cubeRadius), 5, brightness);
+		createFace(center, cubeRadius, 5, brightness);
 }
+
+// ----- Transparent -----
+
+#if TRANSPARENCY == 1
+
+void createTransparentCube(float x, float y, float z, float cubeRadius, float brightness, float alpha)
+{
+#if FIXED_SECTION_SIZE == 0
+	atomicAdd(transparentCubesPerChunk.data[ChunkIndex], 1u);
+	uint currentCube = atomicAdd(totalTransparentCubes, 1u);
+#elif FIXED_SECTION_SIZE == 1
+	uint currentCube = atomicAdd(transparentCubesPerChunk.data[ChunkIndex], 1u);
+#endif
+	TransparentCubeInfo cube;
+	cube.x = x + cubeRadius;
+	cube.y = y + cubeRadius;
+	cube.z = z + cubeRadius;
+	cube.brightness = brightness;
+	cube.alpha = alpha;
+	cube.radius = cubeRadius;
+#if FIXED_SECTION_SIZE == 0
+	cubesTransparent.data[currentCube] = cube;
+#elif FIXED_SECTION_SIZE == 1
+	cubesTransparent.data[TransparentMeshDataOffset + currentCube] = cube;
+#endif
+}
+
+#endif
+
+// -----------------------
 
 void main() 
 {
@@ -244,7 +372,7 @@ void main()
     vec4 info = texture(RegionsSampler, vec3(texelCoord / RegionsTexSize, float(LodLevel)));
     uint regionId = uint(info.r);
     LayerGroup group = layerGroupings.data[regionId];
-    float fade = -5.0 * pow(info.g, 10.0);
+    float fade = -5.0 * pow(1.0 - info.g, 10.0);
 #if FADE_NEAR_ORIGIN == 1
     float len = distance(vec2(x, z), Origin.xz);
 	fade = min(fade, -5.0 * (1.0 - min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0)));
@@ -254,22 +382,28 @@ void main()
 	float len = distance(vec2(x, z), Origin.xz);
 	float fade = -5.0 * min(max(len - FadeStart, 0.0) / (FadeEnd - FadeStart), 1.0);
 #endif
-	float noise = getNoiseForLayerGroup(group, x, y, z) + fade;
+	vec3 gradient = vec3(0.0);
+	float noise = getNoiseForLayerGroup(group, x, y, z, gradient) + fade;
+	float storminess = clamp(group.Storminess + fade * 0.1, 0.0, 1.0);
+	float brightness = clamp(1.0 - storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
+#if STYLE == 1
+	gradient = normalize(gradient);
+	float strength = dot(gradient, SHADE_DIRECTION) * 0.5 + 0.5;
+	brightness = clamp(brightness - strength * 0.1, 0.0, 1.0);
+#endif
     if (noise > 0.0)
     {
-    	float storminess = clamp(group.Storminess + fade * 0.1, 0.0, 1.0);
-    	float brightness = clamp(1.0 - storminess * (1.0 - clamp((y - group.StormStart) / group.StormFadeDistance, 0.0, 1.0)), 0.0, 1.0);
-#if STYLE == 1
-	    float px = getNoiseForLayerGroup(group, x - 0.1, y, z) + fade;
-		float py = getNoiseForLayerGroup(group, x, y - 0.1, z) + fade;
-		float pz = getNoiseForLayerGroup(group, x, y, z - 0.1) + fade;
-		float dx = (px - noise) / -0.1;
-		float dy = (py - noise) / -0.1;
-		float dz = (pz - noise) / -0.1;
-		vec3 secant = normalize(vec3(dx, dy, dz));
-		float strength = dot(secant, SHADE_DIRECTION) * 0.5 + 0.5;
-		brightness = clamp(brightness - strength * 0.1, 1.0 - group.Storminess, 1.0);
-#endif
     	createCube(x, y, z, Scale / 2.0, brightness, fade, group);
     }
+#if TRANSPARENCY == 1
+    else if (group.TransparencyFade > 0.01 && noise > -group.TransparencyFade && noise < 0.0)
+    {
+   		float length = distance(vec2(x, z), Origin.xz);
+   		if (length < TransparencyDistance)
+   		{
+   			float alpha = 1.0 / group.TransparencyFade * (noise + group.TransparencyFade);
+    		createTransparentCube(x, y, z, Scale / 2.0, brightness, alpha);
+   		}
+    }
+#endif
 }

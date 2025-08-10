@@ -69,9 +69,12 @@ repositories {
     }
     maven {
         name "nonamecrackers2Maven"
-        url "https://maven.nonamecrackers2.dev/snapshots"
+        url "https://maven.nonamecrackers2.dev/releases"
     }
-    
+    maven {
+    	name "SimpleCloudsAPILocal"
+    	url "C:/Users/nonam/git/Simple-Clouds-API-1.21.1/repo"
+    }
     flatDir {
         dir 'libs'
     }
@@ -84,11 +87,12 @@ dependencies {
     //	jarJar.ranged(it, "${crackerslib_version_range}")
     //}
     
-    //runtimeOnly "maven.modrinth:sodium:mc1.21-0.6.0-beta.2-neoforge"
-    //runtimeOnly "maven.modrinth:iris:1.8.0-beta.5+1.21-neoforge"
-    
     //implementation "nonamecrackers2:crackerslib-neoforge:${crackerslib_version}"
     implementation "nonamecrackers2.crackerslib:crackerslib-1.21.1-0.4.6-beta"
+    
+    implementation "nonamecrackers2:simplecloudsapi-forge:${api_version}"
+    
+	implementation "maven.modrinth:DistantHorizonsApi:${dh_api_version}"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

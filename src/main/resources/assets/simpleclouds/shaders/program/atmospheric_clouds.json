@@ -1,0 +1,23 @@
+{
+    "vertex": "blit",
+    "fragment": "simpleclouds:atmospheric_clouds",
+    "attributes": [ "Position" ],
+    "samplers": [
+    	{ "name": "DiffuseSampler" }
+    ],
+    "uniforms": [
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "OutSize", "type": "float", "count": 2,  "values": [ 1.0, 1.0 ] },
+        { "name": "InverseWorldProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "InverseModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "Transform", "type": "matrix2x2", "count": 4, "values": [ 2.0, 0.0, 0.0, 8.0 ] },
+        { "name": "Height", "type": "float", "count": 1, "values": [ 5000.0 ] },
+        { "name": "PixelScale", "type": "float", "count": 1, "values": [ 128.0 ] },
+        { "name": "Span", "type": "float", "count": 2, "values": [ 10000.0, 10000.0 ] },
+        { "name": "MaxDist", "type": "float", "count": 1, "values": [ 30000.0 ] },
+        { "name": "FadeStart", "type": "float", "count": 1, "values": [ 10000.0 ] },
+        { "name": "ShiftMovement", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "CloudColor", "type": "float", "count": 4, "values": [ 1.0, 1.0, 1.0, 1.0 ] },
+        { "name": "CloudDensity", "type": "float", "count": 1, "values": [ 1.0 ] }
+    ]
+}

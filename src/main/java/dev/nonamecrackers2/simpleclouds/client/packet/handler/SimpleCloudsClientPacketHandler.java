@@ -1,6 +1,7 @@
 package dev.nonamecrackers2.simpleclouds.client.packet.handler;
 
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudManagerPayload;
+import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudRegionsPayload;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SendCloudTypesPayload;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.SpawnLightningPayload;
 import dev.nonamecrackers2.simpleclouds.common.packet.impl.UpdateCloudManagerPayload;
@@ -13,6 +14,8 @@ public interface SimpleCloudsClientPacketHandler
 	void handleUpdateCloudManagerPayload(UpdateCloudManagerPayload packet, IPayloadContext context);
 	
 	void handleSendCloudManagerPayload(SendCloudManagerPayload packet, IPayloadContext context);
+	
+	void handleSendCloudRegionsPacket(SendCloudRegionsPayload packet, IPayloadContext context);
 	
 	void handleSendCloudTypesPayload(SendCloudTypesPayload packet, IPayloadContext context);
 	

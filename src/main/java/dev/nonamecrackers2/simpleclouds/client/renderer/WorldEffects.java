@@ -1,7 +1,9 @@
 package dev.nonamecrackers2.simpleclouds.client.renderer;
 
+import java.awt.Color;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
@@ -22,10 +24,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
+import dev.nonamecrackers2.simpleclouds.api.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.client.renderer.lightning.LightningBolt;
 import dev.nonamecrackers2.simpleclouds.client.renderer.rain.PrecipitationQuad;
 import dev.nonamecrackers2.simpleclouds.client.sound.AdjustableAttenuationSoundInstance;
-import dev.nonamecrackers2.simpleclouds.common.cloud.CloudMode;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
 import dev.nonamecrackers2.simpleclouds.common.config.SimpleCloudsConfig;
@@ -76,6 +78,7 @@ public class WorldEffects
 	private final Map<BlockPos, PrecipitationQuad> precipitationQuads = Maps.newHashMap();
 	private final Map<Biome.Precipitation, List<PrecipitationQuad>> quadsByPrecipitation = Maps.newHashMap();
 	private final RandomSource random = RandomSource.create();
+	private int rainDelay = 20;
 	
 	protected WorldEffects(Minecraft mc, SimpleCloudsRenderer renderer)
 	{
@@ -86,7 +89,7 @@ public class WorldEffects
 	public void renderPost(Matrix4f camMat, float partialTick, double camX, double camY, double camZ, float scale)
 	{
 		CloudManager<ClientLevel> manager = CloudManager.get(this.mc.level);
-		Pair<CloudType, Float> result = manager.getCloudTypeAtPosition((float)camX, (float)camZ);
+		Pair<CloudType, Float> result = manager.getCloudTypeAtWorldPos((float)camX, (float)camZ);
 		CloudType type = result.getLeft();
 		this.typeAtCamera = type;
 		this.fadeAtCamera = result.getRight();
@@ -109,39 +112,13 @@ public class WorldEffects
 		}
 	}
 	
-	public void renderWeather(LightTexture texture, float partialTick, double camX, double camY, double camZ)
+	public void renderRain(LightTexture texture, float partialTick, double camX, double camY, double camZ)
 	{
 		Tesselator tesselator = Tesselator.getInstance();
 		RenderSystem.depthMask(Minecraft.useShaderTransparency() || CompatHelper.areShadersRunning());
 		RenderSystem.colorMask(true, true, true, true);
 		RenderSystem.enableBlend();
 		RenderSystem.enableDepthTest();
-		
-		if (!this.lightningBolts.isEmpty())
-		{
-			float currentFogStart = RenderSystem.getShaderFogStart();
-			RenderSystem.setShaderFogStart(Float.MAX_VALUE);
-			RenderSystem.applyModelViewMatrix();
-			BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-			RenderSystem.setShader(GameRenderer::getRendertypeLightningShader);
-			RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
-			PoseStack stack = new PoseStack();
-			stack.pushPose();
-			stack.translate(-camX, -camY, -camZ);
-			for (LightningBolt bolt : this.lightningBolts)
-			{
-				if (bolt.getPosition().distance((float)camX, (float)camY, (float)camZ) <= SimpleCloudsConstants.CLOSE_THUNDER_CUTOFF && bolt.getFade(partialTick) > 0.5F)
-					this.mc.level.setSkyFlashTime(2);
-				float dist = bolt.getPosition().distance((float)camX, (float)camY, (float)camZ);
-				bolt.render(stack, builder, partialTick, 1.0F, 1.0F, 1.0F, this.renderer.getFadeFactorForDistance(dist));
-			}
-			stack.popPose();
-			MeshData meshData = builder.build();
-			if (meshData != null)
-				BufferUploader.drawWithShader(meshData);
-			RenderSystem.applyModelViewMatrix();
-			RenderSystem.setShaderFogStart(currentFogStart);
-		}
 		
 		if (!this.quadsByPrecipitation.isEmpty())
 		{
@@ -167,6 +144,54 @@ public class WorldEffects
 					BufferUploader.drawWithShader(meshData);
 			}
 			RenderSystem.enableCull();
+		}
+		
+		RenderSystem.disableBlend();
+		RenderSystem.defaultBlendFunc();
+	}
+	
+	public boolean hasLightningToRender()
+	{
+		return !this.lightningBolts.isEmpty();
+	}
+	
+	public void forLightning(Consumer<LightningBolt> consumer)
+	{
+		this.lightningBolts.forEach(consumer);
+	}
+	
+	public void renderLightning(float partialTick, double camX, double camY, double camZ)
+	{
+		Tesselator tesselator = Tesselator.getInstance();
+		RenderSystem.depthMask(Minecraft.useShaderTransparency() || CompatHelper.areShadersRunning());
+		RenderSystem.colorMask(true, true, true, true);
+		RenderSystem.enableBlend();
+		RenderSystem.enableDepthTest();
+		
+		if (!this.hasLightningToRender())
+		{
+			float currentFogStart = RenderSystem.getShaderFogStart();
+			RenderSystem.setShaderFogStart(Float.MAX_VALUE);
+			RenderSystem.applyModelViewMatrix();
+			BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+			RenderSystem.setShader(GameRenderer::getRendertypeLightningShader);
+			RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+			PoseStack stack = new PoseStack();
+			stack.pushPose();
+			stack.translate(-camX, -camY, -camZ);
+			for (LightningBolt bolt : this.lightningBolts)
+			{
+				if (bolt.getPosition().distance((float)camX, (float)camY, (float)camZ) <= SimpleCloudsConstants.CLOSE_THUNDER_CUTOFF && bolt.getFade(partialTick) > 0.5F)
+					this.mc.level.setSkyFlashTime(2);
+				float dist = bolt.getPosition().distance((float)camX, (float)camY, (float)camZ);
+				bolt.render(stack, builder, partialTick, 1.0F, 1.0F, 1.0F, this.renderer.getFadeFactorForDistance(dist));
+			}
+			stack.popPose();
+			MeshData meshData = builder.build();
+			if (meshData != null)
+				BufferUploader.drawWithShader(meshData);
+			RenderSystem.applyModelViewMatrix();
+			RenderSystem.setShaderFogStart(currentFogStart);
 		}
 		
 		RenderSystem.disableBlend();
@@ -202,12 +227,12 @@ public class WorldEffects
 		this.mc.getSoundManager().playDelayed(instance, time);
 		if (!onlySound)
 		{
-			int color = LIGHTNING_COLORS.getRandomValue(random).get();
 			float r = 1.0F;
 			float g = 1.0F;
 			float b = 1.0F;
 			if (SimpleCloudsConfig.CLIENT.lightningColorVariation.get())
 			{
+				int color = LIGHTNING_COLORS.getRandomValue(random).get();
 				r = (float)FastColor.ARGB32.red(color) / 255.0F;
 				g = (float)FastColor.ARGB32.green(color) / 255.0F;
 				b = (float)FastColor.ARGB32.blue(color) / 255.0F;
@@ -227,6 +252,9 @@ public class WorldEffects
 	
 	public void tick()
 	{
+		if (this.rainDelay > 0)
+			this.rainDelay--;
+		
 		var lightning = this.lightningBolts.iterator();
 		while (lightning.hasNext())
 		{
@@ -236,11 +264,11 @@ public class WorldEffects
 			bolt.tick();
 		}
 		
-		float rainIntensity = this.mc.level.getRainLevel(0.0F);
+		float rainIntensity = this.mc.level.getRainLevel(1.0F);
 		BlockPos camPos = this.mc.gameRenderer.getMainCamera().getBlockPosition();
 		float xRot = SimpleCloudsConfig.CLIENT.rainAngle.get().floatValue() * ((float)Math.PI / 180.0F);
-		Vector3f direction = CloudManager.get(this.mc.level).getDirection();
-		float yRot = (float)-Mth.atan2((double)direction.x, (double)direction.z);
+		Vector2f direction = CloudManager.get(this.mc.level).calculateWindDirection();
+		float yRot = (float)-Mth.atan2((double)direction.x, (double)direction.y);
 		float xRotCos = Mth.cos(xRot - (float)Math.PI / 2.0F);
 		int xOffset = Mth.floor(Mth.sin(-yRot) * xRotCos * ((float)RAIN_SCAN_WIDTH / 2.0F));
 		int zOffset = Mth.floor(Mth.cos(-yRot) * xRotCos * ((float)RAIN_SCAN_WIDTH / 2.0F));
@@ -253,7 +281,7 @@ public class WorldEffects
 		int maxZ = camPos.getZ() + radius - zOffset;
 		AABB box = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
 		Biome biome = this.mc.level.getBiome(camPos).value();
-		if (rainIntensity > 0.0F && biome.hasPrecipitation())
+		if (rainIntensity > 0.0F && biome.hasPrecipitation() && this.rainDelay == 0)
 		{
 			for (int x = minX; x < maxX; x++)
 			{
@@ -266,6 +294,8 @@ public class WorldEffects
 							continue;
 						BlockPos pos = new BlockPos(x, y, z);
 						Biome.Precipitation precipitation = biome.getPrecipitationAt(pos);
+						if (precipitation == Biome.Precipitation.NONE)
+							continue;
 						RandomSource blockRandom = RandomSource.create(pos.asLong());
 						if (!this.precipitationQuads.containsKey(pos))
 						{
@@ -301,6 +331,38 @@ public class WorldEffects
 		
 		this.storminessSmoothedO = this.storminessSmoothed;
 		this.storminessSmoothed += (this.storminessAtCamera - this.storminessSmoothed) / 25.0F;
+	}
+	
+
+	public Color calculateFogColor(float defaultR, float defaultG, float defaultB, float partialTick)
+	{
+		float lerp = this.getDarkenFactor(partialTick);
+		return hsbLerp(defaultR, defaultG, defaultB, 0.68F, 0.2F, -0.05F, lerp);
+	}
+	
+	public Color calculateSkyColor(float defaultR, float defaultG, float defaultB, float partialTick)
+	{
+		float lerp = this.getDarkenFactor(partialTick);
+		return hsbLerp(defaultR, defaultG, defaultB, 0.63F, 0.1F, 0.05F, lerp);
+	}
+	
+	//TODO: Better lerping
+	private static Color hsbLerp(float r, float g, float b, float targetHue, float targetSaturation, float targetBrightness, float lerp)
+	{
+		float[] hsbFog = Color.RGBtoHSB((int)(r * 255.0F), (int)(g * 255.0F), (int)(b * 255.0F), null);
+		if (targetHue < hsbFog[0])
+			targetHue += 1.0F;
+		float hue = Mth.lerp(lerp, targetHue, hsbFog[0]);
+		float sat = Mth.clamp(Mth.lerp(lerp, targetSaturation, hsbFog[1]), 0.0F, 1.0F);
+		float bright = Mth.clamp(Mth.lerp(lerp, targetBrightness, hsbFog[2]), 0.0F, 1.0F);
+		return Color.getHSBColor(hue, sat, bright);
+	}
+	
+	public void reset()
+	{
+		this.precipitationQuads.clear();
+		this.quadsByPrecipitation.clear();
+		this.rainDelay = 20;
 	}
 	
 	public @Nullable CloudType getCloudTypeAtCamera()

@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 
+import dev.nonamecrackers2.simpleclouds.client.compat.SimpleCloudsCompatHelper;
 import dev.nonamecrackers2.simpleclouds.client.renderer.SimpleCloudsRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
@@ -68,12 +69,13 @@ public class MixinLevelRenderer
 	public void simpleclouds$injectCustomWeatherRendering_renderLevel(DeltaTracker tracker, boolean blockOutline, Camera camera, GameRenderer renderer, LightTexture lightTexture, Matrix4f mat, Matrix4f projMat, CallbackInfo ci, TickRateManager tickratemanager, float f)
 	{
 		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
-			SimpleCloudsRenderer.getInstance().getWorldEffectsManager().renderWeather(lightTexture, f, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+			SimpleCloudsRenderer.getInstance().renderWeather(lightTexture, f, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 	}
 	
 	@Inject(method = "tick", at = @At("HEAD"))
 	public void simpleclouds$tickCloudRenderer_tick(CallbackInfo ci)
 	{
+		SimpleCloudsRenderer.getInstance().baseTick();
 		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
 			SimpleCloudsRenderer.getInstance().tick();
 	}
@@ -81,7 +83,7 @@ public class MixinLevelRenderer
 	@Inject(method = "renderSnowAndRain", at = @At("HEAD"), cancellable = true)
 	public void simpleclouds$overrideRainRendering_renderSnowAndRain(LightTexture texture, float partialTick, double camX, double camY, double camZ, CallbackInfo ci)
 	{
-		if (SimpleCloudsRenderer.canRenderInDimension(this.level))
+		if (SimpleCloudsRenderer.canRenderInDimension(this.level) && SimpleCloudsCompatHelper.renderCustomRain())
 			ci.cancel();
 	}
 	
