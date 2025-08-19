@@ -1,5 +1,8 @@
 package dev.nonamecrackers2.simpleclouds.mixin;
 
+import java.util.List;
+import java.util.function.Function;
+
 import javax.annotation.Nullable;
 
 import org.spongepowered.asm.mixin.Final;
@@ -46,25 +49,28 @@ public abstract class MixinMinecraft implements IMinecraftExtension
 		BindingManager.fillReport(report);
 	}
 
-	@Inject(method = "buildInitialScreens", at = @At("RETURN"), cancellable = true)
-	public void buildInitialScreens(CallbackInfoReturnable<Runnable> ci)
+	@Inject(method = "addInitialScreens", at = @At("HEAD"))
+	private void simpleclouds$addErrorScreens_addInitialScreens(List<Function<Runnable, Screen>> screenFactory, CallbackInfo ci)
 	{
-		SimpleCloudsNoticeScreen notice = SimpleCloudsCompatHelper.createNotice();
-		if (notice != null)
-		{
-			this.pushGuiLayer(notice);
-			ci.cancel();
-		}
-		
 		var renderer = SimpleCloudsRenderer.getOptionalInstance().orElse(null);
 		if (renderer != null)
 		{
 			RendererInitializeResult result = renderer.getInitialInitializationResult();
 			if (result != null && result.getState() == RendererInitializeResult.State.ERROR)
-			{
-				this.pushGuiLayer(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult()));
-				ci.cancel();
-			}
+				screenFactory.add(onClose -> new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult(), onClose));
+		}
+	}
+	
+	@Inject(method = "addInitialScreens", at = @At(""))
+	private void simpleclouds$addInfoScreens_addInitialScreens(List<Function<Runnable, Screen>> screenFactory, CallbackInfo ci)
+	{
+		SimpleCloudsNoticeScreen notice = SimpleCloudsCompatHelper.createNotice();
+		if (notice != null)
+		{
+			screenFactory.add(onClose -> {
+				notice.setOnClose(onClose);
+				return notice;
+			});
 		}
 	}
 	

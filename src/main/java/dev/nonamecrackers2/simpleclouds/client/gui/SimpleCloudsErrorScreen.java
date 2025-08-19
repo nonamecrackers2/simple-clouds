@@ -20,12 +20,14 @@ public class SimpleCloudsErrorScreen extends SimpleCloudsInfoScreen
 {
 	private static final Component DESCRIPTION = Component.translatable("gui.simpleclouds.error_screen.description");
 	private final RendererInitializeResult result;
+	private final Runnable onClose;
 	private Path crashReportsFolder;
 	
-	public SimpleCloudsErrorScreen(RendererInitializeResult result)
+	public SimpleCloudsErrorScreen(RendererInitializeResult result, Runnable onClose)
 	{
 		super(Component.translatable("gui.simpleclouds.error_screen.title").withStyle(Style.EMPTY.withUnderlined(true).withBold(true)), 3);
 		this.result = result;
+		this.onClose = onClose;
 	}
 	
 	@Override
@@ -87,9 +89,9 @@ public class SimpleCloudsErrorScreen extends SimpleCloudsInfoScreen
 					return;
 				RendererInitializeResult result = renderer.getInitialInitializationResult();
 				if (result != null && result.getState() == RendererInitializeResult.State.ERROR)
-					this.minecraft.setScreen(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult()));
+					this.minecraft.setScreen(new SimpleCloudsErrorScreen(renderer.getInitialInitializationResult(), this.onClose));
 				else
-					this.minecraft.setScreen(null);
+					this.onClose();
 			}, this.minecraft);
 			return true;
 		}
@@ -104,5 +106,8 @@ public class SimpleCloudsErrorScreen extends SimpleCloudsInfoScreen
 	}
 	
 	@Override
-	public void onClose() {}
+	public void onClose()
+	{
+		this.onClose.run();
+	}
 }

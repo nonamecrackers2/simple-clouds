@@ -341,6 +341,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (main == null)
 		{
 			this.initialInitializationResult = RendererInitializeResult.builder().errorUnknown(new NullPointerException("Main framebuffer is null"), "Simple Clouds Renderer").build();
+			saveAndPrintCrashReports(this.mc, this.initialInitializationResult);
 			return;
 		}
 		
@@ -485,7 +486,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 				LOGGER.error("{}", report.getFriendlyReport(ReportType.CRASH));
 			}
 			LOGGER.error("---------CRASH REPORT END---------");
-			result.saveCrashReports(mc.gameDirectory);
+			result.saveCrashReports(mc.gameDirectory.toPath());
 			break;
 		}
 		default:

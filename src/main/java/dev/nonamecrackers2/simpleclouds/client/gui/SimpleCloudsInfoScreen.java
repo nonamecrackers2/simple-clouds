@@ -63,8 +63,6 @@ public abstract class SimpleCloudsInfoScreen extends Screen
 	@Override
 	public void render(GuiGraphics stack, int mouseX, int mouseY, float partialTick)
 	{
-		this.renderBackground(stack, mouseX, mouseY, partialTick);
-		
 		super.render(stack, mouseX, mouseY, partialTick);
 		
 		stack.drawCenteredString(this.font, this.getTitle(), this.width / 2, PADDING, 0xFFFFFFFF);
