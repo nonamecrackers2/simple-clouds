@@ -2,6 +2,7 @@ package dev.nonamecrackers2.simpleclouds.mixin;
 
 import javax.annotation.Nullable;
 
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -9,7 +10,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.mojang.blaze3d.platform.Window;
+
 import dev.nonamecrackers2.simpleclouds.client.compat.SimpleCloudsCompatHelper;
+import dev.nonamecrackers2.simpleclouds.client.gui.CloudPreviewerScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsErrorScreen;
 import dev.nonamecrackers2.simpleclouds.client.gui.SimpleCloudsNoticeScreen;
 import dev.nonamecrackers2.simpleclouds.client.mesh.RendererInitializeResult;
@@ -28,6 +32,11 @@ import net.neoforged.neoforge.client.extensions.IMinecraftExtension;
 @Mixin(Minecraft.class)
 public abstract class MixinMinecraft implements IMinecraftExtension
 {
+	@Shadow
+	public @Nullable Screen screen;
+	@Shadow @Final
+	private Window window;
+	
 	@Inject(method = "fillReport", at = @At("HEAD"))
 	public void simpleclouds$appendCrashReportDetails_fillReport(CrashReport report, CallbackInfoReturnable<CrashReport> ci)
 	{
@@ -70,6 +79,13 @@ public abstract class MixinMinecraft implements IMinecraftExtension
 				renderer.onCloudManagerChange(manager);
 			});
 		}
+	}
+	
+	@Inject(method = "getFramerateLimit", at = @At("TAIL"), cancellable = true)
+	public void simpleclouds$overrideFramerateLimit_getFramerateLimit(CallbackInfoReturnable<Integer> ci)
+	{
+		if (this.screen instanceof CloudPreviewerScreen)
+			ci.setReturnValue(this.window.getFramerateLimit());
 	}
 
 	@Shadow

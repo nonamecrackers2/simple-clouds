@@ -35,7 +35,7 @@ public class SimpleCloudsSoundReplacements
 			SimpleCloudsSoundReplacements.Replacements replacements = REPLACEMENT_SOUNDS.get(soundLoc);
 			if (!replacements.condition().get() || !replacements.replacements().contains(sound.getLocation().getPath()))
 				return currentSound;
-			//TODO: Test
+			
 			ResourceLocation newLoc = SimpleCloudsMod.id(sound.getLocation().getPath());
 			Sound newSound = new Sound(newLoc, sound.getVolume(), sound.getPitch(), sound.getWeight(), Sound.Type.FILE, false, sound.shouldPreload(), sound.getAttenuationDistance());
 			if (!soundCache.containsKey(newSound.getPath()))

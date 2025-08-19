@@ -482,6 +482,7 @@ public class CloudPreviewerScreen extends Screen3D
 		{
 			Popup.createInfoPopup(this, 200, INFO);
 			SimpleCloudsConfig.CLIENT.showCloudPreviewerInfoPopup.set(false);
+			SimpleCloudsConfig.CLIENT_SPEC.save();
 		}
 		
 		super.render(stack, pMouseX, pMouseY, pPartialTick);

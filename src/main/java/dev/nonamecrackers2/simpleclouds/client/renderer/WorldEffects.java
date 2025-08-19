@@ -168,7 +168,7 @@ public class WorldEffects
 		RenderSystem.enableBlend();
 		RenderSystem.enableDepthTest();
 		
-		if (!this.hasLightningToRender())
+		if (this.hasLightningToRender())
 		{
 			float currentFogStart = RenderSystem.getShaderFogStart();
 			RenderSystem.setShaderFogStart(Float.MAX_VALUE);

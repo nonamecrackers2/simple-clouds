@@ -25,7 +25,6 @@ import net.minecraft.client.renderer.ShaderInstance;
 
 public class SimpleCloudsDebugOverlayRenderer
 {
-	//TODO: Test
 	public static void render(GuiGraphics stack, DeltaTracker tracker)
 	{
 		Minecraft mc = Minecraft.getInstance();

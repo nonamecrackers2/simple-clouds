@@ -132,7 +132,7 @@ public class SimpleCloudsConfig
 			
 			builder.comment("Seed").push("seed");
 			
-			this.cloudSeed = this.createValue(0L, "cloudSeed", RestartType.NONE, "Specifies the seed to use for the clouds. Will apply for all servers that the user connects to with the mod on the client-side only");
+			this.cloudSeed = this.createRangedLongValue(0L, Long.MIN_VALUE, Long.MAX_VALUE, "cloudSeed", RestartType.NONE, "Specifies the seed to use for the clouds. Will apply for all servers that the user connects to with the mod on the client-side only");
 			
 			this.useSpecificSeed = this.createValue(false, "useSpecificSeed", RestartType.NONE, "Specifies if the seed set by the 'Cloud Seed' option should be used or not");
 			

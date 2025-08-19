@@ -74,6 +74,7 @@ public class SimpleCloudsCompatHelper
 		if (CompatHelper.isVivecraftLoaded() && SimpleCloudsConfig.CLIENT.showVivecraftNotice.get())
 		{
 			SimpleCloudsConfig.CLIENT.showVivecraftNotice.set(false);
+			SimpleCloudsConfig.CLIENT_SPEC.save();
 			return new SimpleCloudsNoticeScreen(Component.translatable("gui.simpleclouds.notice.vivecraft"));
 		}
 		return null;

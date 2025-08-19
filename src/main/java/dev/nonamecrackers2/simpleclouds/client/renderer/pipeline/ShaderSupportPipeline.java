@@ -114,7 +114,6 @@ public class ShaderSupportPipeline implements CloudsRenderPipeline
 			RenderSystem.disableBlend();
 			RenderSystem.defaultBlendFunc();
 			// Need to do this here because blitToScreen messes up the projection matrix and doesn't set it back
-			//RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN); //TODO: Test if needed
 			
 			p.pop();
 		}

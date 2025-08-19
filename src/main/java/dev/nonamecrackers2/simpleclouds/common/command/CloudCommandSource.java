@@ -172,7 +172,7 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		float accelerationFactor = FloatArgumentType.getFloat(context, "accelerationFactor");
 		if (generator.addCloud(new CloudRegion(id, direction, maxSpeed, accelerationFactor, pos.x / SimpleCloudsConstants.CLOUD_SCALE, pos.y / SimpleCloudsConstants.CLOUD_SCALE, radius, rotation, stretchFactor, lifeTime, growTime, Integer.MAX_VALUE), CloudGenerator.Order.TOP))
 		{
-			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.spawn", id, pos.x, pos.y), true);
+			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.spawn", id.toString(), pos.x, pos.y), true);
 			return 1;
 		}
 		else
@@ -190,7 +190,7 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		CloudRegion region = generator.spawnCloud(generator.getSpawnConfig().get(), source.getUnsidedLevel()).orElse(null);
 		if (region != null)
 		{
-			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.spawn", region.getCloudTypeId(), region.getWorldX(), region.getWorldZ()), true);
+			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.spawn", region.getCloudTypeId().toString(), region.getWorldX(), region.getWorldZ()), true);
 			return 1;
 		}
 		else
@@ -221,7 +221,7 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		
 		if (region != null)
 		{
-			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.spawn", region.getCloudTypeId(), region.getWorldX(), region.getWorldZ()), true);
+			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.spawn", region.getCloudTypeId().toString(), region.getWorldX(), region.getWorldZ()), true);
 			return 2;
 		}
 		else
@@ -280,6 +280,7 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		}
 		
 		int size = regions.size();
+		System.out.println(Component.translatable("command.simpleclouds.clouds.count", size).getString());
 		source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.count", size), false);
 		return size;
 	}

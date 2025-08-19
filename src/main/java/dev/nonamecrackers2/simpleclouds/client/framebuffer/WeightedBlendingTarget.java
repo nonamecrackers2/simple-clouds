@@ -117,8 +117,11 @@ public class WeightedBlendingTarget extends RenderTarget
 	@Override
 	public void setFilterMode(int mode)
 	{
-		super.setFilterMode(mode);
+		this.filterMode = mode;
 		GlStateManager._bindTexture(this.revealageTextureId);
+		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, mode);
+		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, mode);
+		GlStateManager._bindTexture(this.colorTextureId);
 		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, mode);
 		GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, mode);
 		GlStateManager._bindTexture(0);

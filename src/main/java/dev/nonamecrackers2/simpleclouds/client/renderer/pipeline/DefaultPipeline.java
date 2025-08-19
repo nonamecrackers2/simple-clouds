@@ -125,10 +125,6 @@ public class DefaultPipeline implements CloudsRenderPipeline
 			RenderSystem.disableBlend();
 			RenderSystem.defaultBlendFunc();
 			
-			// Need to do this here because blitToScreen messes up the projection matrix and doesn't set it back
-			//RenderSystem.setProjectionMatrix(projMat, VertexSorting.DISTANCE_TO_ORIGIN);
-			//TODO: Fairly certain this is not needed anymore ^
-			
 			p.pop();
 		}
 		
@@ -147,5 +143,13 @@ public class DefaultPipeline implements CloudsRenderPipeline
 	}
 
 	@Override
-	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, Matrix4f camMat, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) {}
+	public void afterLevel(Minecraft mc, SimpleCloudsRenderer renderer, Matrix4f camMat, Matrix4f projMat, float partialTick, double camX, double camY, double camZ, Frustum frustum) 
+	{
+//		mc.getProfiler().push("clouds_debug");
+//		PoseStack stack = new PoseStack();
+//		stack.mulPose(camMat);
+//		renderer.translateClouds(stack, camX, camY, camZ);
+//		SimpleCloudsRenderer.renderCloudsDebug(renderer.getMeshGenerator(), stack, projMat, partialTick, renderer.getFogStart(), renderer.getFogEnd(), frustum, false, true);
+//		mc.getProfiler().pop();
+	}
 }

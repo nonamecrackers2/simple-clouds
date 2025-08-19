@@ -893,7 +893,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.mc.getMainRenderTarget().bindWrite(true);
 	}
 	
-	//TODO: Test debug renderer
 	public static void renderCloudsDebug(CloudMeshGenerator generator, PoseStack stack, Matrix4f projMat, float partialTick, float fogStart, float fogEnd, @Nullable Frustum frustum, boolean chunkBoundaries, boolean noiseBoundaries)
 	{
 		RenderSystem.assertOnRenderThread();
@@ -1033,7 +1032,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			else if (map.containsKey(MobEffects.DARKNESS))
 			{
 				MobEffectInstance instance = map.get(MobEffects.DARKNESS);
-				float f = Mth.lerp(instance.getBlendFactor(living, partialTick), renderDistance, 15.0F); //TODO: test
+				float f = Mth.lerp(instance.getBlendFactor(living, partialTick), renderDistance, 15.0F);
 				this.fogStart = 0.0F;
 				this.fogEnd = f;
 			}

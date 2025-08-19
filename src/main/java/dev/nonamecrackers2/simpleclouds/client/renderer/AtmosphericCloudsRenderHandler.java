@@ -139,7 +139,7 @@ public class AtmosphericCloudsRenderHandler
 				}
 				else if (map.containsKey(MobEffects.DARKNESS))
 				{
-					MobEffectInstance instance = map.get(MobEffects.DARKNESS); //TODO: Test
+					MobEffectInstance instance = map.get(MobEffects.DARKNESS);
 					alpha = 1.0F - Mth.clamp(instance.getBlendFactor(living, partialTick), 0.0F, 1.0F);
 				}
 			}
