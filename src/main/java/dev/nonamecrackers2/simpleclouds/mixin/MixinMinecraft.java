@@ -61,7 +61,7 @@ public abstract class MixinMinecraft implements IMinecraftExtension
 		}
 	}
 	
-	@Inject(method = "addInitialScreens", at = @At(""))
+	@Inject(method = "addInitialScreens", at = @At("TAIL"))
 	private void simpleclouds$addInfoScreens_addInitialScreens(List<Function<Runnable, Screen>> screenFactory, CallbackInfo ci)
 	{
 		SimpleCloudsNoticeScreen notice = SimpleCloudsCompatHelper.createNotice();

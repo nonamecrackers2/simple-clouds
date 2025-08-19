@@ -8,7 +8,7 @@
 		"MixinWeatherCommand",
 		"MixinLevel",
 		"MixinServerLevelAccessor",
-		"vanillacompat.MixinThrownTrident"
+		"vanillacompat.MixinWeatherCheck"
 	],
 	"client": [
 		"MixinLevelRenderer",
@@ -19,7 +19,6 @@
 		"MixinLightTexture",
 		"MixinMinecraft",
 		"MixinFrustumAccessor",
-		"MixinPostPass",
 		"MixinRenderTargetAccessor",
 		"MixinUniform",
 		"MixinSoundManagerPreperations",
