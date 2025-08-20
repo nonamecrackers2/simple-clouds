@@ -29,7 +29,7 @@ public class SimpleCloudsAfterDhRenderHandler extends DhApiAfterRenderEvent
 //		PoseStack stack = new PoseStack();
 //		stack.setIdentity();
 //		stack.last().pose().set(modelView);
-		float partialTick = mc.getTimer().getGameTimeDeltaPartialTick(true); //TODO: True or false?
+		float partialTick = mc.getTimer().getGameTimeDeltaPartialTick(true);
 		
 		int fbo = SimpleCloudsDhCompatHandler._getDhFramebufferId();
 		

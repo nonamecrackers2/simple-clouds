@@ -193,7 +193,6 @@ public class DhSupportPipeline implements CloudsRenderPipeline
 		GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL11.GL_TEXTURE_2D, mc.getMainRenderTarget().getDepthTextureId(), 0);
 	}
 	
-	//TODO: Test
 	private static void renderLightning(WorldEffects effects, SimpleCloudsRenderer renderer, Minecraft mc, PoseStack stack, float partialTick, double camX, double camY, double camZ)
 	{
 		Tesselator tesselator = Tesselator.getInstance();

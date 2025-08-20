@@ -869,7 +869,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 		RenderSystem.disableCull();
 		
-		//TODO: Test shadow maps + DH
 		this.stormFogShadowMapMatrix = this.createShadowMapMatrix(this.stormFogShadowMap, camX, camY, camZ, mat -> 
 		{
 			Vector2f direction = this.cloudManager.calculateWindDirection();

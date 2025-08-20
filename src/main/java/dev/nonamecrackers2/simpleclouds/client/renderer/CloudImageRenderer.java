@@ -162,7 +162,6 @@ public class CloudImageRenderer implements AutoCloseable
 			throw new IllegalStateException("Not properly initialized");
 	}
 	
-	//TODO: test renders
 	public void render()
 	{
 		RenderSystem.assertOnRenderThread();

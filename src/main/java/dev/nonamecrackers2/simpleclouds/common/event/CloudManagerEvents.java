@@ -20,7 +20,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-//TODO: Test syncing
 public class CloudManagerEvents
 {
 	@SubscribeEvent

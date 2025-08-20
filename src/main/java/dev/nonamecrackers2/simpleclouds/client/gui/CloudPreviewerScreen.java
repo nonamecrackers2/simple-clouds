@@ -504,7 +504,7 @@ public class CloudPreviewerScreen extends Screen3D
 	{
 		if (this.needsMeshRegen)
 			this.generateMesh();
-		//TODO: Test
+		
 		SimpleCloudsRenderer renderer = SimpleCloudsRenderer.getInstance();
 		
 		RenderTarget cloudTarget = renderer.getCloudTarget();

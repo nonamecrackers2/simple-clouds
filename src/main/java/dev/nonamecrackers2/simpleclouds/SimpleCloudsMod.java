@@ -30,7 +30,6 @@ import net.neoforged.neoforge.common.NeoForge;
 
 //TODO: Lower crackerslib neoforge version requirement
 //TODO: Test API
-//TODO: Test DH
 //TODO: Test Vivecraft
 @Mod(SimpleCloudsMod.MODID)
 public class SimpleCloudsMod

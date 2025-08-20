@@ -27,9 +27,6 @@ public class SimpleCloudsBeforeDhRenderHandler extends DhApiBeforeApplyShaderRen
 		DhApiRenderParam params = event.value;
 		Matrix4f projMat = new Matrix4f().setTransposed(params.dhProjectionMatrix.getValuesAsArray());
 		Matrix4f modelView = new Matrix4f().setTransposed(params.mcModelViewMatrix.getValuesAsArray());
-//		PoseStack stack = new PoseStack(); //TODO: Test
-//		stack.setIdentity();
-//		stack.last().pose().set(modelView);
 		
 		SimpleCloudsDhCompatHandler._updateCachedDhState(projMat, modelView);
 		
