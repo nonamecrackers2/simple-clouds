@@ -31,6 +31,8 @@ import net.neoforged.neoforge.common.NeoForge;
 //TODO: Lower crackerslib neoforge version requirement
 //TODO: Test API
 //TODO: Test Vivecraft
+//TODO: Change API path from forge to neoforge
+//TODO: "Use Normals" option not working
 @Mod(SimpleCloudsMod.MODID)
 public class SimpleCloudsMod
 {

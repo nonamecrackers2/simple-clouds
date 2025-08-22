@@ -1297,6 +1297,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		shader.safeGetUniform("UseNormals").set(SimpleCloudsConfig.CLIENT.cubeNormals.get() ? 1 : 0);
 		
 		RenderSystem.setShaderLights(DIFFUSE_LIGHT_0, DIFFUSE_LIGHT_1);
+		RenderSystem.setupShaderLights(shader);
 	}
 	
 	public void copyDepthFromCloudsToMain()
