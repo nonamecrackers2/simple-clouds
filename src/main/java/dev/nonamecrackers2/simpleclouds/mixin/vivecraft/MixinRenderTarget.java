@@ -11,7 +11,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 @Mixin(value = RenderTarget.class, priority = 1001)
 public class MixinRenderTarget
 {
-	@Redirect(method = "modify$zcd000$vivecraft$noViewportChangeOnClear", at = @At(value = "INVOKE", target = "Lorg/vivecraft/client_xr/render_pass/RenderPassType;isWorldOnly()Z", remap = false))
+	@Redirect(method = "modify$zfb000$vivecraft$noViewportChangeOnClear", at = @At(value = "INVOKE", target = "Lorg/vivecraft/client_xr/render_pass/RenderPassType;isWorldOnly()Z", remap = false))
 	public boolean simpleclouds$disableNoViewportChangeOnClear(boolean flag)
 	{
 		return false;
