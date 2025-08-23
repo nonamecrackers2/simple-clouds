@@ -93,9 +93,13 @@ dependencies {
 	implementation "maven.modrinth:DistantHorizonsApi:${dh_api_version}"
 	//implementation "maven.modrinth:DistantHorizons:${dh_version}-${minecraft_version}"
 	
-	implementation "maven.modrinth:Vivecraft:1.21.1-1.2.5-neoforge"
+	//implementation "maven.modrinth:Vivecraft:1.21.1-1.2.5-neoforge"
 	
-	runtimeOnly "maven.modrinth:Sodium:mc1.21.1-0.6.13-neoforge"
+	//runtimeOnly "maven.modrinth:Sodium:mc1.21.1-0.6.13-neoforge"
+	//runtimeOnly "maven.modrinth:Stellaris:1.4.6"
+	//runtimeOnly "maven.modrinth:Potentials:EEjnSxLK"
+	//runtimeOnly "maven.modrinth:Architectury-API:13.0.8+neoforge"
+	
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

@@ -3,6 +3,7 @@
 	"package": "dev.nonamecrackers2.simpleclouds.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"refmap": "simpleclouds.refmap.json",
+	"plugin": "dev.nonamecrackers2.simpleclouds.common.mixin.SimpleCloudsMixinPlugin",
 	"mixins": [
 		"MixinServerLevel",
 		"MixinWeatherCommand",
@@ -24,7 +25,8 @@
 		"MixinSoundManagerPreperations",
 		"vivecraft.MixinVRRenderer",
 		"vivecraft.MixinMinecraftVRMixin",
-		"vivecraft.MixinRenderTarget"
+		"vivecraft.MixinRenderTarget",
+		"skyaesthetics.MixinSkyRenderer"
 	],
 	"minVersion": "0.8"
 }
