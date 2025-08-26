@@ -71,10 +71,6 @@ repositories {
         name "nonamecrackers2Maven"
         url "https://maven.nonamecrackers2.dev/releases"
     }
-    maven {
-    	name "SimpleCloudsAPILocal"
-    	url "C:/Users/nonam/git/Simple-Clouds-API-1.21.1/repo"
-    }
 }
 
 dependencies {
@@ -85,10 +81,10 @@ dependencies {
     }
     implementation "nonamecrackers2:crackerslib-neoforge:${crackerslib_version}"
     
-    jarJar("nonamecrackers2:simplecloudsapi-forge:${api_version}") {
+    jarJar("nonamecrackers2:simplecloudsapi-neoforge:${api_version}") {
 		jarJar.ranged(it, api_version_range)
 	}
-    implementation "nonamecrackers2:simplecloudsapi-forge:${api_version}"
+    implementation "nonamecrackers2:simplecloudsapi-neoforge:${api_version}"
     
 	implementation "maven.modrinth:DistantHorizonsApi:${dh_api_version}"
 	//implementation "maven.modrinth:DistantHorizons:${dh_version}-${minecraft_version}"
@@ -128,16 +124,28 @@ tasks.withType(ProcessResources).configureEach {
     }
 }
 
+java {
+	withSourcesJar()
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            from components.java
+            group = mod_authors
+            artifactId = "${mod_id}-neoforge"
+            artifact jar
+            artifact sourcesJar
         }
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/repo"
-        }
+		    name "nonamecrackers2Maven"
+		    url "https://maven.nonamecrackers2.dev/${maven_dir}"
+		    credentials(PasswordCredentials)
+		    authentication {
+		    	basic(BasicAuthentication)
+		    }
+		}
     }
 }
 
