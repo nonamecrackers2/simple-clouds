@@ -133,7 +133,13 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	@Override
 	public boolean removeClouds(Predicate<CloudRegion> predicate)
 	{
-		boolean anyPassed = false;
+		return this.removeCloudsCount(predicate) > 0;
+	}
+	
+	@Override
+	public int removeCloudsCount(Predicate<CloudRegion> predicate)
+	{
+		int count = 0;
 		var iterator = this.clouds.iterator();
 		while (iterator.hasNext())
 		{
@@ -142,10 +148,10 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			{
 				iterator.remove();
 				NeoForge.EVENT_BUS.post(new CloudRegionRemovedEvent(null, region, CloudRegionRemovedEvent.Reason.MANUALLY));
-				anyPassed = true;
+				count++;
 			}
 		}
-		return anyPassed;
+		return count;
 	}
 	
 	@Override

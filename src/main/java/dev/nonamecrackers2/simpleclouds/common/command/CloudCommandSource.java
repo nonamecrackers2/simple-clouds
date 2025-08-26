@@ -3,6 +3,7 @@ package dev.nonamecrackers2.simpleclouds.common.command;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.arguments.FloatArgumentType;
@@ -280,8 +281,8 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		}
 		
 		int size = regions.size();
-		System.out.println(Component.translatable("command.simpleclouds.clouds.count", size).getString());
-		source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.count", size), false);
+		String types = regions.stream().map(t -> t.getCloudTypeId().toString()).distinct().collect(Collectors.joining(", "));
+		source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.count", size, types), false);
 		return size;
 	}
 	
@@ -290,8 +291,8 @@ public interface CloudCommandSource<S extends Level, T extends CloudManager<S>>
 		CommandSourceStack source = context.getSource();
 		T manager = this.getCloudManager(context);
 		CloudGenerator generator = manager.getCloudGenerator();
-		int amount = generator.getClouds().size();
-		if (generator.removeClouds(region))
+		int amount = generator.removeCloudsCount(region);
+		if (amount > 0)
 			source.sendSuccess(() -> Component.translatable("command.simpleclouds.clouds.clear", amount), true);
 		else
 			source.sendFailure(Component.translatable("command.simpleclouds.clouds.clear.fail"));

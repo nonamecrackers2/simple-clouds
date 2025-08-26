@@ -320,6 +320,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			LOGGER.error("Simple Clouds renderer could not initialize due to compat error(s): {}", compatError.getErrors().stream().map(e -> e.text().getString()).toList());
 			this.initialInitializationResult = compatError;
+			saveAndPrintCrashReports(this.mc, this.initialInitializationResult);
 			return;
 		}
 		
@@ -344,7 +345,6 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			saveAndPrintCrashReports(this.mc, this.initialInitializationResult);
 			return;
 		}
-		
 		
 		if (this.cloudTarget != null)
 			this.cloudTarget.destroyBuffers();
