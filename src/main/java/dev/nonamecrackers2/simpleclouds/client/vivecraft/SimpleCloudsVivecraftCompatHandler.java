@@ -13,8 +13,6 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.Minecraft;
 import nonamecrackers2.crackerslib.common.compat.CompatHelper;
 
-//TODO Test on Nvidia
-
 // Vivecraft doesn't have a seperate API lib so we use reflection
 // to not require Vivecraft as a dependency in dev
 // These shouldn't be called when Vivecraft is not installed

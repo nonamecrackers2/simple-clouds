@@ -88,10 +88,8 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -320,6 +318,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		{
 			LOGGER.error("Simple Clouds renderer could not initialize due to compat error(s): {}", compatError.getErrors().stream().map(e -> e.text().getString()).toList());
 			this.initialInitializationResult = compatError;
+			saveAndPrintCrashReports(this.mc, this.initialInitializationResult);
 			return;
 		}
 		
@@ -341,9 +340,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		if (main == null)
 		{
 			this.initialInitializationResult = RendererInitializeResult.builder().errorUnknown(new NullPointerException("Main framebuffer is null"), "Simple Clouds Renderer").build();
+			saveAndPrintCrashReports(this.mc, this.initialInitializationResult);
 			return;
 		}
-		
 		
 		if (this.cloudTarget != null)
 			this.cloudTarget.destroyBuffers();

@@ -18,16 +18,12 @@ import org.joml.Vector2i;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-
-import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsHooks;
 import dev.nonamecrackers2.simpleclouds.api.SimpleCloudsAPI;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.CreateRegionFunction;
 import dev.nonamecrackers2.simpleclouds.api.common.cloud.spawning.SpawnInfo;
-
 import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionNaturallySpawnEvent;
 import dev.nonamecrackers2.simpleclouds.api.common.event.CloudRegionRemovedEvent;
 import dev.nonamecrackers2.simpleclouds.common.api.ScAPICloudGeneratorImplHelper;
-import dev.nonamecrackers2.simpleclouds.common.api.SimpleCloudsAPIImpl;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudType;
 import dev.nonamecrackers2.simpleclouds.common.cloud.CloudTypeSource;
 import dev.nonamecrackers2.simpleclouds.common.cloud.SimpleCloudsConstants;
@@ -137,7 +133,13 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 	@Override
 	public boolean removeClouds(Predicate<CloudRegion> predicate)
 	{
-		boolean anyPassed = false;
+		return this.removeCloudsCount(predicate) > 0;
+	}
+	
+	@Override
+	public int removeCloudsCount(Predicate<CloudRegion> predicate)
+	{
+		int count = 0;
 		var iterator = this.clouds.iterator();
 		while (iterator.hasNext())
 		{
@@ -146,10 +148,10 @@ public abstract class CloudGenerator implements ScAPICloudGeneratorImplHelper
 			{
 				iterator.remove();
 				MinecraftForge.EVENT_BUS.post(new CloudRegionRemovedEvent(null, region, CloudRegionRemovedEvent.Reason.MANUALLY));
-				anyPassed = true;
+				count++;
 			}
 		}
-		return anyPassed;
+		return count;
 	}
 	
 	@Override

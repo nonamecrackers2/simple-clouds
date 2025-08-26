@@ -39,6 +39,13 @@ public interface ScAPICloudGeneratorImplHelper extends ScAPICloudGenerator
 		return this.removeClouds((Predicate<CloudRegion>)predicate);
 	}
 	
+	@SuppressWarnings("unchecked")
+	@Override
+	default int api_removeCloudsCount(Predicate<? extends ScAPICloudRegion> predicate)
+	{
+		return this.removeCloudsCount((Predicate<CloudRegion>)predicate);
+	}
+	
 	@Override
 	default boolean addCloudToTop(ScAPICloudRegion region)
 	{
@@ -64,6 +71,8 @@ public interface ScAPICloudGeneratorImplHelper extends ScAPICloudGenerator
 	List<SpawnRegion> getRegionsThatOccupyCloud(CloudRegion cloud);
 	
 	boolean removeClouds(Predicate<CloudRegion> predicate);
+	
+	int removeCloudsCount(Predicate<CloudRegion> predicate);
 	
 	boolean addCloud(CloudRegion region, CloudGenerator.Order order);
 }
