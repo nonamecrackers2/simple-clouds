@@ -357,6 +357,15 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	@Override
 	protected void onOffGen()
 	{
+		Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.options == null)
+            return;
+
+        boolean vsync = mc.options.enableVsync().get();
+        boolean fullscreen = mc.getWindow() != null && mc.getWindow().isFullscreen();
+
+        if (!(vsync && fullscreen))
+            return;
 		super.onOffGen();
 		
 		if (this.regionTextureGenerator != null)
@@ -402,3 +411,4 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		super.fillReport(category);
 	}
 }
+
