@@ -802,6 +802,12 @@ public abstract class CloudMeshGenerator
 	
 	protected void onOffGen()
 	{
+		//Fix fps drop when not using V-Sync in fullscreen BY Gaboouu
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.options == null || !mc.options.enableVsync().get())
+            return;
+        if (!mc.getWindow().isFullscreen())
+            return;
 		//We read these SSBOs here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
 		if (!this.useFixedMeshDataSectionSize)
 			this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4);
@@ -1147,3 +1153,4 @@ public abstract class CloudMeshGenerator
 		}
 	}
 }
+
