@@ -10,11 +10,15 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.client.Minecraft;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL31;
+import org.lwjgl.opengl.GL32;
+import org.lwjgl.opengl.GL33;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
@@ -116,6 +120,7 @@ public abstract class CloudMeshGenerator
 	private float fadeEnd;
 	private float cullDistance;
 	private int transparencyDistance;
+	private long meshGenFence = 0L;
 	
 	private int opaqueBufferSize;
 	private int opaqueBufferBytesUsed;
@@ -314,12 +319,23 @@ public abstract class CloudMeshGenerator
 	{
 		RenderSystem.assertOnRenderThreadOrInit();
 		
+		if (this.meshGenFence != 0L)
+		{
+			GL32.glDeleteSync(this.meshGenFence);
+			this.meshGenFence = 0L;
+		}
+		
 		this.opaqueBufferBytesUsed = 0;
 		this.opaqueBufferSize = 0;
 		this.opaqueBytesPerChunk = 0;
 		this.transparentBufferBytesUsed = 0;
 		this.transparentBufferSize = 0;
 		this.transparentBytesPerChunk = 0;
+		if (this.meshGenFence != 0L)
+		{
+			GL32.glDeleteSync(this.meshGenFence);
+			this.meshGenFence = 0L;
+		}
 		
 		GL42.glMemoryBarrier(GL42.GL_ALL_BARRIER_BITS);
 		this.chunkGenTasks.clear();
@@ -551,6 +567,8 @@ public abstract class CloudMeshGenerator
 			this.doMeshGenning(this.chunkGenTasks.size());
 		
 		this.meshGenStatus = this.finalizeMeshGen();
+		if (this.meshGenStatus.getLeft() == CloudMeshGenerator.MeshGenStatus.WAITING_FOR_GPU)
+			return;
 		this.completedGenTasks.clear();
 	}
 	
@@ -582,6 +600,8 @@ public abstract class CloudMeshGenerator
 		if (this.chunkGenTasks.isEmpty()) //If we have no chunk gen tasks
 		{
 			this.meshGenStatus = this.finalizeMeshGen(); //Split the combined mesh data from the GPU, and store them in the VBOs for each chunk that was generated
+			if (this.meshGenStatus.getLeft() == CloudMeshGenerator.MeshGenStatus.WAITING_FOR_GPU)
+				return;
 			this.completedGenTasks.clear(); //Clear the chunk gen tasks
 			
 			//Prepare the next batch of chunks to generate meshes for
@@ -685,6 +705,15 @@ public abstract class CloudMeshGenerator
 			return Pair.of(CloudMeshGenerator.MeshGenStatus.NO_TASKS, CloudMeshGenerator.MeshGenStatus.NO_TASKS);
 		
 		RenderSystem.assertOnRenderThread();
+		
+		if (this.meshGenFence != 0L)
+		{
+			int res = GL32.glClientWaitSync(this.meshGenFence, 0, 0L);
+			if (res == GL32.GL_TIMEOUT_EXPIRED)
+				return Pair.of(CloudMeshGenerator.MeshGenStatus.WAITING_FOR_GPU, CloudMeshGenerator.MeshGenStatus.WAITING_FOR_GPU);
+			GL32.glDeleteSync(this.meshGenFence);
+			this.meshGenFence = 0L;
+		}
 		
 		GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
 			
@@ -808,7 +837,13 @@ public abstract class CloudMeshGenerator
             return;
         if (!mc.getWindow().isFullscreen())
             return;
-		//We read these SSBOs here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
+        //Fix fps drop when not using V-Sync in fullscreen BY Gaboouu
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.options == null || !mc.options.enableVsync().get())
+            return;
+        if (!mc.getWindow().isFullscreen())
+            return;
+        //We read these SSBOs here to avoid weird frame spikes when in fullscreen V-Sync, not sure why it happens
 		if (!this.useFixedMeshDataSectionSize)
 			this.shader.getShaderStorageBuffer(TOTAL_SIDES_NAME).readWriteData(b -> {}, 4);
 		this.shader.getShaderStorageBuffer(SIDES_PER_CHUNK_NAME).readWriteData(buffer -> {}, this.chunks.size() * 4);
@@ -872,12 +907,15 @@ public abstract class CloudMeshGenerator
 	 */
 	protected void doMeshGenning(int tasksPerTick)
 	{
+		boolean dispatched = false;
 		for (int i = 0; i < tasksPerTick; i++)
 		{
 			CloudMeshGenerator.ChunkGenTask task = this.chunkGenTasks.poll();
 			if (task != null)
 			{
-				this.generateChunk(task);
+				boolean taskDispatched = this.generateChunk(task);
+				if (taskDispatched)
+					dispatched = true;
 				this.updateMeshChunkAfterGeneration(task.chunk(), task);
 				this.completedGenTasks.add(task);
 			}
@@ -885,6 +923,14 @@ public abstract class CloudMeshGenerator
 			{
 				break;
 			}
+		}
+		
+		if (dispatched)
+		{
+			if (this.meshGenFence != 0L)
+				GL32.glDeleteSync(this.meshGenFence);
+			this.meshGenFence = GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+			GL11.glFlush();
 		}
 	}
 	
@@ -903,7 +949,7 @@ public abstract class CloudMeshGenerator
 	 * @param globalOffsetX
 	 * @param globalOffsetZ
 	 */
-	protected void generateChunk(CloudMeshGenerator.ChunkGenTask task)
+	protected boolean generateChunk(CloudMeshGenerator.ChunkGenTask task)
 	{
 		PreparedChunk chunkInfo = task.chunk().getChunkInfo();
 		
@@ -946,7 +992,10 @@ public abstract class CloudMeshGenerator
 			this.shader.dispatch(WORK_SIZE, localHeightInvocations, WORK_SIZE, false);
 			if (!this.useFixedMeshDataSectionSize)
 				GL42.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
+			return true;
 		}
+		
+		return false;
 	}
 	
 	public void forRenderableMeshChunks(@Nullable Frustum frustum, Function<MeshChunk, MeshChunk.BufferSet> bufferSetFunction, BiConsumer<MeshChunk, MeshChunk.BufferSet> function)
@@ -1035,6 +1084,7 @@ public abstract class CloudMeshGenerator
 	{
 		NOT_INITIALIZED("Not initialized", true),
 		NO_TASKS("No tasks", false),
+		WAITING_FOR_GPU("Waiting for GPU", false),
 		NORMAL("Normal", false),
 		MESH_POOL_OVERFLOW("Mesh pool overflow", true),
 		CHUNK_OVERFLOW("Chunk overflow", true);
