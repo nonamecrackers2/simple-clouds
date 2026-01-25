@@ -117,10 +117,32 @@ public class ShaderStorageBufferObject implements WithBinding
 	
 	public void writeData(Consumer<ByteBuffer> consumer, int size, boolean invalidate)
 	{
-		int access = GL30.GL_MAP_WRITE_BIT;
-		if (invalidate)
-			access |= GL30.GL_MAP_INVALIDATE_BUFFER_BIT;
-		this.fetchData(consumer, access, size);
+		RenderSystem.assertOnRenderThread();
+		this.assertValid();
+		if (size <= 0)
+			throw new IllegalArgumentException("Invalid size, please use a size greater than 0");
+		
+		ByteBuffer buffer = this.buffer;
+		if (buffer == null || buffer.capacity() < size)
+		{
+			if (buffer != null)
+				MemoryUtil.memFree(buffer);
+			buffer = MemoryTracker.create(size);
+			this.buffer = buffer;
+		}
+		
+		buffer.position(0);
+		buffer.limit(size);
+		consumer.accept(buffer);
+		buffer.position(0);
+		buffer.limit(size);
+		
+		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.id);
+		int currentSize = GL15.glGetBufferParameteri(GL43.GL_SHADER_STORAGE_BUFFER, GL15.GL_BUFFER_SIZE);
+		if (currentSize < size)
+			GL15.glBufferData(GL43.GL_SHADER_STORAGE_BUFFER, size, this.usage);
+		GL15.glBufferSubData(GL43.GL_SHADER_STORAGE_BUFFER, 0, buffer);
+		GlStateManager._glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, 0);
 	}
 	
 	public void readWriteData(Consumer<ByteBuffer> consumer, int size)
