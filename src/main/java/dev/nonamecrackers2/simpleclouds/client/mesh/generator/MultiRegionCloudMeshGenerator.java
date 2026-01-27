@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.client.Minecraft;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -223,7 +224,7 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	}
 	
 	@Override
-	protected void generateChunk(CloudMeshGenerator.ChunkGenTask task)
+	protected boolean generateChunk(CloudMeshGenerator.ChunkGenTask task)
 	{
 		this.shader.forUniform("RegionSampleOffset", (id, loc) -> 
 		{
@@ -232,7 +233,7 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 		});
 		this.shader.setSampler2DArray("RegionsSampler", this.cloudRegionTextureId, 0);
 		
-		super.generateChunk(task);
+		return super.generateChunk(task);
 	}
 	
 	private void runRegionGenerator(float meshOffsetX, float meshOffsetZ, float partialTick)
@@ -357,6 +358,15 @@ public final class MultiRegionCloudMeshGenerator extends CloudMeshGenerator
 	@Override
 	protected void onOffGen()
 	{
+		Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.options == null)
+            return;
+
+        boolean vsync = mc.options.enableVsync().get();
+        boolean fullscreen = mc.getWindow() != null && mc.getWindow().isFullscreen();
+
+        if (!(vsync && fullscreen))
+            return;
 		super.onOffGen();
 		
 		if (this.regionTextureGenerator != null)

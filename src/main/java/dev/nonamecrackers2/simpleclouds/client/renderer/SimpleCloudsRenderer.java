@@ -11,7 +11,6 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
@@ -32,6 +31,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -118,6 +118,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	public static final int SHADOW_MAP_SPAN = 10000;
 	public static final int MAX_LIGHTNING_BOLTS = 16;
 	public static final int BYTES_PER_LIGHTNING_BOLT = 16;
+	private static final int LIGHTNING_SSBO_BUFFER_COUNT = 3;
 	public static final float CHUNK_FADE_IN_ALPHA_PER_TICK = 0.2F;
 	public static final float DITHER_SCALE = 0.05F;
 	private static @Nullable SimpleCloudsRenderer instance;
@@ -140,7 +141,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private @Nullable PostChain blurPostProcessing;
 	private @Nullable PostChain screenSpaceWorldFog;
 	private @Nullable PostChain cloudShadows;
-	private @Nullable ShaderStorageBufferObject lightningBoltPositions;
+	private @Nullable ShaderStorageBufferObject[] lightningBoltPositions;
+	private int lightningBoltPositionsIndex;
+	private @Nullable StormPostPassUniforms[] stormPostUniforms;
 	private @Nullable ShadowMapBuffer stormFogShadowMap;
 	private Optional<ShadowMapBuffer> shadowMap = Optional.empty();
 	private @Nullable Frustum cullFrustum;
@@ -151,6 +154,8 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	private boolean failedToCopyDepthBuffer;
 	private boolean needsReload;
 	private @Nullable RendererInitializeResult initialInitializationResult;
+	private final Matrix4f stormInvertedProjMat = new Matrix4f();
+	private final Matrix4f stormInvertedModelViewMat = new Matrix4f();
 	
 	private SimpleCloudsRenderer(CloudsRendererSettings settings, Minecraft mc)
 	{
@@ -407,12 +412,22 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		if (this.lightningBoltPositions != null)
 		{
-			BindingManager.freeSSBO(this.lightningBoltPositions);
+			for (ShaderStorageBufferObject buffer : this.lightningBoltPositions)
+			{
+				if (buffer != null)
+					BindingManager.freeSSBO(buffer);
+			}
 			this.lightningBoltPositions = null;
 		}
 		
-		this.lightningBoltPositions = BindingManager.createSSBO(GL15.GL_DYNAMIC_DRAW);
-		this.lightningBoltPositions.allocateBuffer(MAX_LIGHTNING_BOLTS * BYTES_PER_LIGHTNING_BOLT);
+		this.lightningBoltPositions = new ShaderStorageBufferObject[LIGHTNING_SSBO_BUFFER_COUNT];
+		for (int i = 0; i < LIGHTNING_SSBO_BUFFER_COUNT; i++)
+		{
+			ShaderStorageBufferObject buffer = BindingManager.createSSBO(GL15.GL_DYNAMIC_DRAW);
+			buffer.allocateBuffer(MAX_LIGHTNING_BOLTS * BYTES_PER_LIGHTNING_BOLT);
+			this.lightningBoltPositions[i] = buffer;
+		}
+		this.lightningBoltPositionsIndex = 0;
 		
 		this.stormPostProcessing = this.createPostChain(manager, STORM_POST_PROCESSING_LOC, this.stormFogTarget, pass -> 
 		{
@@ -420,8 +435,9 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 			effect.setSampler("ShadowMap", () -> this.stormFogShadowMap.getDepthTexId());
 			effect.setSampler("ShadowMapColor", () -> this.stormFogShadowMap.getColorTexId());
 			effect.setSampler("DepthSampler", () -> this.cloudTarget.getDepthTextureId());
-			this.lightningBoltPositions.optionalBindToProgram("LightningBolts", effect.getId());
+			this.lightningBoltPositions[0].optionalBindToProgram("LightningBolts", effect.getId());
 		});
+		this.cacheStormPostUniforms();
 		
 		this.blurPostProcessing = this.createPostChain(manager, BLUR_POST_PROCESSING_LOC, this.blurTarget);
 		this.blurPostProcessing.getTempTarget("swap").setFilterMode(GL11.GL_LINEAR);
@@ -564,6 +580,7 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	{
 		this.postChains.forEach(PostChain::close);
 		this.postChains.clear();
+		this.stormPostUniforms = null;
 	}
 	
 	private @Nullable PostChain createPostChain(ResourceManager manager, ResourceLocation loc, RenderTarget target)
@@ -592,6 +609,23 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		}
 		
 		return null;
+	}
+
+	private void cacheStormPostUniforms()
+	{
+		if (this.stormPostProcessing == null)
+		{
+			this.stormPostUniforms = null;
+			return;
+		}
+		
+		List<PostPass> passes = ((MixinPostChain)this.stormPostProcessing).simpleclouds$getPostPasses();
+		this.stormPostUniforms = new StormPostPassUniforms[passes.size()];
+		for (int i = 0; i < passes.size(); i++)
+		{
+			EffectInstance effect = passes.get(i).getEffect();
+			this.stormPostUniforms[i] = new StormPostPassUniforms(effect);
+		}
 	}
 	
 	public void onMainWindowResize(int width, int height)
@@ -670,9 +704,15 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		
 		if (this.lightningBoltPositions != null)
 		{
-			BindingManager.freeSSBO(this.lightningBoltPositions);
+			for (ShaderStorageBufferObject buffer : this.lightningBoltPositions)
+			{
+				if (buffer != null)
+					BindingManager.freeSSBO(buffer);
+			}
 			this.lightningBoltPositions = null;
 		}
+		
+		this.stormPostUniforms = null;
 		
 		this.atmoshpericClouds.close();
 	}
@@ -1165,8 +1205,20 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 	
 	public void doStormPostProcessing(PoseStack stack, float partialTick, Matrix4f projMat, double camX, double camY, double camZ, float r, float g, float b)
 	{
-		if (this.stormPostProcessing == null || this.stormFogShadowMapStack == null || this.stormFogShadowMapStack == null)
+		if (this.stormPostProcessing == null || this.stormFogShadowMapStack == null || this.stormFogShadowMap == null)
 			return;
+		
+		if (this.stormPostUniforms == null)
+			this.cacheStormPostUniforms();
+		if (this.stormPostUniforms == null)
+			return;
+		
+		ShaderStorageBufferObject[] lightningBuffers = this.lightningBoltPositions;
+		if (lightningBuffers == null || lightningBuffers.length == 0)
+			return;
+		
+		ShaderStorageBufferObject lightningBuffer = lightningBuffers[this.lightningBoltPositionsIndex];
+		this.lightningBoltPositionsIndex = (this.lightningBoltPositionsIndex + 1) % lightningBuffers.length;
 		
 		RenderSystem.disableBlend();
 		RenderSystem.disableDepthTest();
@@ -1176,17 +1228,18 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 		this.stormFogTarget.clear(Minecraft.ON_OSX);
 		this.stormFogTarget.bindWrite(true);
 		
-		MutableInt size = new MutableInt();
+		int size;
 		boolean flag = SimpleCloudsConfig.CLIENT.stormFogLightningFlashes.get();
 		if (flag)
 		{
 			List<LightningBolt> lightningBolts = this.worldEffectsManager.getLightningBolts();
-			size.setValue(Math.min(lightningBolts.size(), MAX_LIGHTNING_BOLTS));
-			if (size.getValue() > 0)
+			size = Math.min(lightningBolts.size(), MAX_LIGHTNING_BOLTS);
+			if (size > 0)
 			{
-				this.lightningBoltPositions.writeData(buffer -> 
+				final int boltCount = size;
+				lightningBuffer.writeData(buffer -> 
 				{
-					for (int i = 0; i < size.getValue(); i++)
+					for (int i = 0; i < boltCount; i++)
 					{
 						LightningBolt bolt = lightningBolts.get(i);
 						Vector3f pos = bolt.getPosition();
@@ -1196,31 +1249,70 @@ public class SimpleCloudsRenderer implements ResourceManagerReloadListener
 						buffer.putFloat(bolt.getFade(partialTick));
 					}
 					buffer.rewind();
-				}, size.getValue() * BYTES_PER_LIGHTNING_BOLT, false);
+				}, boltCount * BYTES_PER_LIGHTNING_BOLT, false);
 			}
 		}
-		
-		Matrix4f invertedProjMat = new Matrix4f(projMat).invert();
-		Matrix4f invertedModelViewMat = new Matrix4f(stack.last().pose()).invert();
-		for (PostPass pass : ((MixinPostChain)this.stormPostProcessing).simpleclouds$getPostPasses())
+		else
 		{
-			EffectInstance effect = pass.getEffect();
-			effect.safeGetUniform("InverseWorldProjMat").set(invertedProjMat);
-			effect.safeGetUniform("InverseModelViewMat").set(invertedModelViewMat);
-			effect.safeGetUniform("ShadowProjMat").set(this.stormFogShadowMap.getProjMatrix());
-			effect.safeGetUniform("ShadowModelViewMat").set(this.stormFogShadowMapStack.last().pose());
-			effect.safeGetUniform("CameraPos").set((float)camX, (float)camY, (float)camZ);
-			effect.safeGetUniform("FogStart").set(this.fogEnd / 2.0F);
-			effect.safeGetUniform("FogEnd").set(this.fogEnd);
-			effect.safeGetUniform("ColorModulator").set(r, g, b, 1.0F);
-			float factor = this.worldEffectsManager.getDarkenFactor(partialTick);
-			effect.safeGetUniform("CutoffDistance").set(1000.0F * factor);
-			effect.safeGetUniform("TotalLightningBolts").set(size.getValue());
+			size = 0;
+		}
+		
+		this.stormInvertedProjMat.set(projMat).invert();
+		this.stormInvertedModelViewMat.set(stack.last().pose()).invert();
+		float factor = this.worldEffectsManager.getDarkenFactor(partialTick);
+		for (StormPostPassUniforms uniforms : this.stormPostUniforms)
+		{
+			uniforms.bindLightning(lightningBuffer);
+			uniforms.inverseWorldProjMat.set(this.stormInvertedProjMat);
+			uniforms.inverseModelViewMat.set(this.stormInvertedModelViewMat);
+			uniforms.shadowProjMat.set(this.stormFogShadowMap.getProjMatrix());
+			uniforms.shadowModelViewMat.set(this.stormFogShadowMapStack.last().pose());
+			uniforms.cameraPos.set((float)camX, (float)camY, (float)camZ);
+			uniforms.fogStart.set(this.fogEnd / 2.0F);
+			uniforms.fogEnd.set(this.fogEnd);
+			uniforms.colorModulator.set(r, g, b, 1.0F);
+			uniforms.cutoffDistance.set(1000.0F * factor);
+			uniforms.totalLightningBolts.set(size);
 		}
 		
 		this.stormPostProcessing.process(partialTick);
 		
 		RenderSystem.depthMask(true);
+	}
+
+	private static final class StormPostPassUniforms
+	{
+		private final int programId;
+		private final AbstractUniform inverseWorldProjMat;
+		private final AbstractUniform inverseModelViewMat;
+		private final AbstractUniform shadowProjMat;
+		private final AbstractUniform shadowModelViewMat;
+		private final AbstractUniform cameraPos;
+		private final AbstractUniform fogStart;
+		private final AbstractUniform fogEnd;
+		private final AbstractUniform colorModulator;
+		private final AbstractUniform cutoffDistance;
+		private final AbstractUniform totalLightningBolts;
+		
+		private StormPostPassUniforms(EffectInstance effect)
+		{
+			this.programId = effect.getId();
+			this.inverseWorldProjMat = effect.safeGetUniform("InverseWorldProjMat");
+			this.inverseModelViewMat = effect.safeGetUniform("InverseModelViewMat");
+			this.shadowProjMat = effect.safeGetUniform("ShadowProjMat");
+			this.shadowModelViewMat = effect.safeGetUniform("ShadowModelViewMat");
+			this.cameraPos = effect.safeGetUniform("CameraPos");
+			this.fogStart = effect.safeGetUniform("FogStart");
+			this.fogEnd = effect.safeGetUniform("FogEnd");
+			this.colorModulator = effect.safeGetUniform("ColorModulator");
+			this.cutoffDistance = effect.safeGetUniform("CutoffDistance");
+			this.totalLightningBolts = effect.safeGetUniform("TotalLightningBolts");
+		}
+		
+		private void bindLightning(ShaderStorageBufferObject buffer)
+		{
+			buffer.optionalBindToProgram("LightningBolts", this.programId);
+		}
 	}
 	
 	public void doCloudShadowProcessing(PoseStack stack, float partialTick, Matrix4f projMat, double camX, double camY, double camZ, int depthBufferId)
