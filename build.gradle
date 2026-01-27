@@ -170,6 +170,9 @@ dependencies {
 	implementation fg.deobf("nonamecrackers2:simplecloudsapi-forge:${api_version}")
 	
 	implementation fg.deobf("maven.modrinth:DistantHorizonsApi:${dh_api_version}")
+    runtimeOnly fg.deobf("curse.maven:spark-361579:4738952")
+    runtimeOnly fg.deobf("curse.maven:chloride-931925:6615986")
+    runtimeOnly fg.deobf("curse.maven:embeddium-908741:5681725")
 	//implementation fg.deobf("maven.modrinth:DistantHorizons:${dh_version}-${minecraft_version}")
 	
 
