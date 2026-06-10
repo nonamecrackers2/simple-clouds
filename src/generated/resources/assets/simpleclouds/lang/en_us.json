@@ -15,7 +15,7 @@
   "command.simpleclouds.scroll.get": "The current cloud scroll position is [x: %s, y: %s, z: %s]",
   "command.simpleclouds.seed.get": "The current cloud seed is %s",
   "command.simpleclouds.speed.get": "The current cloud speed is %s",
-  "command.simpleclouds.weather.override": "Simple Clouds is overriding vanilla weather, and the /weather command is disabled. To use vanilla weather, please do either of the following:\n1. Set the cloud mode in the SERVER config to AMBIENT.\n2. Set the cloud mode in the SERVER config to SINGLE, and set the single mode cloud type to a cloud type that has no weather associated with it (e.x. simpleclouds:itty_bitty)",
+  "command.simpleclouds.weather.override": "Simple Clouds is overriding vanilla weather, and the /weather command is disabled. To use vanilla weather, please do either of the following:\n1. Set the cloud mode in the SERVER config to AMBIENT.\n2. Set the cloud mode in the SERVER config to SINGLE, and set the single mode cloud type to a cloud type that has no weather associated with it (e.x. simpleclouds:itty_bitty)\nYou can also clear the weather with /simpleclouds clouds clear storms",
   "commands.simpleclouds.client.configReferal": "This option is overriden by the CLIENT config. Please refer to the CLIENT config to change this option.",
   "commands.simpleclouds.cloudType.notFound": "Unknown cloud type '%s'",
   "commands.simpleclouds.notClientSideOnly": "Client cloud commands can only be used when connected to servers that do not have Simple Clouds installed. If you're connected on singleplayer, or you are an operator on a dedicated server with Simple Clouds installed, please use '/simpleclouds clouds'",
